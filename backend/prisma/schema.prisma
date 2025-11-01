@@ -1,0 +1,187 @@
+// Esquema de Prisma para la base de datos principal
+// Base de datos: asistente_ia_juvenil
+// Funcionalidad: Usuarios, autenticación, sesiones
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo de usuarios
+model Usuario {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  nombre          String
+  apellidos       String?
+  nombreUsuario   String?  @unique
+  avatarUrl       String?
+  telefono        String?
+  fechaNacimiento DateTime?
+  genero          Genero?
+  
+  // Autenticación
+  emailVerificado DateTime?
+  password        String?
+  
+  // Información de la organización/grupo
+  organizacion    String?
+  cargo           String?
+  experiencia     Int?     // años de experiencia
+  
+  // Configuración del usuario
+  temaPreferido   String   @default("light")
+  idioma          String   @default("es")
+  notificaciones  Boolean  @default(true)
+  
+  // Metadatos
+  fechaCreacion   DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+  activo          Boolean  @default(true)
+  
+  // Relaciones
+  sesiones        Sesion[]
+  actividades     Actividad[]
+  configuraciones ConfiguracionUsuario[]
+  favoritos       ActividadFavorita[]
+  
+  @@map("usuarios")
+}
+
+// Enum para género
+enum Genero {
+  MASCULINO
+  FEMENINO
+  OTRO
+  PREFIERO_NO_DECIR
+}
+
+// Modelo de sesiones de usuario
+model Sesion {
+  id            String   @id @default(cuid())
+  usuarioId     String
+  token         String   @unique
+  tipoDispositivo String?
+  navegador     String?
+  ip            String?
+  ubicacion     String?
+  activa        Boolean  @default(true)
+  fechaCreacion DateTime @default(now())
+  fechaExpiracion DateTime
+  ultimoAcceso  DateTime @default(now())
+  
+  // Relaciones
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  @@map("sesiones")
+}
+
+// Modelo para actividades generadas
+model Actividad {
+  id              String   @id @default(cuid())
+  usuarioId       String
+  titulo          String
+  descripcion     String
+  contenido       String   // JSON con la actividad completa
+  
+  // Clasificación
+  tipoActividad   TipoActividad
+  edadMinima      Int
+  edadMaxima      Int
+  duracionMinutos Int
+  numeroParticipantes Int
+  
+  // Categorías y tags
+  categoria       String
+  subcategoria    String?
+  tags            String[] // Array de tags
+  dificultad      Dificultad
+  
+  // Metadatos de generación IA
+  promptOriginal  String
+  modeloIA        String
+  parametrosIA    String   // JSON con parámetros usados
+  versionIA       String?
+  
+  // Estado y métricas
+  estado          EstadoActividad @default(BORRADOR)
+  calificacion    Float?   // 1-5 estrellas
+  vecesUsada      Int      @default(0)
+  fechaCreacion   DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+  
+  // Relaciones
+  usuario         Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  favoritos       ActividadFavorita[]
+  
+  @@map("actividades")
+}
+
+// Enums para actividades
+enum TipoActividad {
+  DINAMICA
+  JUEGO
+  REFLEXION
+  ORACION
+  TALLER
+  DEBATE
+  COMPETICION
+  CREATIVA
+  DEPORTIVA
+  MUSICAL
+}
+
+enum Dificultad {
+  MUY_FACIL
+  FACIL
+  INTERMEDIO
+  DIFICIL
+  MUY_DIFICIL
+}
+
+enum EstadoActividad {
+  BORRADOR
+  PUBLICADA
+  ARCHIVADA
+  ELIMINADA
+}
+
+// Modelo para favoritos
+model ActividadFavorita {
+  id           String    @id @default(cuid())
+  usuarioId    String
+  actividadId  String
+  fechaCreacion DateTime @default(now())
+  
+  // Relaciones
+  usuario      Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  actividad    Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  
+  @@unique([usuarioId, actividadId])
+  @@map("actividades_favoritas")
+}
+
+// Modelo para configuraciones personalizadas
+model ConfiguracionUsuario {
+  id            String   @id @default(cuid())
+  usuarioId     String
+  clave         String   // ej: "edad_preferida", "tipo_actividad_preferida"
+  valor         String   // valor serializado (JSON si es complejo)
+  tipo          String   // "string", "number", "boolean", "json"
+  fechaCreacion DateTime @default(now())
+  fechaActualizacion DateTime @updatedAt
+  
+  // Relaciones
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  @@unique([usuarioId, clave])
+  @@map("configuraciones_usuario")
+}
+
+// Índices para mejorar rendimiento
+// @@index([email])
+// @@index([fechaCreacion])
+// @@index([tipoActividad, edadMinima, edadMaxima])

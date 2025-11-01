@@ -1,0 +1,53 @@
+{
+    "name": "asistente-ia-juvenil-backend",
+    "version": "1.0.0",
+    "description": "Backend API para el Asistente IA de Actividades Juveniles",
+    "main": "src/index.js",
+    "type": "module",
+    "scripts": {
+        "dev": "nodemon src/index.js",
+        "start": "node src/index.js",
+        "server": "npm run dev",
+        "prisma:generate": "prisma generate",
+        "prisma:migrate": "prisma migrate dev",
+        "prisma:studio": "prisma studio",
+        "prisma:seed": "node prisma/seed.js"
+    },
+    "keywords": [
+        "nodejs",
+        "express",
+        "prisma",
+        "postgresql",
+        "api",
+        "ai",
+        "juventud"
+    ],
+    "author": "Desarrollador Asistente IA",
+    "license": "MIT",
+    "dependencies": {
+        "@prisma/client": "^5.7.0",
+        "bcryptjs": "^2.4.3",
+        "cors": "^2.8.5",
+        "dotenv": "^16.3.1",
+        "express": "^4.18.2",
+        "express-rate-limit": "^7.1.5",
+        "helmet": "^7.1.0",
+        "jsonwebtoken": "^9.0.2",
+        "multer": "^1.4.5-lts.1",
+        "nodemailer": "^6.9.7",
+        "openai": "^4.20.1",
+        "pg": "^8.11.3",
+        "pgvector": "^0.1.5",
+        "uuid": "^9.0.1",
+        "zod": "^3.22.4"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.0",
+        "nodemon": "^3.0.2",
+        "prisma": "^5.7.0"
+    },
+    "engines": {
+        "node": ">=18.0.0",
+        "npm": ">=9.0.0"
+    }
+}

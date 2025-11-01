@@ -54,5 +54,7 @@
     "typescript.suggest.autoImports": true,
     "typescript.updateImportsOnFileMove.enabled": "always",
     "javascript.suggest.autoImports": true,
-    "javascript.updateImportsOnFileMove.enabled": "always"
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "chat.agent.maxRequests": 10000,
+    "chat.todoListTool.writeOnly": true
 }
