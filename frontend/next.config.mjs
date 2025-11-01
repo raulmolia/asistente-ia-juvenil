@@ -17,8 +17,8 @@ const nextConfig = {
 
     // Variables de entorno públicas
     env: {
-        APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
-        API_URL: process.env.NEXT_PUBLIC_API_URL,
+        APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'Asistente IA Juvenil',
+        API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
     },
 
     // Configuración de redirects

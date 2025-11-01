@@ -1,5 +1,6 @@
-// Esquema de Prisma para desarrollo con SQLite
-// Una vez resuelto PostgreSQL, cambiaremos el provider
+// Esquema de Prisma para la base de datos principal
+// Base de datos: asistente_ia_juvenil
+// Funcionalidad: Usuarios, autenticación, sesiones
 
 generator client {
   provider = "prisma-client-js"
@@ -7,10 +8,10 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
-// Modelo de usuarios (adaptado para SQLite)
+// Modelo de usuarios
 model Usuario {
   id              String   @id @default(cuid())
   email           String   @unique
@@ -20,7 +21,7 @@ model Usuario {
   avatarUrl       String?
   telefono        String?
   fechaNacimiento DateTime?
-  genero          String?  // Cambiado de enum a string para SQLite
+  genero          Genero?
   
   // Autenticación
   emailVerificado DateTime?
@@ -48,6 +49,14 @@ model Usuario {
   favoritos       ActividadFavorita[]
   
   @@map("usuarios")
+}
+
+// Enum para género
+enum Genero {
+  MASCULINO
+  FEMENINO
+  OTRO
+  PREFIERO_NO_DECIR
 }
 
 // Modelo de sesiones de usuario
@@ -79,7 +88,7 @@ model Actividad {
   contenido       String   // JSON con la actividad completa
   
   // Clasificación
-  tipoActividad   String   // Cambiado de enum a string
+  tipoActividad   TipoActividad
   edadMinima      Int
   edadMaxima      Int
   duracionMinutos Int
@@ -88,8 +97,8 @@ model Actividad {
   // Categorías y tags
   categoria       String
   subcategoria    String?
-  tags            String   // JSON array como string
-  dificultad      String   // Cambiado de enum a string
+  tags            String[] // Array de tags
+  dificultad      Dificultad
   
   // Metadatos de generación IA
   promptOriginal  String
@@ -98,7 +107,7 @@ model Actividad {
   versionIA       String?
   
   // Estado y métricas
-  estado          String   @default("BORRADOR") // Cambiado de enum a string
+  estado          EstadoActividad @default(BORRADOR)
   calificacion    Float?   // 1-5 estrellas
   vecesUsada      Int      @default(0)
   fechaCreacion   DateTime @default(now())
@@ -109,6 +118,35 @@ model Actividad {
   favoritos       ActividadFavorita[]
   
   @@map("actividades")
+}
+
+// Enums para actividades
+enum TipoActividad {
+  DINAMICA
+  JUEGO
+  REFLEXION
+  ORACION
+  TALLER
+  DEBATE
+  COMPETICION
+  CREATIVA
+  DEPORTIVA
+  MUSICAL
+}
+
+enum Dificultad {
+  MUY_FACIL
+  FACIL
+  INTERMEDIO
+  DIFICIL
+  MUY_DIFICIL
+}
+
+enum EstadoActividad {
+  BORRADOR
+  PUBLICADA
+  ARCHIVADA
+  ELIMINADA
 }
 
 // Modelo para favoritos
@@ -142,3 +180,8 @@ model ConfiguracionUsuario {
   @@unique([usuarioId, clave])
   @@map("configuraciones_usuario")
 }
+
+// Índices para mejorar rendimiento
+// @@index([email])
+// @@index([fechaCreacion])
+// @@index([tipoActividad, edadMinima, edadMaxima])
