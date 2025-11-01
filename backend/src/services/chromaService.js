@@ -12,12 +12,27 @@ class ChromaService {
 
     async initialize() {
         const host = process.env.CHROMA_HOST || '127.0.0.1';
-        const port = process.env.CHROMA_PORT || '8000';
-        const protocol = process.env.CHROMA_SSL === 'true' ? 'https' : 'http';
-        const baseUrl = process.env.CHROMA_URL || `${protocol}://${host}:${port}`;
+        const port = Number(process.env.CHROMA_PORT || '8000');
+        const ssl = process.env.CHROMA_SSL === 'true';
+
+        let clientOptions = { host, port, ssl };
+
+        if (process.env.CHROMA_URL) {
+            try {
+                const parsed = new URL(process.env.CHROMA_URL);
+
+                clientOptions = {
+                    host: parsed.hostname,
+                    port: Number(parsed.port) || (parsed.protocol === 'https:' ? 443 : 80),
+                    ssl: parsed.protocol === 'https:',
+                };
+            } catch (error) {
+                console.warn('⚠️ No se pudo interpretar CHROMA_URL, se usará host/port por defecto');
+            }
+        }
 
         try {
-            this.client = new ChromaClient({ path: baseUrl });
+            this.client = new ChromaClient(clientOptions);
 
             this.collection = await this.client.getOrCreateCollection({
                 name: this.collectionName,
