@@ -1,52 +1,107 @@
 // Servicio para ChromaDB - Base de datos vectorial
 // Manejo de documentación y búsqueda semántica para IA
+import { ChromaClient } from 'chromadb';
 
 class ChromaService {
     constructor() {
         this.client = null;
         this.collection = null;
         this.isAvailable = false;
+        this.collectionName = process.env.CHROMA_COLLECTION || 'rpjia-actividades';
     }
 
     async initialize() {
+        const host = process.env.CHROMA_HOST || '127.0.0.1';
+        const port = process.env.CHROMA_PORT || '8000';
+        const protocol = process.env.CHROMA_SSL === 'true' ? 'https' : 'http';
+        const baseUrl = process.env.CHROMA_URL || `${protocol}://${host}:${port}`;
+
         try {
-            // Por ahora, simular que ChromaDB no está disponible
-            // pero mantener la estructura para futuras implementaciones
-            console.log('📚 ChromaDB no configurado, usando modo sin vectores');
-            this.isAvailable = false;
-            return false;
+            this.client = new ChromaClient({ path: baseUrl });
+
+            this.collection = await this.client.getOrCreateCollection({
+                name: this.collectionName,
+                metadata: {
+                    project: 'asistente-ia-juvenil',
+                    created_at: new Date().toISOString(),
+                },
+            });
+
+            // Verificar el estado conectando con una consulta mínima
+            await this.collection.count();
+
+            this.isAvailable = true;
+            console.log(`📚 ChromaDB conectado en ${baseUrl} (colección: ${this.collectionName})`);
+            return true;
         } catch (error) {
             console.error('❌ Error inicializando ChromaDB:', error.message);
+            this.client = null;
+            this.collection = null;
             this.isAvailable = false;
             return false;
         }
     }
 
     async addDocument(id, content, metadata = {}) {
-        if (!this.isAvailable) {
+        if (!this.isAvailable || !this.collection) {
             console.log('⚠️ ChromaDB no disponible, omitiendo documento');
             return false;
         }
 
-        // Implementación futura
-        return false;
+        try {
+            await this.collection.add({
+                ids: [id],
+                documents: [content],
+                metadatas: [metadata],
+            });
+
+            return true;
+        } catch (error) {
+            console.error('❌ Error añadiendo documento a ChromaDB:', error.message);
+            return false;
+        }
     }
 
     async searchSimilar(query, limit = 5) {
-        if (!this.isAvailable) {
+        if (!this.isAvailable || !this.collection) {
             console.log('⚠️ ChromaDB no disponible, devolviendo resultados vacíos');
             return [];
         }
 
-        // Implementación futura
-        return [];
+        try {
+            const result = await this.collection.query({
+                queryTexts: [query],
+                nResults: limit,
+                include: ['documents', 'metadatas', 'distances'],
+            });
+
+            if (!result || !result.ids || result.ids.length === 0) {
+                return [];
+            }
+
+            const firstBatch = result.ids[0] || [];
+
+            return firstBatch.map((id, index) => ({
+                id,
+                document: result.documents?.[0]?.[index] || '',
+                metadata: result.metadatas?.[0]?.[index] || {},
+                distance: result.distances?.[0]?.[index] || null,
+            }));
+        } catch (error) {
+            console.error('❌ Error buscando en ChromaDB:', error.message);
+            return [];
+        }
     }
 
     async getDocumentCount() {
-        if (!this.isAvailable) return 0;
+        if (!this.isAvailable || !this.collection) return -1;
 
-        // Implementación futura
-        return 0;
+        try {
+            return await this.collection.count();
+        } catch (error) {
+            console.error('❌ Error obteniendo conteo de ChromaDB:', error.message);
+            return -1;
+        }
     }
 }
 

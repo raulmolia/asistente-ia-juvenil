@@ -1,4 +1,8 @@
+import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import chromaService from '../src/services/chromaService.js';
+
+dotenv.config();
 
 const prisma = new PrismaClient();
 
@@ -117,6 +121,59 @@ async function main() {
     });
 
     console.log('✅ Actividades de ejemplo creadas');
+
+    // Sincronizar actividades con ChromaDB si está disponible
+    const chromaReady = await chromaService.initialize();
+
+    if (chromaReady) {
+        const actividades = [actividadEjemplo1, actividadEjemplo2];
+
+        const documentos = actividades.map((actividad) => {
+            let contenidoVector;
+
+            try {
+                const contenidoParseado = typeof actividad.contenido === 'string'
+                    ? JSON.parse(actividad.contenido)
+                    : actividad.contenido;
+
+                contenidoVector = JSON.stringify({
+                    titulo: actividad.titulo,
+                    descripcion: actividad.descripcion,
+                    contenido: contenidoParseado,
+                });
+            } catch (error) {
+                contenidoVector = JSON.stringify({
+                    titulo: actividad.titulo,
+                    descripcion: actividad.descripcion,
+                    contenido: actividad.contenido,
+                });
+            }
+
+            return {
+                id: actividad.id,
+                document: contenidoVector,
+                metadata: {
+                    tipoActividad: actividad.tipoActividad,
+                    edadMinima: actividad.edadMinima,
+                    edadMaxima: actividad.edadMaxima,
+                    tags: actividad.tags,
+                    dificultad: actividad.dificultad,
+                },
+            };
+        });
+
+        for (const doc of documentos) {
+            const agregado = await chromaService.addDocument(doc.id, doc.document, doc.metadata);
+            if (agregado) {
+                console.log(`📚 Documento ${doc.id} agregado a ChromaDB`);
+            }
+        }
+
+        const count = await chromaService.getDocumentCount();
+        console.log(`📈 Documentos en ChromaDB: ${count}`);
+    } else {
+        console.log('⚠️ No se pudo conectar con ChromaDB durante el seed.');
+    }
 
     // Crear configuraciones de usuario
     await prisma.configuracionUsuario.createMany({

@@ -9,9 +9,9 @@ Esta aplicación utiliza inteligencia artificial para ayudar a monitores, educad
 ### 🏗️ Arquitectura
 
 ```
-Base de Datos PostgreSQL (usuarios/auth) ←→ Backend Node.js/Prisma ←→ Frontend Next.js/TypeScript
+Base de Datos MariaDB (usuarios/auth) ←→ Backend Node.js/Prisma ←→ Frontend Next.js/TypeScript
                                                     ↕
-                                            Base de Datos Vectorial PostgreSQL (documentación IA)
+                                                ChromaDB (vectores IA)
                                                     ↕
                                                 API de IA
 ```
@@ -20,7 +20,8 @@ Base de Datos PostgreSQL (usuarios/auth) ←→ Backend Node.js/Prisma ←→ Fr
 
 - **Backend**: Node.js + Prisma ORM
 - **Frontend**: Next.js + TypeScript  
-- **Base de datos**: PostgreSQL (principal + vectorial)
+- **Base de datos**: MariaDB (aplicación principal)
+- **Base vectorial**: ChromaDB (documentación IA)
 - **Componentes UI**: Shadcn/ui exclusivamente
 - **Hosting**: Servidor Plesk con SSH
 
@@ -28,7 +29,8 @@ Base de Datos PostgreSQL (usuarios/auth) ←→ Backend Node.js/Prisma ←→ Fr
 
 ### Requisitos Previos
 - Node.js 18+
-- PostgreSQL 14+
+- MariaDB 10.6+ (o compatible)
+- Servidor ChromaDB ≥ 0.4 (Docker o binario)
 - Visual Studio Code
 - Conexión SSH configurada
 
@@ -48,9 +50,10 @@ code asistente-ia-juvenil.code-workspace
 ### Variables de Entorno
 ```env
 # backend/.env
-DATABASE_URL="postgresql://user:password@localhost:5432/asistente_ia_juvenil"
-VECTOR_DATABASE_URL="postgresql://user:password@localhost:5432/asistente_ia_vectorial"
-NEXTAUTH_SECRET="your-secret-key"
+DATABASE_URL="mysql://usuario:password@localhost:3306/rpjia"
+CHROMA_HOST="127.0.0.1"
+CHROMA_PORT="8000"
+NEXTAUTH_SECRET="tu-clave-secreta"
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
@@ -86,12 +89,12 @@ httpdocs/
 
 ## 🗃️ Base de Datos
 
-### PostgreSQL Principal
+### MariaDB Principal
 - Usuarios y autenticación
 - Sesiones y perfiles
-- Configuraciones de la aplicación
+- Actividades y programaciones generadas por IA
 
-### PostgreSQL Vectorial  
+### ChromaDB (Base Vectorial)
 - Documentación y ejemplos para IA
 - Contexto semántico para generación
 - Consultas vectoriales para recomendaciones

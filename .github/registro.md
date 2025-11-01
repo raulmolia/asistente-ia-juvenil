@@ -377,3 +377,13 @@ Stack de Base de Datos:
 ---
 
 *Última actualización: 2 de noviembre de 2025 - Fase 2 completada exitosamente*
+
+---
+
+## Actualización 2 de noviembre de 2025 - Integración ChromaDB & Seed
+
+- 📄 README principal actualizado con arquitectura MariaDB + ChromaDB y requisitos revisados
+- 🔗 Repositorio sincronizado con remoto GitHub (`origin`)
+- 🌱 Script `backend/prisma/seed.js` ampliado con sincronización automática a ChromaDB
+- 🤖 Servicio `backend/src/services/chromaService.js` conectado a ChromaDB mediante cliente oficial
+- ⚙️ Variables de entorno de ejemplo adaptadas a MariaDB y configuración vectorial
