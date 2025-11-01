@@ -13,10 +13,11 @@
 - **IDE**: Visual Studio Code (conexión SSH)
 
 ## Stack Tecnológico
-- **Backend**: Node.js + Prisma ORM
-- **Frontend**: Next.js + TypeScript
-- **Base de datos**: PostgreSQL (principal + vectorial)
-- **Componentes UI**: Shadcn/ui
+- **Backend**: Node.js + Express + Prisma ORM
+- **Frontend**: Next.js + TypeScript + Tailwind CSS
+- **Base de datos**: MariaDB (aplicación principal)
+- **Base vectorial**: ChromaDB para Node.js (búsqueda semántica IA)
+- **Componentes UI**: Shadcn/ui (exclusivo)
 - **Hosting**: Servidor Plesk
 
 ---
@@ -252,4 +253,127 @@ El proyecto está **100% listo para desarrollo** con:
 
 ---
 
-*Última actualización: 1 de noviembre de 2025 - Fase 1 completada exitosamente*
+### Fase 2: Migración a MariaDB y Configuración ChromaDB (1-2 Nov 2025)
+**Estado**: ✅ Completada
+
+#### Problema identificado:
+- PostgreSQL configurado con autenticación `ident` en lugar de `password`
+- Imposibilidad de conectar con credenciales usuario/contraseña
+- Error: `FATAL: Ident authentication failed for user`
+- Decisión: Migrar a MariaDB que no presenta problemas de autenticación en Plesk
+
+#### Acciones realizadas:
+- [x] **Migración de PostgreSQL a MariaDB**
+  - [x] Creación de base de datos `rpjia` en MariaDB
+  - [x] Configuración de usuario `sa` con contraseña `Servidor2025`
+  - [x] Actualización de schema Prisma de `postgresql` a `mysql`
+  - [x] Corrección de campos incompatibles (String[] a String separados por comas)
+  - [x] Generación de cliente Prisma para MariaDB
+  - [x] Ejecución exitosa de `prisma db push` - Todas las tablas creadas
+
+- [x] **Configuración de ChromaDB**
+  - [x] Instalación de paquete `chromadb` para Node.js
+  - [x] Creación de servicio ChromaDB (`src/services/chromaService.js`)
+  - [x] Configuración de estructura para base vectorial
+  - [x] Implementación de métodos: initialize, addDocument, searchSimilar, getDocumentCount
+  - [x] Modo fallback sin vectores para desarrollo inicial
+
+- [x] **Actualización de configuración**
+  - [x] `.env` actualizado con credenciales MariaDB
+  - [x] Configuración de ChromaDB en variables de entorno
+  - [x] Actualización de `src/index.js` con inicialización de servicios
+  - [x] Creación de rutas API (`src/routes/index.js`)
+
+- [x] **Endpoints API implementados**
+  - [x] `/api/health` - Health check con estado de MariaDB y ChromaDB
+  - [x] `/api/info` - Información del stack tecnológico
+  - [x] `/api/test-db` - Prueba de inserción en base de datos
+
+#### Tests realizados:
+```bash
+# Test de conexión MariaDB
+✅ npx prisma generate - Cliente generado correctamente
+✅ npx prisma db push - Base de datos sincronizada
+✅ Tablas creadas: Usuario, Grupo, ParticipacionGrupo, Actividad, 
+   ActividadGenerada, Programacion, SesionUsuario
+
+# Test de servidor
+✅ Servidor iniciado en puerto 3001
+✅ Servicios inicializados correctamente
+✅ ChromaDB en modo sin vectores (pendiente configuración completa)
+```
+
+#### Estructura de Base de Datos MariaDB:
+```
+rpjia/
+├── Usuario (usuarios del sistema)
+├── Grupo (grupos juveniles)
+├── ParticipacionGrupo (relación usuarios-grupos)
+├── Actividad (catálogo de actividades)
+├── ActividadGenerada (actividades creadas por IA)
+├── Programacion (programaciones de actividades)
+└── SesionUsuario (sesiones y autenticación)
+```
+
+#### Archivos modificados/creados:
+- `.github/copilot-instructions.md` - Actualizado a MariaDB + ChromaDB
+- `backend/prisma/schema.prisma` - Migrado a MySQL
+- `backend/.env` - Credenciales MariaDB
+- `backend/src/services/chromaService.js` - Nuevo servicio vectorial
+- `backend/src/routes/index.js` - Rutas API actualizadas
+- `backend/src/index.js` - Inicialización de servicios
+- `backend/package.json` - Dependencia ChromaDB añadida
+
+#### Configuración técnica final:
+```javascript
+Stack de Base de Datos:
+- MariaDB: mysql://sa:Servidor2025@127.0.0.1:3306/rpjia
+- ChromaDB: Preparado para búsqueda semántica (modo desarrollo)
+- Prisma Client: Generado y funcionando
+```
+
+#### Problemas resueltos:
+1. ✅ Autenticación PostgreSQL (migrado a MariaDB)
+2. ✅ Arrays incompatibles en MySQL (convertidos a String con separadores)
+3. ✅ Conexión base de datos verificada
+4. ✅ Schema sincronizado correctamente
+
+### 🎯 Estado Actual del Proyecto
+- **Backend**: ✅ Funcional con MariaDB
+- **Base de datos**: ✅ Operativa con todas las tablas
+- **ChromaDB**: ⚠️ Preparado pero no activo (modo desarrollo)
+- **Frontend**: ✅ Funcional en puerto 3000
+- **API**: ✅ Endpoints básicos operativos
+
+---
+
+## Próximas Acciones Planificadas
+
+1. **Activación completa de ChromaDB**
+   - Configurar servidor ChromaDB dedicado
+   - Implementar embeddings para búsqueda semántica
+   - Poblar con documentación de actividades
+
+2. **Población de base de datos**
+   - Crear seed con datos de ejemplo
+   - Usuarios de prueba
+   - Actividades base para testeo
+
+3. **Desarrollo de funcionalidades core**
+   - Sistema de autenticación con JWT
+   - Interfaz de chat con IA
+   - Generador de actividades con contexto vectorial
+
+4. **Testing e integración**
+   - Tests unitarios de servicios
+   - Tests de integración API
+   - Tests end-to-end frontend-backend
+
+5. **Deploy y producción**
+   - Optimización de rendimiento
+   - Variables de entorno de producción
+   - Documentación de deploy
+
+---
+
+*Última actualización: 2 de noviembre de 2025 - Fase 2 completada exitosamente*

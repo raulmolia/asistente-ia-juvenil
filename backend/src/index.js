@@ -5,6 +5,8 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import apiRoutes from './routes/index.js';
+import chromaService from './services/chromaService.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -53,30 +55,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// Rutas básicas
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        message: 'API del Asistente IA Juvenil funcionando correctamente',
-        timestamp: new Date().toISOString(),
-        version: '1.0.0',
-    });
-});
-
-app.get('/api/info', (req, res) => {
-    res.json({
-        name: 'Asistente IA para Actividades Juveniles',
-        description: 'Backend API para la generación de actividades juveniles con IA',
-        version: '1.0.0',
-        endpoints: {
-            health: '/api/health',
-            auth: '/api/auth/*',
-            users: '/api/users/*',
-            activities: '/api/activities/*',
-            ai: '/api/ai/*',
-        },
-    });
-});
+// Usar las rutas API
+app.use('/api', apiRoutes);
 
 // Ruta 404 para rutas no encontradas
 app.use('*', (req, res) => {
@@ -98,12 +78,30 @@ app.use((error, req, res, next) => {
     });
 });
 
+// Función para inicializar servicios
+async function initializeServices() {
+    console.log('🔧 Inicializando servicios...');
+
+    // Inicializar ChromaDB
+    const chromaInitialized = await chromaService.initialize();
+
+    if (chromaInitialized) {
+        console.log('📚 Base vectorial ChromaDB lista');
+    } else {
+        console.log('⚠️ Funcionando sin base vectorial');
+    }
+}
+
 // Iniciar servidor
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`🚀 Servidor backend iniciado en puerto ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
     console.log(`📋 Info API: http://localhost:${PORT}/api/info`);
     console.log(`🌐 Entorno: ${process.env.NODE_ENV || 'development'}`);
+
+    // Inicializar servicios después de que el servidor esté en marcha
+    await initializeServices();
+    console.log('✅ Todos los servicios inicializados');
 });
 
 export default app;

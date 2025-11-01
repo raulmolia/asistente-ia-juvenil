@@ -16,9 +16,9 @@
 ### Arquitectura de la Aplicación
 
 ```
-Base de Datos PostgreSQL (usuarios/auth) ←→ Backend Node.js/Prisma ←→ Frontend Next.js/TypeScript
+Base de Datos MariaDB (usuarios/auth) ←→ Backend Node.js/Prisma ←→ Frontend Next.js/TypeScript
                                                     ↕
-                                            Base de Datos Vectorial PostgreSQL (documentación IA)
+                                            ChromaDB (base vectorial para IA)
                                                     ↕
                                                 API de IA
 ```
@@ -35,7 +35,8 @@ Base de Datos PostgreSQL (usuarios/auth) ←→ Backend Node.js/Prisma ←→ Fr
 
 - **Backend**: Node.js con Prisma ORM
 - **Frontend**: Next.js con TypeScript
-- **Base de datos**: PostgreSQL (aplicación + vectorial)
+- **Base de datos**: MariaDB (aplicación principal)
+- **Base vectorial**: ChromaDB para Node.js (documentación IA)
 - **Componentes UI**: Shadcn exclusivamente (sin excepciones salvo petición expresa)
 - **Hosting**: Servidor Plesk
 
@@ -55,10 +56,11 @@ httpdocs/
 
 ### Flujo de Trabajo
 1. **Desarrollo local** vía SSH en VS Code
-2. **Base de datos**: PostgreSQL para usuarios + vectorial para IA
-3. **Frontend**: Componentes Shadcn únicamente
-4. **Sincronización**: GitHub después de cada sesión
-5. **Registro**: Actualizar `.github/registro.md` con cambios
+2. **Base de datos**: MariaDB para usuarios y aplicación principal
+3. **Base vectorial**: ChromaDB para búsqueda semántica de documentación IA
+4. **Frontend**: Componentes Shadcn únicamente
+5. **Sincronización**: GitHub después de cada sesión
+6. **Registro**: Actualizar `.github/registro.md` con cambios
 
 ### Comandos Comunes
 ```bash
@@ -75,9 +77,10 @@ npm run server       # Backend API
 ## Consideraciones Específicas
 
 ### Base de Datos
-- **PostgreSQL principal**: Usuarios, autenticación, sesiones
-- **PostgreSQL vectorial**: Documentación, ejemplos, contenido para IA
-- **Prisma**: ORM para gestión de datos y migraciones
+- **MariaDB**: Usuarios, autenticación, sesiones, actividades, grupos
+- **ChromaDB**: Base vectorial para documentación y búsqueda semántica IA
+- **Prisma**: ORM para gestión de datos MariaDB y migraciones
+- **Credenciales**: Usuario `sa`, contraseña `Servidor2025`, base de datos `rpjia`
 
 ### Componentes UI
 - **Obligatorio**: Usar únicamente componentes Shadcn
