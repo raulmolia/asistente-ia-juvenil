@@ -387,3 +387,12 @@ Stack de Base de Datos:
 - 🌱 Script `backend/prisma/seed.js` ampliado con sincronización automática a ChromaDB
 - 🤖 Servicio `backend/src/services/chromaService.js` conectado a ChromaDB mediante cliente oficial
 - ⚙️ Variables de entorno de ejemplo adaptadas a MariaDB y configuración vectorial
+
+## Actualización 2 de noviembre de 2025 - Sistema de Usuarios y Roles
+
+- 🔐 Añadido enum `Rol` en Prisma y campo `rol` para usuarios con niveles jerárquicos
+- 🔑 Campo `passwordHash` y gestión de contraseñas seguras con bcrypt
+- 🛣️ Nuevas rutas `/api/auth/*` para login, logout, perfil y administración de usuarios
+- 🧩 Middleware de autenticación JWT con verificación de sesiones en MariaDB
+- 🌱 Seed ampliado con usuarios de ejemplo para los cuatro roles y credenciales documentadas
+- 📘 README actualizado con las variables JWT y la descripción del sistema de usuarios

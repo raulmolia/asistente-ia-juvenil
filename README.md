@@ -55,6 +55,10 @@ CHROMA_HOST="127.0.0.1"
 CHROMA_PORT="8000"
 NEXTAUTH_SECRET="tu-clave-secreta"
 NEXTAUTH_URL="http://localhost:3000"
+JWT_SECRET="tu-clave-jwt"
+JWT_EXPIRES_IN="12h"
+AUTH_SALT_ROUNDS="12"
+SEED_DEFAULT_PASSWORD="CambioTemporal2025!"
 ```
 
 ## 📁 Estructura del Proyecto
@@ -93,6 +97,20 @@ httpdocs/
 - Usuarios y autenticación
 - Sesiones y perfiles
 - Actividades y programaciones generadas por IA
+
+## 🔐 Sistema de Usuarios
+
+- **Roles disponibles**: Superadmin, Administrador, Documentador y Usuario (jerárquicos)
+- **Autenticación**: credenciales email + contraseña con hash bcrypt y tokens JWT
+- **Endpoints clave**:
+    - `POST /api/auth/login` / `POST /api/auth/logout`
+    - `GET /api/auth/me`
+    - `GET /api/auth/users`
+    - `POST /api/auth/users`
+    - `PATCH /api/auth/users/:id/role`
+    - `PATCH /api/auth/users/:id/status`
+- **Gestión de sesiones**: tabla `sesiones` con control de expiración y revocación
+- **Seed inicial**: crea usuarios de ejemplo para cada rol con contraseñas de desarrollo
 
 ### ChromaDB (Base Vectorial)
 - Documentación y ejemplos para IA

@@ -2,9 +2,13 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import chromaService from '../services/chromaService.js';
+import authRoutes from './auth.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+// Subrutas
+router.use('/auth', authRoutes);
 
 // Ruta de health check
 router.get('/health', async (req, res) => {

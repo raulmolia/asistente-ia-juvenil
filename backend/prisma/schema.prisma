@@ -22,10 +22,11 @@ model Usuario {
   telefono        String?
   fechaNacimiento DateTime?
   genero          Genero?
+  rol             Rol      @default(USUARIO)
   
   // Autenticación
   emailVerificado DateTime?
-  password        String?
+  passwordHash    String?
   
   // Información de la organización/grupo
   organizacion    String?
@@ -49,6 +50,14 @@ model Usuario {
   favoritos       ActividadFavorita[]
   
   @@map("usuarios")
+}
+
+// Enum para roles del sistema
+enum Rol {
+  SUPERADMIN
+  ADMINISTRADOR
+  DOCUMENTADOR
+  USUARIO
 }
 
 // Enum para género

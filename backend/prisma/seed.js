@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import chromaService from '../src/services/chromaService.js';
 
@@ -8,6 +9,9 @@ const prisma = new PrismaClient();
 
 async function main() {
     console.log('🌱 Iniciando seed de la base de datos...');
+
+    const defaultPassword = process.env.SEED_DEFAULT_PASSWORD || 'CambioTemporal2025!';
+    const passwordHash = await bcrypt.hash(defaultPassword, 12);
 
     // Crear usuario administrador por defecto
     const adminUser = await prisma.usuario.upsert({
@@ -22,10 +26,12 @@ async function main() {
             cargo: 'Administrador',
             experiencia: 5,
             emailVerificado: new Date(),
+            rol: 'SUPERADMIN',
+            passwordHash,
         },
     });
 
-    console.log('✅ Usuario administrador creado:', adminUser.email);
+    console.log('✅ Usuario superadministrador creado:', adminUser.email);
 
     // Crear usuario de ejemplo
     const ejemploUser = await prisma.usuario.upsert({
@@ -43,10 +49,46 @@ async function main() {
             fechaNacimiento: new Date('1995-05-15'),
             genero: 'FEMENINO',
             emailVerificado: new Date(),
+            rol: 'ADMINISTRADOR',
+            passwordHash: await bcrypt.hash('MonitorSeguro2025!', 12),
         },
     });
 
-    console.log('✅ Usuario de ejemplo creado:', ejemploUser.email);
+    console.log('✅ Usuario administrador de ejemplo creado:', ejemploUser.email);
+
+    const documentadorUser = await prisma.usuario.upsert({
+        where: { email: 'documentador@ejemplo.com' },
+        update: {},
+        create: {
+            email: 'documentador@ejemplo.com',
+            nombre: 'Carlos',
+            apellidos: 'Díaz Romero',
+            nombreUsuario: 'carlos_doc',
+            organizacion: 'Centro Juvenil Horizonte',
+            cargo: 'Documentador',
+            experiencia: 2,
+            telefono: '+34 644 555 222',
+            rol: 'DOCUMENTADOR',
+            passwordHash: await bcrypt.hash('Documentador2025!', 12),
+        },
+    });
+
+    console.log('✅ Usuario documentador creado:', documentadorUser.email);
+
+    const usuarioBasico = await prisma.usuario.upsert({
+        where: { email: 'usuario@ejemplo.com' },
+        update: {},
+        create: {
+            email: 'usuario@ejemplo.com',
+            nombre: 'Lucía',
+            apellidos: 'Fernández Soto',
+            nombreUsuario: 'lucia_usuario',
+            rol: 'USUARIO',
+            passwordHash: await bcrypt.hash('Usuario2025!', 12),
+        },
+    });
+
+    console.log('✅ Usuario básico creado:', usuarioBasico.email);
 
     // Crear actividades de ejemplo
     const actividadEjemplo1 = await prisma.actividad.create({
@@ -73,7 +115,7 @@ async function main() {
             numeroParticipantes: 15,
             categoria: 'Presentación',
             subcategoria: 'Rompe hielos',
-            tags: ['presentacion', 'nombres', 'creatividad', 'participacion'],
+            tags: 'presentacion,nombres,creatividad,participacion',
             dificultad: 'FACIL',
             promptOriginal: 'Crea una dinámica para presentaciones creativas para jóvenes de 12-18 años',
             modeloIA: 'gpt-3.5-turbo',
@@ -109,7 +151,7 @@ async function main() {
             numeroParticipantes: 20,
             categoria: 'Valores',
             subcategoria: 'Amistad',
-            tags: ['amistad', 'valores', 'reflexion', 'compartir'],
+            tags: 'amistad,valores,reflexion,compartir',
             dificultad: 'INTERMEDIO',
             promptOriginal: 'Diseña una reflexión sobre amistad para jóvenes adolescentes',
             modeloIA: 'gpt-4',
@@ -156,7 +198,7 @@ async function main() {
                     tipoActividad: actividad.tipoActividad,
                     edadMinima: actividad.edadMinima,
                     edadMaxima: actividad.edadMaxima,
-                    tags: actividad.tags,
+                    tags: actividad.tags ? actividad.tags.split(',').map((tag) => tag.trim()) : [],
                     dificultad: actividad.dificultad,
                 },
             };
@@ -197,6 +239,7 @@ async function main() {
                 tipo: 'number',
             },
         ],
+        skipDuplicates: true,
     });
 
     console.log('✅ Configuraciones de usuario creadas');
@@ -210,6 +253,12 @@ async function main() {
     });
 
     console.log('✅ Favoritos creados');
+
+    console.log('\n[INFO] Credenciales iniciales disponibles:');
+    console.log('   - Superadmin: admin@asistente-ia-juvenil.com /', defaultPassword);
+    console.log('   - Admin: monitor@ejemplo.com / MonitorSeguro2025!');
+    console.log('   - Documentador: documentador@ejemplo.com / Documentador2025!');
+    console.log('   - Usuario: usuario@ejemplo.com / Usuario2025!');
 
     console.log('🌟 Seed completado exitosamente!');
 }
