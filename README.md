@@ -149,6 +149,7 @@ Scripts útiles:
 - Documentación y ejemplos para IA
 - Contexto semántico para generación
 - Consultas vectoriales para recomendaciones
+- Servidor Python dedicado: `python3 backend/scripts/run_chromadb.py` (requiere `pip install --user chromadb pysqlite3-binary`)
 
 ## 🤖 Funcionalidades IA
 

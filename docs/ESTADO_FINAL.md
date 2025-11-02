@@ -63,8 +63,8 @@ MariaDB
 └── Status: ✅ OPERATIVA
 
 ChromaDB
-├── Modo: Desarrollo
-└── Status: ⚠️ Preparado (no activo)
+├── Modo: Desarrollo con servidor uvicorn dedicado
+└── Status: ✅ Operativo via `python3 backend/scripts/run_chromadb.py`
 ```
 
 ---

@@ -31,3 +31,4 @@ Ver también el [registro completo de desarrollo](../.github/registro.md) en `.g
 
 **Fecha**: 2 de noviembre de 2025  
 **Estado**: Proyecto operativo con MariaDB + ChromaDB
+**Nota**: Servidor ChromaDB disponible con `python3 backend/scripts/run_chromadb.py` (persistencia en `database/chroma`).

@@ -414,3 +414,11 @@ Stack de Base de Datos:
 - 🧵 Configurado script raíz `npm run dev` que lanza backend y frontend simultáneamente con `concurrently`
 - 🧰 Scripts auxiliares `dev:backend` y `dev:frontend` accesibles desde la raíz del proyecto
 - 📦 Dependencia de desarrollo `concurrently` añadida al `package.json` raíz
+
+## Actualización 2 de noviembre de 2025 - Servidor ChromaDB dedicado
+
+- 🧱 Creada carpeta de persistencia `database/chroma` con `.gitignore` para almacenar vectores sin versionarlos
+- 🐍 Instalado entorno Python local con `pip`, `chromadb==0.4.24` y `pysqlite3-binary` para superar la limitación de sqlite del sistema
+- 🚀 Script `backend/scripts/run_chromadb.py` que parchea `sqlite3` y arranca el servidor oficial vía `uvicorn`
+- 🔧 Variables en `.env.example`: `CHROMA_PERSIST_PATH` y `CHROMA_TELEMETRY` para configurar ruta de datos y telemetría
+- 📒 Documentado flujo de arranque manual: `python3 backend/scripts/run_chromadb.py` (requiere entorno Python con dependencias)

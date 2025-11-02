@@ -208,6 +208,13 @@ Crear archivo `backend/prisma/seed.js` con:
 6. ✅ **Código limpio** sin archivos temporales ni obsoletos
 7. ✅ **Commit realizado** con todos los cambios versionados
 
+## 🔄 Actualización posterior: Servidor ChromaDB Python (2 Nov 2025)
+
+- Instalado `pip` de usuario y dependencias `chromadb==0.4.24` + `pysqlite3-binary` para disponer de sqlite ≥ 3.35
+- Script ejecutable `backend/scripts/run_chromadb.py` que arranca el servidor oficial con persistencia en `database/chroma`
+- Nuevas variables en `.env.example`: `CHROMA_PERSIST_PATH` y `CHROMA_TELEMETRY`
+- Directorio `database/chroma` versionado vacío (`.gitignore`) para almacenar embeddings sin comprometer el repositorio
+
 ---
 
 ## 💡 Notas Técnicas
