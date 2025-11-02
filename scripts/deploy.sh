@@ -20,7 +20,14 @@ step "Instalando dependencias frontend"
 npm install --prefix frontend
 
 step "Aplicando migraciones Prisma"
-npx prisma migrate deploy --schema backend/prisma/schema.prisma
+(
+  cd backend
+  if [ ! -f .env ]; then
+    echo "[deploy] ERROR: falta backend/.env con DATABASE_URL" >&2
+    exit 1
+  fi
+  npx prisma migrate deploy
+)
 
 step "Compilando frontend"
 npm run build --prefix frontend
