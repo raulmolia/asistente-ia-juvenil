@@ -45,6 +45,11 @@ code asistente-ia-juvenil.code-workspace
 
 # Instalar dependencias (usar tarea de VS Code)
 # Ctrl+Shift+P → "Tasks: Run Task" → "📦 Instalar dependencias"
+
+# Instalación desde la raíz (opcional)
+npm install --prefix backend
+npm install --prefix frontend
+npm install
 ```
 
 ### Variables de Entorno
@@ -91,6 +96,18 @@ httpdocs/
 ```
 
 ## ⚡ Desarrollo
+
+### Arranque rápido desde la raíz
+```bash
+# Ejecutar ambos servicios en paralelo desde httpdocs/
+npm install            # instala concurrently la primera vez
+npm run dev            # lanza backend (3001) y frontend (3000)
+```
+
+Scripts útiles:
+- `npm run dev:backend`
+- `npm run dev:frontend`
+- `npm run install:all`
 
 ### Tareas Disponibles en VS Code
 - **🚀 Ejecutar frontend** - Inicia Next.js en desarrollo

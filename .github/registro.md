@@ -402,3 +402,15 @@ Stack de Base de Datos:
 - 👤 Seed preparado para superadministradores adicionales configurables mediante variables de entorno (sin credenciales embebidas)
 - ♻️ Seed reorganizado con identificadores deterministas (upsert) para evitar duplicados en reejecuciones
 - 🔄 Hashes de contraseñas precalculados por rol para mantener coherencia entre ejecuciones
+
+## Actualización 2 de noviembre de 2025 - Login inicial
+
+- 🖥️ Página principal reemplazada por formulario de acceso minimalista con fondo blanco
+- 🧩 Componentes shadcn añadidos (`Input`, `Label`) reutilizables para formularios
+- 🔐 Formulario con campos de usuario/contraseña y enlace de recuperación sin lógica todavía
+
+## Actualización 2 de noviembre de 2025 - Script `npm run dev`
+
+- 🧵 Configurado script raíz `npm run dev` que lanza backend y frontend simultáneamente con `concurrently`
+- 🧰 Scripts auxiliares `dev:backend` y `dev:frontend` accesibles desde la raíz del proyecto
+- 📦 Dependencia de desarrollo `concurrently` añadida al `package.json` raíz
