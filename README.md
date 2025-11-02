@@ -108,6 +108,8 @@ Scripts útiles:
 - `npm run dev:backend`
 - `npm run dev:frontend`
 - `npm run install:all`
+- `npm run pm2:start` / `npm run pm2:reload` / `npm run pm2:stop`
+- `npm run deploy`
 
 ### Tareas Disponibles en VS Code
 - **🚀 Ejecutar frontend** - Inicia Next.js en desarrollo
@@ -123,6 +125,7 @@ Scripts útiles:
 3. Sincronización obligatoria con GitHub tras cada sesión
 4. Documentación en castellano (excepto estándares)
 5. Priorización de herramientas MCP
+6. Despliegue productivo: `npm run deploy` (incluye `git pull`, instalación, migraciones, build, reinicio PM2)
 
 ## 🗃️ Base de Datos
 

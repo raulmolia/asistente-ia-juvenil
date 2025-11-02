@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+TIMESTAMP="$(date '+%Y-%m-%d %H:%M:%S')"
+
+step() {
+  echo "[deploy] $1"
+}
+
+step "Actualizando repositorio"
+git pull --rebase
+
+step "Instalando dependencias backend"
+npm install --prefix backend
+
+step "Instalando dependencias frontend"
+npm install --prefix frontend
+
+step "Aplicando migraciones Prisma"
+npx prisma migrate deploy --schema backend/prisma/schema.prisma
+
+step "Compilando frontend"
+npm run build --prefix frontend
+
+step "Reiniciando orquestación PM2"
+npx pm2 start ecosystem.config.js --update-env
+npx pm2 save
+
+LOGGER_ENTRY="\n### Despliegue automatizado ${TIMESTAMP}\n- git pull --rebase\n- npm install --prefix backend\n- npm install --prefix frontend\n- npx prisma migrate deploy --schema backend/prisma/schema.prisma\n- npm run build --prefix frontend\n- npx pm2 start ecosystem.config.js --update-env && npx pm2 save\n"
+
+printf "%b" "$LOGGER_ENTRY" >> .github/registro.md
+
+step "Despliegue completado"

@@ -15,6 +15,7 @@
 - ✅ Base de datos MariaDB `rpjia` con 7 tablas
 - ✅ Servicio ChromaDB preparado
 - ✅ API con endpoints de health check y test
+- ✅ Orquestación con PM2 (`ecosystem.config.js`) para backend, frontend y ChromaDB
 
 ### Control de Versiones
 ```bash

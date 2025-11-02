@@ -215,6 +215,13 @@ Crear archivo `backend/prisma/seed.js` con:
 - Nuevas variables en `.env.example`: `CHROMA_PERSIST_PATH` y `CHROMA_TELEMETRY`
 - Directorio `database/chroma` versionado vacío (`.gitignore`) para almacenar embeddings sin comprometer el repositorio
 
+## 🔄 Actualización posterior: Orquestación PM2 (2 Nov 2025)
+
+- Definido `ecosystem.config.js` con procesos para backend, frontend y ChromaDB
+- Script `scripts/deploy.sh` automatiza `git pull`, instalación de dependencias, migraciones, build del frontend y reinicio con PM2
+- Añadidos scripts npm (`pm2:start`, `pm2:reload`, `pm2:stop`, `deploy`) y dependencia `pm2`
+- Cada despliegue añade una entrada automática en `.github/registro.md`
+
 ---
 
 ## 💡 Notas Técnicas

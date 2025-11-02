@@ -422,3 +422,10 @@ Stack de Base de Datos:
 - 🚀 Script `backend/scripts/run_chromadb.py` que parchea `sqlite3` y arranca el servidor oficial vía `uvicorn`
 - 🔧 Variables en `.env.example`: `CHROMA_PERSIST_PATH` y `CHROMA_TELEMETRY` para configurar ruta de datos y telemetría
 - 📒 Documentado flujo de arranque manual: `python3 backend/scripts/run_chromadb.py` (requiere entorno Python con dependencias)
+
+## Actualización 2 de noviembre de 2025 - Orquestación con PM2 y despliegue automatizado
+
+- ⚙️ Definido PM2 como gestor de procesos con `ecosystem.config.js` para backend, frontend y ChromaDB
+- 🗂️ Creado script `scripts/deploy.sh` que actualiza, instala dependencias, aplica migraciones, compila frontend y reinicia PM2
+- 📦 Añadido `pm2` como dependencia de desarrollo y scripts npm para administrar los procesos (`pm2:start`, `pm2:reload`, `pm2:stop`, `deploy`)
+- 📝 El script de despliegue anota automáticamente cada ejecución en `.github/registro.md`
