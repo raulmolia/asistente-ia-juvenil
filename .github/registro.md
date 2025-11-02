@@ -446,3 +446,19 @@ Stack de Base de Datos:
 - 🧩 Componentes Shadcn añadidos (`textarea`, `avatar`) para construir la interfaz de chat respetando las directrices de UI establecidas.
 - 🔁 Redirecciones gestionadas desde el frontend: usuarios no autenticados se envían a `/auth/login`, mientras que las sesiones válidas se conducen al panel principal inmediatamente.
 - 🛠️ Ajuste de metadatos en `frontend/src/app/layout.tsx` para cumplir con la exportación `viewport` de Next.js 14 y eliminar advertencias en el build.
+
+## Actualización 2 de noviembre de 2025 - Sidebar tipo ChatGPT y gestión de chats
+
+- 📁 Logotipo corporativo `logo.png` reubicado en `frontend/public/logo.png` para servirlo desde Next.js.
+- 🗂️ Panel lateral inspirando en ChatGPT con modo colapsable por iconos, botón de “Nuevo chat” integrado en el logotipo y listado dinámico de conversaciones.
+- 💬 Gestión de conversaciones por usuario en `frontend/src/app/page.tsx`: selector de chat, creación rápida, archivado, eliminación y copia al portapapeles.
+- 🎛️ Opciones contextualizadas mediante menú desplegable (`DropdownMenu` Shadcn) y desplazamiento suave (`ScrollArea` Shadcn) para el listado de chats.
+- 🙋 Avatar inferior fijo con iniciales del usuario y color corporativo, cumpliendo con el diseño solicitado.
+
+### Despliegue automatizado 2025-11-02 21:11:11
+- git pull --rebase
+- npm install --prefix backend
+- npm install --prefix frontend
+- prisma migrate deploy (condicional)
+- npm run build --prefix frontend
+- npx pm2 start ecosystem.config.js --update-env && npx pm2 save
