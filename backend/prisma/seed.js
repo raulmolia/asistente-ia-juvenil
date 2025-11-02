@@ -11,12 +11,26 @@ async function main() {
     console.log('🌱 Iniciando seed de la base de datos...');
 
     const defaultPassword = process.env.SEED_DEFAULT_PASSWORD || 'CambioTemporal2025!';
-    const passwordHash = await bcrypt.hash(defaultPassword, 12);
+    const superAdminPasswordHash = await bcrypt.hash(defaultPassword, 12);
+    const raulPasswordHash = await bcrypt.hash('Raul5578molia', 12);
+    const monitorPasswordHash = await bcrypt.hash('MonitorSeguro2025!', 12);
+    const documentadorPasswordHash = await bcrypt.hash('Documentador2025!', 12);
+    const usuarioPasswordHash = await bcrypt.hash('Usuario2025!', 12);
 
     // Crear usuario administrador por defecto
     const adminUser = await prisma.usuario.upsert({
         where: { email: 'admin@asistente-ia-juvenil.com' },
-        update: {},
+        update: {
+            nombre: 'Administrador',
+            apellidos: 'Sistema',
+            nombreUsuario: 'admin',
+            organizacion: 'Sistema',
+            cargo: 'Administrador',
+            experiencia: 5,
+            emailVerificado: new Date(),
+            rol: 'SUPERADMIN',
+            passwordHash: superAdminPasswordHash,
+        },
         create: {
             email: 'admin@asistente-ia-juvenil.com',
             nombre: 'Administrador',
@@ -27,16 +41,58 @@ async function main() {
             experiencia: 5,
             emailVerificado: new Date(),
             rol: 'SUPERADMIN',
-            passwordHash,
+            passwordHash: superAdminPasswordHash,
         },
     });
 
     console.log('✅ Usuario superadministrador creado:', adminUser.email);
 
+    const raulUser = await prisma.usuario.upsert({
+        where: { email: 'raulmolia@escolapiosemaus.org' },
+        update: {
+            nombre: 'Raúl',
+            apellidos: 'Molia Romera',
+            nombreUsuario: 'raulmolia',
+            avatarUrl: 'RM',
+            telefono: '662927604',
+            fechaNacimiento: new Date('1978-05-05'),
+            emailVerificado: new Date(),
+            rol: 'SUPERADMIN',
+            passwordHash: raulPasswordHash,
+        },
+        create: {
+            email: 'raulmolia@escolapiosemaus.org',
+            nombre: 'Raúl',
+            apellidos: 'Molia Romera',
+            nombreUsuario: 'raulmolia',
+            avatarUrl: 'RM',
+            telefono: '662927604',
+            fechaNacimiento: new Date('1978-05-05'),
+            emailVerificado: new Date(),
+            rol: 'SUPERADMIN',
+            passwordHash: raulPasswordHash,
+        },
+    });
+
+    console.log('✅ Usuario superadministrador Raúl creado:', raulUser.email);
+
     // Crear usuario de ejemplo
     const ejemploUser = await prisma.usuario.upsert({
         where: { email: 'monitor@ejemplo.com' },
-        update: {},
+        update: {
+            nombre: 'María',
+            apellidos: 'García López',
+            nombreUsuario: 'maria_monitor',
+            organizacion: 'Parroquia San José',
+            cargo: 'Monitora de Juventud',
+            experiencia: 3,
+            telefono: '+34 666 777 888',
+            fechaNacimiento: new Date('1995-05-15'),
+            genero: 'FEMENINO',
+            emailVerificado: new Date(),
+            rol: 'ADMINISTRADOR',
+            passwordHash: monitorPasswordHash,
+        },
         create: {
             email: 'monitor@ejemplo.com',
             nombre: 'María',
@@ -50,7 +106,7 @@ async function main() {
             genero: 'FEMENINO',
             emailVerificado: new Date(),
             rol: 'ADMINISTRADOR',
-            passwordHash: await bcrypt.hash('MonitorSeguro2025!', 12),
+            passwordHash: monitorPasswordHash,
         },
     });
 
@@ -58,7 +114,17 @@ async function main() {
 
     const documentadorUser = await prisma.usuario.upsert({
         where: { email: 'documentador@ejemplo.com' },
-        update: {},
+        update: {
+            nombre: 'Carlos',
+            apellidos: 'Díaz Romero',
+            nombreUsuario: 'carlos_doc',
+            organizacion: 'Centro Juvenil Horizonte',
+            cargo: 'Documentador',
+            experiencia: 2,
+            telefono: '+34 644 555 222',
+            rol: 'DOCUMENTADOR',
+            passwordHash: documentadorPasswordHash,
+        },
         create: {
             email: 'documentador@ejemplo.com',
             nombre: 'Carlos',
@@ -69,7 +135,7 @@ async function main() {
             experiencia: 2,
             telefono: '+34 644 555 222',
             rol: 'DOCUMENTADOR',
-            passwordHash: await bcrypt.hash('Documentador2025!', 12),
+            passwordHash: documentadorPasswordHash,
         },
     });
 
@@ -77,22 +143,62 @@ async function main() {
 
     const usuarioBasico = await prisma.usuario.upsert({
         where: { email: 'usuario@ejemplo.com' },
-        update: {},
+        update: {
+            nombre: 'Lucía',
+            apellidos: 'Fernández Soto',
+            nombreUsuario: 'lucia_usuario',
+            rol: 'USUARIO',
+            passwordHash: usuarioPasswordHash,
+        },
         create: {
             email: 'usuario@ejemplo.com',
             nombre: 'Lucía',
             apellidos: 'Fernández Soto',
             nombreUsuario: 'lucia_usuario',
             rol: 'USUARIO',
-            passwordHash: await bcrypt.hash('Usuario2025!', 12),
+            passwordHash: usuarioPasswordHash,
         },
     });
 
     console.log('✅ Usuario básico creado:', usuarioBasico.email);
 
     // Crear actividades de ejemplo
-    const actividadEjemplo1 = await prisma.actividad.create({
-        data: {
+    const actividadEjemplo1 = await prisma.actividad.upsert({
+        where: { id: 'actividad_dinamica_nombre_creativo' },
+        update: {
+            usuarioId: ejemploUser.id,
+            titulo: 'Dinámica del Nombre Creativo',
+            descripcion: 'Una dinámica para que los jóvenes se presenten de manera creativa y memorable',
+            contenido: JSON.stringify({
+                objetivo: 'Romper el hielo y facilitar las presentaciones entre los participantes',
+                desarrollo: [
+                    'Cada participante dice su nombre con un adjetivo que empiece por la misma letra',
+                    'Ejemplo: "Soy María la Marvillosa" o "Pedro el Paciente"',
+                    'El siguiente debe repetir todos los nombres anteriores antes de decir el suyo',
+                    'Continúa hasta que todos se hayan presentado'
+                ],
+                materiales: ['Ninguno necesario'],
+                tiempo: '15-20 minutos',
+                consejos: 'Ayuda a los participantes tímidos sugiriendo adjetivos positivos'
+            }),
+            tipoActividad: 'DINAMICA',
+            edadMinima: 12,
+            edadMaxima: 18,
+            duracionMinutos: 20,
+            numeroParticipantes: 15,
+            categoria: 'Presentación',
+            subcategoria: 'Rompe hielos',
+            tags: 'presentacion,nombres,creatividad,participacion',
+            dificultad: 'FACIL',
+            promptOriginal: 'Crea una dinámica para presentaciones creativas para jóvenes de 12-18 años',
+            modeloIA: 'gpt-3.5-turbo',
+            parametrosIA: JSON.stringify({ temperature: 0.7, max_tokens: 500 }),
+            estado: 'PUBLICADA',
+            calificacion: 4.5,
+            vecesUsada: 12,
+        },
+        create: {
+            id: 'actividad_dinamica_nombre_creativo',
             usuarioId: ejemploUser.id,
             titulo: 'Dinámica del Nombre Creativo',
             descripcion: 'Una dinámica para que los jóvenes se presenten de manera creativa y memorable',
@@ -126,8 +232,43 @@ async function main() {
         },
     });
 
-    const actividadEjemplo2 = await prisma.actividad.create({
-        data: {
+    const actividadEjemplo2 = await prisma.actividad.upsert({
+        where: { id: 'actividad_reflexion_valor_amistad' },
+        update: {
+            usuarioId: adminUser.id,
+            titulo: 'Reflexión: El Valor de la Amistad',
+            descripcion: 'Una actividad de reflexión profunda sobre la importancia de la amistad verdadera',
+            contenido: JSON.stringify({
+                objetivo: 'Reflexionar sobre las cualidades de una buena amistad y fortalecer los lazos del grupo',
+                desarrollo: [
+                    'Presentación del tema con una historia o video sobre amistad',
+                    'Trabajo en pequeños grupos: definir qué es un buen amigo',
+                    'Puesta en común de las conclusiones',
+                    'Momento personal: escribir una carta a su mejor amigo',
+                    'Cierre grupal compartiendo voluntariamente'
+                ],
+                materiales: ['Hojas de papel', 'Bolígrafos', 'Video o historia preparada'],
+                tiempo: '45-60 minutos',
+                consejos: 'Crear un ambiente de confianza y respeto para facilitar la apertura'
+            }),
+            tipoActividad: 'REFLEXION',
+            edadMinima: 14,
+            edadMaxima: 21,
+            duracionMinutos: 50,
+            numeroParticipantes: 20,
+            categoria: 'Valores',
+            subcategoria: 'Amistad',
+            tags: 'amistad,valores,reflexion,compartir',
+            dificultad: 'INTERMEDIO',
+            promptOriginal: 'Diseña una reflexión sobre amistad para jóvenes adolescentes',
+            modeloIA: 'gpt-4',
+            parametrosIA: JSON.stringify({ temperature: 0.6, max_tokens: 800 }),
+            estado: 'PUBLICADA',
+            calificacion: 4.8,
+            vecesUsada: 8,
+        },
+        create: {
+            id: 'actividad_reflexion_valor_amistad',
             usuarioId: adminUser.id,
             titulo: 'Reflexión: El Valor de la Amistad',
             descripcion: 'Una actividad de reflexión profunda sobre la importancia de la amistad verdadera',
@@ -245,8 +386,14 @@ async function main() {
     console.log('✅ Configuraciones de usuario creadas');
 
     // Crear favoritos
-    await prisma.actividadFavorita.create({
-        data: {
+    await prisma.actividadFavorita.upsert({
+        where: { id: 'favorito_maria_dinamica' },
+        update: {
+            usuarioId: ejemploUser.id,
+            actividadId: actividadEjemplo1.id,
+        },
+        create: {
+            id: 'favorito_maria_dinamica',
             usuarioId: ejemploUser.id,
             actividadId: actividadEjemplo1.id,
         },
@@ -256,6 +403,7 @@ async function main() {
 
     console.log('\n[INFO] Credenciales iniciales disponibles:');
     console.log('   - Superadmin: admin@asistente-ia-juvenil.com /', defaultPassword);
+    console.log('   - Superadmin (Raúl): raulmolia@escolapiosemaus.org / Raul5578molia');
     console.log('   - Admin: monitor@ejemplo.com / MonitorSeguro2025!');
     console.log('   - Documentador: documentador@ejemplo.com / Documentador2025!');
     console.log('   - Usuario: usuario@ejemplo.com / Usuario2025!');
