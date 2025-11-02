@@ -429,3 +429,10 @@ Stack de Base de Datos:
 - 🗂️ Creado script `scripts/deploy.sh` que actualiza, instala dependencias, aplica migraciones, compila frontend y reinicia PM2
 - 📦 Añadido `pm2` como dependencia de desarrollo y scripts npm para administrar los procesos (`pm2:start`, `pm2:reload`, `pm2:stop`, `deploy`)
 - 📝 El script de despliegue anota automáticamente cada ejecución en `.github/registro.md`
+### Despliegue automatizado 2025-11-02 20:52:56
+- git pull --rebase
+- npm install --prefix backend
+- npm install --prefix frontend
+- prisma migrate deploy (condicional)
+- npm run build --prefix frontend
+- npx pm2 start ecosystem.config.js --update-env && npx pm2 save
