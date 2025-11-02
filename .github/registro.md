@@ -399,6 +399,13 @@ Stack de Base de Datos:
 
 ## Actualización 2 de noviembre de 2025 - Seed Idempotente
 
+## Actualización 3 de noviembre de 2025 - Páginas de Documentación y Administración
+
+- 📚 Creada `frontend/src/app/documentacion/page.tsx` con control de acceso por roles (SUPERADMIN, ADMINISTRADOR, DOCUMENTADOR) y enlaces directos a la documentación interna del proyecto y al repositorio GitHub.
+- 🛡️ Creada `frontend/src/app/admin/page.tsx` con control de acceso exclusivo para SUPERADMIN y ADMINISTRADOR, introduciendo tablero informativo para futuras herramientas de gestión.
+- 🔁 Ambas vistas redirigen al panel principal en caso de acceso no autorizado y muestran indicadores de carga mientras se verifica la sesión desde el contexto de autenticación.
+- 🌗 Integrado botón de alternancia claro/oscuro (`frontend/src/components/theme-toggle.tsx`) visible en el encabezado principal y gestionado por `next-themes` a través del proveedor global.
+
 - 👤 Seed preparado para superadministradores adicionales configurables mediante variables de entorno (sin credenciales embebidas)
 - ♻️ Seed reorganizado con identificadores deterministas (upsert) para evitar duplicados en reejecuciones
 - 🔄 Hashes de contraseñas precalculados por rol para mantener coherencia entre ejecuciones

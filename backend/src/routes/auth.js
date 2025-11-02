@@ -190,6 +190,57 @@ router.get('/me', authenticate, async (req, res) => {
     }
 });
 
+router.patch('/me', authenticate, async (req, res) => {
+    const ALLOWED_FIELDS = new Set([
+        'nombre',
+        'apellidos',
+        'telefono',
+        'organizacion',
+        'cargo',
+        'experiencia',
+        'avatarUrl',
+    ]);
+
+    try {
+        const updates = Object.entries(req.body || {}).reduce((acc, [key, value]) => {
+            if (ALLOWED_FIELDS.has(key)) {
+                if (key === 'experiencia') {
+                    const parsed = parseInt(value, 10);
+                    if (!Number.isNaN(parsed) && parsed >= 0) {
+                        acc[key] = parsed;
+                    }
+                } else if (typeof value === 'string' || value === null) {
+                    acc[key] = value;
+                }
+            }
+            return acc;
+        }, {});
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({
+                error: 'Datos inválidos',
+                message: 'No se proporcionaron campos válidos para actualizar',
+            });
+        }
+
+        const updatedUser = await prisma.usuario.update({
+            where: { id: req.user.id },
+            data: updates,
+        });
+
+        return res.json({
+            message: 'Perfil actualizado correctamente',
+            user: sanitizeUser(updatedUser),
+        });
+    } catch (error) {
+        console.error('Error actualizando perfil:', error);
+        return res.status(500).json({
+            error: 'Error actualizando perfil',
+            message: error.message,
+        });
+    }
+});
+
 router.get('/users', authenticate, authorize(['ADMINISTRADOR']), async (req, res) => {
     try {
         const users = await prisma.usuario.findMany({

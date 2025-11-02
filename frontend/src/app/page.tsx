@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
     Archive,
@@ -18,6 +18,8 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -40,6 +42,7 @@ import {
 } from "@/components/ui/dialog"
 import { useAuth } from "@/hooks/use-auth"
 import { cn } from "@/lib/utils"
+import { ThemeToggleButton } from "@/components/theme-toggle"
 
 type MessageRole = "usuario" | "asistente"
 
@@ -127,9 +130,19 @@ function createInitialChats(): Chat[] {
     ]
 }
 
+type ProfileFormState = {
+    nombre: string
+    apellidos: string
+    telefono: string
+    organizacion: string
+    cargo: string
+    experiencia: string
+    avatarUrl: string
+}
+
 export default function ChatHomePage() {
     const router = useRouter()
-    const { user, status, isAuthenticated, logout } = useAuth()
+    const { user, status, isAuthenticated, logout, updateProfile } = useAuth()
     const initialChatsRef = useRef<Chat[]>([])
 
     if (initialChatsRef.current.length === 0) {
@@ -144,6 +157,17 @@ export default function ChatHomePage() {
     const [shareFeedback, setShareFeedback] = useState<string | null>(null)
     const [isUserDialogOpen, setIsUserDialogOpen] = useState(false)
     const [isArchivedDialogOpen, setIsArchivedDialogOpen] = useState(false)
+    const [profileForm, setProfileForm] = useState<ProfileFormState>({
+        nombre: "",
+        apellidos: "",
+        telefono: "",
+        organizacion: "",
+        cargo: "",
+        experiencia: "",
+        avatarUrl: "",
+    })
+    const [profileSaving, setProfileSaving] = useState(false)
+    const [profileFeedback, setProfileFeedback] = useState<string | null>(null)
     const scrollRef = useRef<HTMLDivElement | null>(null)
 
     const activeChat = useMemo(() => chats.find((chat) => chat.id === activeChatId) ?? null, [chats, activeChatId])
@@ -200,6 +224,28 @@ export default function ChatHomePage() {
         return () => clearTimeout(timeout)
     }, [shareFeedback])
 
+    useEffect(() => {
+        if (isUserDialogOpen) {
+            setProfileForm({
+                nombre: user?.nombre ?? "",
+                apellidos: user?.apellidos ?? "",
+                telefono: user?.telefono ?? "",
+                organizacion: user?.organizacion ?? "",
+                cargo: user?.cargo ?? "",
+                experiencia: typeof user?.experiencia === "number" ? String(user?.experiencia) : "",
+                avatarUrl: user?.avatarUrl ?? "",
+            })
+            setProfileFeedback(null)
+        }
+    }, [isUserDialogOpen, user])
+
+    useEffect(() => {
+        if (!profileFeedback) return
+
+        const timeout = setTimeout(() => setProfileFeedback(null), 3000)
+        return () => clearTimeout(timeout)
+    }, [profileFeedback])
+
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         if (!inputValue.trim() || isThinking || !activeChat) {
@@ -253,6 +299,46 @@ export default function ChatHomePage() {
     const handleLogout = async () => {
         await logout()
         router.replace("/auth/login")
+    }
+
+    const handleProfileInputChange = (field: keyof ProfileFormState) => (event: ChangeEvent<HTMLInputElement>) => {
+        const { value } = event.target
+        setProfileForm((prev) => ({
+            ...prev,
+            [field]: value,
+        }))
+    }
+
+    const handleProfileSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        setProfileSaving(true)
+        setProfileFeedback(null)
+
+        const experienciaParsed = profileForm.experiencia.trim().length > 0
+            ? Number.parseInt(profileForm.experiencia, 10)
+            : null
+
+        const experienciaValue = experienciaParsed !== null && Number.isNaN(experienciaParsed) ? null : experienciaParsed
+
+        const payload = {
+            nombre: profileForm.nombre.trim() || null,
+            apellidos: profileForm.apellidos.trim() || null,
+            telefono: profileForm.telefono.trim() || null,
+            organizacion: profileForm.organizacion.trim() || null,
+            cargo: profileForm.cargo.trim() || null,
+            avatarUrl: profileForm.avatarUrl.trim() || null,
+            experiencia: experienciaValue,
+        }
+
+        const result = await updateProfile(payload)
+        setProfileSaving(false)
+
+        if (!result.success) {
+            setProfileFeedback(result.error ?? "No se pudo guardar el perfil")
+            return
+        }
+
+        setProfileFeedback("Perfil actualizado correctamente")
     }
 
     const handleSelectChat = (chatId: string) => {
@@ -485,20 +571,10 @@ export default function ChatHomePage() {
                             side={isSidebarCollapsed ? "top" : "top"}
                             className="w-56"
                         >
-                            <DropdownMenuItem
-                                onSelect={(event: Event) => {
-                                    event.preventDefault()
-                                    setIsUserDialogOpen(true)
-                                }}
-                            >
+                            <DropdownMenuItem onSelect={() => setIsUserDialogOpen(true)}>
                                 Usuario
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onSelect={(event: Event) => {
-                                    event.preventDefault()
-                                    setIsArchivedDialogOpen(true)
-                                }}
-                            >
+                            <DropdownMenuItem onSelect={() => setIsArchivedDialogOpen(true)}>
                                 Chats archivados
                             </DropdownMenuItem>
                             {canShowOptions && (
@@ -506,12 +582,12 @@ export default function ChatHomePage() {
                                     <DropdownMenuSubTrigger>Opciones</DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent className="w-48">
                                         {canAccessDocumentation && (
-                                            <DropdownMenuItem onSelect={(event: Event) => event.preventDefault()}>
+                                            <DropdownMenuItem onSelect={() => router.push("/documentacion")}>
                                                 Documentación
                                             </DropdownMenuItem>
                                         )}
                                         {canAccessAdministration && (
-                                            <DropdownMenuItem onSelect={(event: Event) => event.preventDefault()}>
+                                            <DropdownMenuItem onSelect={() => router.push("/admin")}>
                                                 Administración
                                             </DropdownMenuItem>
                                         )}
@@ -520,10 +596,7 @@ export default function ChatHomePage() {
                             )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                                onSelect={(event: Event) => {
-                                    event.preventDefault()
-                                    handleLogout()
-                                }}
+                                onSelect={() => handleLogout()}
                                 className="text-destructive"
                             >
                                 Salir
@@ -549,6 +622,9 @@ export default function ChatHomePage() {
                                 {shareFeedback}
                             </p>
                         )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <ThemeToggleButton />
                     </div>
                 </header>
 
@@ -633,17 +709,50 @@ export default function ChatHomePage() {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Perfil de usuario</DialogTitle>
-                        <DialogDescription>Actualiza tus datos personales y profesionales. Los cambios se guardarán automáticamente en próximas iteraciones.</DialogDescription>
+                        <DialogDescription>Actualiza tus datos personales. Esta información ayuda a personalizar las propuestas del asistente.</DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4">
-                        <div className="grid gap-1"><span className="text-xs font-medium text-muted-foreground">Nombre</span><span className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">{user?.nombre ?? "Sin definir"}</span></div>
-                        <div className="grid gap-1"><span className="text-xs font-medium text-muted-foreground">Apellidos</span><span className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">{user?.apellidos ?? "Sin definir"}</span></div>
-                        <div className="grid gap-1"><span className="text-xs font-medium text-muted-foreground">Correo electrónico</span><span className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">{user?.email}</span></div>
-                        <div className="grid gap-1"><span className="text-xs font-medium text-muted-foreground">Organización</span><span className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">{user?.organizacion ?? "Sin definir"}</span></div>
-                    </div>
-                    <DialogFooter>
-                        <Button type="button" onClick={() => setIsUserDialogOpen(false)} variant="outline">Cerrar</Button>
-                    </DialogFooter>
+                    <form className="space-y-4" onSubmit={handleProfileSubmit}>
+                        <div className="grid gap-2">
+                            <Label htmlFor="profile-nombre">Nombre</Label>
+                            <Input id="profile-nombre" value={profileForm.nombre} onChange={handleProfileInputChange("nombre")} placeholder="Nombre" autoComplete="given-name" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="profile-apellidos">Apellidos</Label>
+                            <Input id="profile-apellidos" value={profileForm.apellidos} onChange={handleProfileInputChange("apellidos")} placeholder="Apellidos" autoComplete="family-name" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="profile-telefono">Teléfono</Label>
+                            <Input id="profile-telefono" value={profileForm.telefono} onChange={handleProfileInputChange("telefono")} placeholder="Teléfono de contacto" autoComplete="tel" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="profile-organizacion">Organización</Label>
+                            <Input id="profile-organizacion" value={profileForm.organizacion} onChange={handleProfileInputChange("organizacion")} placeholder="Nombre de la organización" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="profile-cargo">Cargo</Label>
+                            <Input id="profile-cargo" value={profileForm.cargo} onChange={handleProfileInputChange("cargo")} placeholder="Ej. Coordinador de juventud" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="profile-experiencia">Experiencia (años)</Label>
+                            <Input id="profile-experiencia" type="number" min="0" value={profileForm.experiencia} onChange={handleProfileInputChange("experiencia")} placeholder="0" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="profile-avatar">URL de avatar</Label>
+                            <Input id="profile-avatar" value={profileForm.avatarUrl} onChange={handleProfileInputChange("avatarUrl")} placeholder="https://..." autoComplete="url" />
+                        </div>
+                        <p className="text-xs text-muted-foreground">Correo: {user?.email}</p>
+                        {profileFeedback && (
+                            <p className="text-sm text-primary" role="status">{profileFeedback}</p>
+                        )}
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setIsUserDialogOpen(false)}>
+                                Cerrar
+                            </Button>
+                            <Button type="submit" disabled={profileSaving}>
+                                {profileSaving ? "Guardando..." : "Guardar cambios"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
             <Dialog open={isArchivedDialogOpen} onOpenChange={setIsArchivedDialogOpen}>

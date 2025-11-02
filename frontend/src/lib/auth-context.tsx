@@ -15,6 +15,9 @@ type AuthUser = {
     rol?: string | null
     avatarUrl?: string | null
     organizacion?: string | null
+    telefono?: string | null
+    cargo?: string | null
+    experiencia?: number | null
 }
 
 type LoginPayload = {
@@ -27,6 +30,21 @@ type LoginResult = {
     error?: string
 }
 
+type UpdateProfilePayload = {
+    nombre?: string | null
+    apellidos?: string | null
+    telefono?: string | null
+    organizacion?: string | null
+    cargo?: string | null
+    experiencia?: number | null
+    avatarUrl?: string | null
+}
+
+type UpdateProfileResult = {
+    success: boolean
+    error?: string
+}
+
 type AuthContextValue = {
     status: AuthStatus
     user: AuthUser | null
@@ -35,6 +53,7 @@ type AuthContextValue = {
     login: (payload: LoginPayload) => Promise<LoginResult>
     logout: () => Promise<void>
     refreshUser: () => Promise<void>
+    updateProfile: (payload: UpdateProfilePayload) => Promise<UpdateProfileResult>
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -217,6 +236,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, [token])
 
+    const updateProfile = useCallback(async (payload: UpdateProfilePayload): Promise<UpdateProfileResult> => {
+        if (!token) {
+            return { success: false, error: "No hay sesión activa" }
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/api/auth/me`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            })
+
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => ({ message: "Error actualizando perfil" }))
+                return {
+                    success: false,
+                    error: errorBody?.message || "Error actualizando perfil",
+                }
+            }
+
+            const data = await response.json()
+            const updatedUser = data.user as AuthUser
+            setUser(updatedUser)
+            setStoredValue("auth_user", updatedUser)
+
+            return { success: true }
+        } catch (error) {
+            console.error("No se pudo actualizar el perfil", error)
+            return {
+                success: false,
+                error: "No se pudo actualizar el perfil. Inténtalo de nuevo.",
+            }
+        }
+    }, [token])
+
     const value = useMemo<AuthContextValue>(() => ({
         status,
         user,
@@ -225,7 +282,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         refreshUser,
-    }), [isAuthenticated, login, logout, refreshUser, status, token, user])
+        updateProfile,
+    }), [isAuthenticated, login, logout, refreshUser, status, token, updateProfile, user])
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -162,7 +162,13 @@ Scripts útiles:
 - **Oraciones y reflexiones** según temáticas
 - **Recomendaciones inteligentes** basadas en historial
 
-## 📋 Directrices de Desarrollo
+## � Interfaz de Usuario
+
+- Panel estilo ChatGPT con chats anclados y archivados
+- Menú de usuario contextual con acceso a perfil, administración y documentación
+- Botón superior para alternar entre modo claro y oscuro gestionado por `next-themes`
+
+## �📋 Directrices de Desarrollo
 
 ### Obligatorias
 - ✅ Toda documentación en castellano
