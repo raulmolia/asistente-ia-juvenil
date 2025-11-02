@@ -22,10 +22,22 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import { useAuth } from "@/hooks/use-auth"
 import { cn } from "@/lib/utils"
 
@@ -130,6 +142,8 @@ export default function ChatHomePage() {
     const [isThinking, setIsThinking] = useState(false)
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [shareFeedback, setShareFeedback] = useState<string | null>(null)
+    const [isUserDialogOpen, setIsUserDialogOpen] = useState(false)
+    const [isArchivedDialogOpen, setIsArchivedDialogOpen] = useState(false)
     const scrollRef = useRef<HTMLDivElement | null>(null)
 
     const activeChat = useMemo(() => chats.find((chat) => chat.id === activeChatId) ?? null, [chats, activeChatId])
@@ -155,6 +169,11 @@ export default function ChatHomePage() {
 
         return "US"
     }, [user])
+
+    const userRole = user?.rol ?? ""
+    const canAccessDocumentation = ["SUPERADMIN", "ADMINISTRADOR", "DOCUMENTADOR"].includes(userRole)
+    const canAccessAdministration = ["SUPERADMIN", "ADMINISTRADOR"].includes(userRole)
+    const canShowOptions = canAccessDocumentation || canAccessAdministration
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -440,23 +459,77 @@ export default function ChatHomePage() {
                 </ScrollArea>
 
                 <div className="border-t border-border/60 px-4 py-6">
-                    <div
-                        className={cn(
-                            "flex items-center gap-3 rounded-xl border border-transparent px-3 py-2 transition",
-                            "hover:border-border/60",
-                            isSidebarCollapsed && "flex-col gap-2 px-0 py-0",
-                        )}
-                    >
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#009846] text-sm font-semibold uppercase text-white">
-                            {initials}
-                        </div>
-                        {!isSidebarCollapsed && (
-                            <div className="flex flex-col">
-                                <span className="text-sm font-medium leading-tight">{user?.nombre || user?.email}</span>
-                                <span className="text-xs uppercase tracking-wide text-muted-foreground">{user?.rol}</span>
-                            </div>
-                        )}
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                type="button"
+                                className={cn(
+                                    "flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2 text-left transition",
+                                    "hover:border-border/60",
+                                    isSidebarCollapsed && "flex-col gap-2 px-0 py-0",
+                                )}
+                            >
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#009846] text-sm font-semibold uppercase text-white">
+                                    {initials}
+                                </div>
+                                {!isSidebarCollapsed && (
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium leading-tight">{user?.nombre || user?.email}</span>
+                                        <span className="text-xs uppercase tracking-wide text-muted-foreground">{user?.rol}</span>
+                                    </div>
+                                )}
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            align={isSidebarCollapsed ? "center" : "end"}
+                            side={isSidebarCollapsed ? "top" : "top"}
+                            className="w-56"
+                        >
+                            <DropdownMenuItem
+                                onSelect={(event: Event) => {
+                                    event.preventDefault()
+                                    setIsUserDialogOpen(true)
+                                }}
+                            >
+                                Usuario
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onSelect={(event: Event) => {
+                                    event.preventDefault()
+                                    setIsArchivedDialogOpen(true)
+                                }}
+                            >
+                                Chats archivados
+                            </DropdownMenuItem>
+                            {canShowOptions && (
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>Opciones</DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent className="w-48">
+                                        {canAccessDocumentation && (
+                                            <DropdownMenuItem onSelect={(event: Event) => event.preventDefault()}>
+                                                Documentación
+                                            </DropdownMenuItem>
+                                        )}
+                                        {canAccessAdministration && (
+                                            <DropdownMenuItem onSelect={(event: Event) => event.preventDefault()}>
+                                                Administración
+                                            </DropdownMenuItem>
+                                        )}
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                onSelect={(event: Event) => {
+                                    event.preventDefault()
+                                    handleLogout()
+                                }}
+                                className="text-destructive"
+                            >
+                                Salir
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </aside>
 
@@ -476,24 +549,6 @@ export default function ChatHomePage() {
                                 {shareFeedback}
                             </p>
                         )}
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <div className="text-right">
-                            <p className="text-sm font-medium">{user?.nombre || user?.email}</p>
-                            <p className="text-xs uppercase tracking-wide text-muted-foreground">{user?.rol}</p>
-                        </div>
-                        <Avatar>
-                            {user?.avatarUrl ? (
-                                <AvatarImage src={user.avatarUrl} alt={user.nombre ?? "Usuario"} />
-                            ) : (
-                                <AvatarFallback>{initials}</AvatarFallback>
-                            )}
-                        </Avatar>
-                        <Button variant="outline" size="sm" onClick={handleLogout}>
-                            <LogOut className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                            Salir
-                        </Button>
                     </div>
                 </header>
 
@@ -574,6 +629,56 @@ export default function ChatHomePage() {
                     </div>
                 </section>
             </main>
+            <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Perfil de usuario</DialogTitle>
+                        <DialogDescription>Actualiza tus datos personales y profesionales. Los cambios se guardarán automáticamente en próximas iteraciones.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4">
+                        <div className="grid gap-1"><span className="text-xs font-medium text-muted-foreground">Nombre</span><span className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">{user?.nombre ?? "Sin definir"}</span></div>
+                        <div className="grid gap-1"><span className="text-xs font-medium text-muted-foreground">Apellidos</span><span className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">{user?.apellidos ?? "Sin definir"}</span></div>
+                        <div className="grid gap-1"><span className="text-xs font-medium text-muted-foreground">Correo electrónico</span><span className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">{user?.email}</span></div>
+                        <div className="grid gap-1"><span className="text-xs font-medium text-muted-foreground">Organización</span><span className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">{user?.organizacion ?? "Sin definir"}</span></div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" onClick={() => setIsUserDialogOpen(false)} variant="outline">Cerrar</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isArchivedDialogOpen} onOpenChange={setIsArchivedDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Chats archivados</DialogTitle>
+                        <DialogDescription>Mantén como máximo 3 chats archivados para evitar ocupar demasiado espacio en la base de datos.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                        {chats.filter((chat) => chat.archived).length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No hay chats archivados por ahora.</p>
+                        ) : (
+                            chats
+                                .filter((chat) => chat.archived)
+                                .slice(0, 3)
+                                .map((chat) => (
+                                    <div key={chat.id} className="rounded-lg border border-border/60 bg-muted/20 px-3 py-3 text-sm">
+                                        <div className="font-medium">{chat.title}</div>
+                                        <div className="mt-1 text-xs text-muted-foreground">Archivado el {chat.createdAt.toLocaleString("es-ES")}</div>
+                                        <div className="mt-2 flex gap-2">
+                                            <Button size="sm" variant="outline" onClick={() => { setIsArchivedDialogOpen(false); setActiveChatId(chat.id) }}>Abrir</Button>
+                                            <Button size="sm" variant="ghost" onClick={() => handleArchiveChat(chat.id)}>Desarchivar</Button>
+                                        </div>
+                                    </div>
+                                ))
+                        )}
+                        {chats.filter((chat) => chat.archived).length > 3 && (
+                            <p className="text-xs text-muted-foreground">Mostrando solo los 3 más recientes.</p>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" onClick={() => setIsArchivedDialogOpen(false)} variant="outline">Cerrar</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

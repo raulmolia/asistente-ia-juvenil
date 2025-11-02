@@ -454,6 +454,8 @@ Stack de Base de Datos:
 - 💬 Gestión de conversaciones por usuario en `frontend/src/app/page.tsx`: selector de chat, creación rápida, archivado, eliminación y copia al portapapeles.
 - 🎛️ Opciones contextualizadas mediante menú desplegable (`DropdownMenu` Shadcn) y desplazamiento suave (`ScrollArea` Shadcn) para el listado de chats.
 - 🙋 Avatar inferior fijo con iniciales del usuario y color corporativo, cumpliendo con el diseño solicitado.
+- ⚙️ Menú contextual del avatar con opciones de usuario, chats archivados (limitado a tres), submenú condicional para documentación/administración según rol y acción de salida.
+- 🪟 Diálogos modales (`frontend/src/components/ui/dialog.tsx`) para mostrar/editar información del usuario y consultar los chats archivados con avisos de capacidad.
 
 ### Despliegue automatizado 2025-11-02 21:11:11
 - git pull --rebase
