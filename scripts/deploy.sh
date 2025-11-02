@@ -26,7 +26,11 @@ step "Aplicando migraciones Prisma"
     echo "[deploy] ERROR: falta backend/.env con DATABASE_URL" >&2
     exit 1
   fi
-  npx prisma migrate deploy
+  if ls prisma/migrations/*/migration.sql >/dev/null 2>&1; then
+    npx prisma migrate deploy
+  else
+    echo "[deploy] Sin migraciones pendientes; se omite prisma migrate deploy"
+  fi
 )
 
 step "Compilando frontend"
@@ -36,7 +40,7 @@ step "Reiniciando orquestación PM2"
 npx pm2 start ecosystem.config.js --update-env
 npx pm2 save
 
-LOGGER_ENTRY="\n### Despliegue automatizado ${TIMESTAMP}\n- git pull --rebase\n- npm install --prefix backend\n- npm install --prefix frontend\n- npx prisma migrate deploy --schema backend/prisma/schema.prisma\n- npm run build --prefix frontend\n- npx pm2 start ecosystem.config.js --update-env && npx pm2 save\n"
+LOGGER_ENTRY="\n### Despliegue automatizado ${TIMESTAMP}\n- git pull --rebase\n- npm install --prefix backend\n- npm install --prefix frontend\n- prisma migrate deploy (condicional)\n- npm run build --prefix frontend\n- npx pm2 start ecosystem.config.js --update-env && npx pm2 save\n"
 
 printf "%b" "$LOGGER_ENTRY" >> .github/registro.md
 
