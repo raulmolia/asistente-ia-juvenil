@@ -405,6 +405,8 @@ Stack de Base de Datos:
 - 🛡️ Creada `frontend/src/app/admin/page.tsx` con control de acceso exclusivo para SUPERADMIN y ADMINISTRADOR, introduciendo tablero informativo para futuras herramientas de gestión.
 - 🔁 Ambas vistas redirigen al panel principal en caso de acceso no autorizado y muestran indicadores de carga mientras se verifica la sesión desde el contexto de autenticación.
 - 🌗 Integrado botón de alternancia claro/oscuro (`frontend/src/components/theme-toggle.tsx`) visible en el encabezado principal y gestionado por `next-themes` a través del proveedor global.
+- 👥 Panel `/admin` evolucionado a gestor de usuarios con creación, asignación de roles y eliminación directa (solo roles inferiores) consumiendo el endpoint `GET/POST/PATCH/DELETE` de `api/auth/users`.
+- 🧰 Backend amplía `backend/src/routes/auth.js` con `DELETE /api/auth/users/:id`, validando jerarquía de roles y evitando la autoeliminación de la cuenta activa.
 
 - 👤 Seed preparado para superadministradores adicionales configurables mediante variables de entorno (sin credenciales embebidas)
 - ♻️ Seed reorganizado con identificadores deterministas (upsert) para evitar duplicados en reejecuciones

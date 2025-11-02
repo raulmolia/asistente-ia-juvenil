@@ -167,6 +167,7 @@ Scripts útiles:
 - Panel estilo ChatGPT con chats anclados y archivados
 - Menú de usuario contextual con acceso a perfil, administración y documentación
 - Botón superior para alternar entre modo claro y oscuro gestionado por `next-themes`
+- Panel de administración con alta de usuarios, asignación de roles y eliminación segura según jerarquía
 
 ## �📋 Directrices de Desarrollo
 

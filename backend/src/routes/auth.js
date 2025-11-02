@@ -419,4 +419,46 @@ router.patch('/users/:id/status', authenticate, authorize(['ADMINISTRADOR']), as
     }
 });
 
+router.delete('/users/:id', authenticate, authorize(['ADMINISTRADOR']), async (req, res) => {
+    const { id } = req.params;
+
+    if (req.user.id === id) {
+        return res.status(400).json({
+            error: 'Operación no permitida',
+            message: 'No puedes eliminar tu propio usuario',
+        });
+    }
+
+    try {
+        const targetUser = await prisma.usuario.findUnique({ where: { id } });
+
+        if (!targetUser) {
+            return res.status(404).json({
+                error: 'Usuario no encontrado',
+            });
+        }
+
+        const currentPriority = getRolePriority(req.user.rol);
+        const targetPriority = getRolePriority(targetUser.rol);
+
+        if (currentPriority <= targetPriority) {
+            return res.status(403).json({
+                error: 'Rol no permitido',
+                message: 'No puedes eliminar un usuario con un rol igual o superior al tuyo',
+            });
+        }
+
+        await prisma.usuario.delete({ where: { id } });
+
+        return res.json({
+            message: 'Usuario eliminado correctamente',
+        });
+    } catch (error) {
+        return res.status(500).json({
+            error: 'Error eliminando usuario',
+            message: error.message,
+        });
+    }
+});
+
 export default router;

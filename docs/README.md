@@ -30,5 +30,5 @@ Ver también el [registro completo de desarrollo](../.github/registro.md) en `.g
 ## 🔄 Última Actualización
 
 **Fecha**: 2 de noviembre de 2025  
-**Estado**: Proyecto operativo con MariaDB + ChromaDB y UI con alternancia claro/oscuro
+**Estado**: Proyecto operativo con MariaDB + ChromaDB, UI con alternancia claro/oscuro y panel /admin para gestión de usuarios
 **Nota**: Servidor ChromaDB disponible con `python3 backend/scripts/run_chromadb.py` (persistencia en `database/chroma`).
