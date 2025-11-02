@@ -10,12 +10,21 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('🌱 Iniciando seed de la base de datos...');
 
-    const defaultPassword = process.env.SEED_DEFAULT_PASSWORD || 'CambioTemporal2025!';
-    const superAdminPasswordHash = await bcrypt.hash(defaultPassword, 12);
-    const raulPasswordHash = await bcrypt.hash('Raul5578molia', 12);
-    const monitorPasswordHash = await bcrypt.hash('MonitorSeguro2025!', 12);
-    const documentadorPasswordHash = await bcrypt.hash('Documentador2025!', 12);
-    const usuarioPasswordHash = await bcrypt.hash('Usuario2025!', 12);
+    const saltRounds = parseInt(process.env.AUTH_SALT_ROUNDS || '12', 10);
+    const defaultPassword = process.env.SEED_DEFAULT_PASSWORD || 'ChangeMe123!';
+
+    const hashPassword = async (password) => {
+        if (!password) {
+            return undefined;
+        }
+
+        return bcrypt.hash(password, saltRounds);
+    };
+
+    const superAdminPasswordHash = await hashPassword(defaultPassword);
+    const monitorPasswordHash = await hashPassword(process.env.SEED_ADMIN_PASSWORD || defaultPassword);
+    const documentadorPasswordHash = await hashPassword(process.env.SEED_DOCUMENTADOR_PASSWORD || defaultPassword);
+    const usuarioPasswordHash = await hashPassword(process.env.SEED_USUARIO_PASSWORD || defaultPassword);
 
     // Crear usuario administrador por defecto
     const adminUser = await prisma.usuario.upsert({
@@ -47,34 +56,39 @@ async function main() {
 
     console.log('✅ Usuario superadministrador creado:', adminUser.email);
 
-    const raulUser = await prisma.usuario.upsert({
-        where: { email: 'raulmolia@escolapiosemaus.org' },
-        update: {
-            nombre: 'Raúl',
-            apellidos: 'Molia Romera',
-            nombreUsuario: 'raulmolia',
-            avatarUrl: 'RM',
-            telefono: '662927604',
-            fechaNacimiento: new Date('1978-05-05'),
-            emailVerificado: new Date(),
-            rol: 'SUPERADMIN',
-            passwordHash: raulPasswordHash,
-        },
-        create: {
-            email: 'raulmolia@escolapiosemaus.org',
-            nombre: 'Raúl',
-            apellidos: 'Molia Romera',
-            nombreUsuario: 'raulmolia',
-            avatarUrl: 'RM',
-            telefono: '662927604',
-            fechaNacimiento: new Date('1978-05-05'),
-            emailVerificado: new Date(),
-            rol: 'SUPERADMIN',
-            passwordHash: raulPasswordHash,
-        },
-    });
+    const extraSuperAdminEmail = process.env.SEED_SUPERADMIN_EMAIL?.trim();
+    const extraSuperAdminPassword = process.env.SEED_SUPERADMIN_PASSWORD;
+    const extraSuperAdminHash = await hashPassword(extraSuperAdminPassword);
 
-    console.log('✅ Usuario superadministrador Raúl creado:', raulUser.email);
+    if (extraSuperAdminEmail) {
+        if (!extraSuperAdminHash) {
+            console.warn('⚠️ SEED_SUPERADMIN_PASSWORD no definido; se omite la creación del superadministrador adicional.');
+        } else {
+            const extraSuperAdminData = {
+                nombre: process.env.SEED_SUPERADMIN_NAME || 'Superadmin',
+                apellidos: process.env.SEED_SUPERADMIN_LASTNAME || null,
+                nombreUsuario: process.env.SEED_SUPERADMIN_USERNAME || extraSuperAdminEmail.split('@')[0],
+                avatarUrl: process.env.SEED_SUPERADMIN_AVATAR || null,
+                telefono: process.env.SEED_SUPERADMIN_PHONE || null,
+                fechaNacimiento: process.env.SEED_SUPERADMIN_BIRTHDATE
+                    ? new Date(process.env.SEED_SUPERADMIN_BIRTHDATE)
+                    : null,
+                emailVerificado: new Date(),
+                rol: 'SUPERADMIN',
+            };
+
+            const updateData = { ...extraSuperAdminData, passwordHash: extraSuperAdminHash };
+            const createData = { ...updateData, email: extraSuperAdminEmail };
+
+            await prisma.usuario.upsert({
+                where: { email: extraSuperAdminEmail },
+                update: updateData,
+                create: createData,
+            });
+
+            console.log('✅ Usuario superadministrador adicional sincronizado.');
+        }
+    }
 
     // Crear usuario de ejemplo
     const ejemploUser = await prisma.usuario.upsert({
@@ -401,12 +415,7 @@ async function main() {
 
     console.log('✅ Favoritos creados');
 
-    console.log('\n[INFO] Credenciales iniciales disponibles:');
-    console.log('   - Superadmin: admin@asistente-ia-juvenil.com /', defaultPassword);
-    console.log('   - Superadmin (Raúl): raulmolia@escolapiosemaus.org / Raul5578molia');
-    console.log('   - Admin: monitor@ejemplo.com / MonitorSeguro2025!');
-    console.log('   - Documentador: documentador@ejemplo.com / Documentador2025!');
-    console.log('   - Usuario: usuario@ejemplo.com / Usuario2025!');
+    console.log('\n[INFO] Usuarios iniciales sincronizados. Consulta las variables de entorno de seed para conocer las credenciales configuradas.');
 
     console.log('🌟 Seed completado exitosamente!');
 }

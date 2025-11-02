@@ -394,11 +394,11 @@ Stack de Base de Datos:
 - 🔑 Campo `passwordHash` y gestión de contraseñas seguras con bcrypt
 - 🛣️ Nuevas rutas `/api/auth/*` para login, logout, perfil y administración de usuarios
 - 🧩 Middleware de autenticación JWT con verificación de sesiones en MariaDB
-- 🌱 Seed ampliado con usuarios de ejemplo para los cuatro roles y credenciales documentadas
+- 🌱 Seed ampliado con usuarios de ejemplo para los cuatro roles configurables mediante variables de entorno
 - 📘 README actualizado con las variables JWT y la descripción del sistema de usuarios
 
-## Actualización 2 de noviembre de 2025 - Usuario Raúl y Seed Idempotente
+## Actualización 2 de noviembre de 2025 - Seed Idempotente
 
-- 👤 Añadido usuario superadministrador `raulmolia@escolapiosemaus.org` con credenciales iniciales
+- 👤 Seed preparado para superadministradores adicionales configurables mediante variables de entorno (sin credenciales embebidas)
 - ♻️ Seed reorganizado con identificadores deterministas (upsert) para evitar duplicados en reejecuciones
 - 🔄 Hashes de contraseñas precalculados por rol para mantener coherencia entre ejecuciones
