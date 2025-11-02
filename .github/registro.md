@@ -436,3 +436,13 @@ Stack de Base de Datos:
 - prisma migrate deploy (condicional)
 - npm run build --prefix frontend
 - npx pm2 start ecosystem.config.js --update-env && npx pm2 save
+
+## Actualización 2 de noviembre de 2025 - Autenticación completa y panel inicial
+
+- 🔐 Cierre del flujo JWT end-to-end: login, validación de sesión y cierre de sesión integrados con el backend (`/api/auth/*`).
+- 🌐 Nuevo `AuthProvider` React (`frontend/src/lib/auth-context.tsx`) con persistencia en `localStorage`, refresco automático del perfil y hook `useAuth` reutilizable.
+- 🔑 Página de acceso dedicada en `frontend/src/app/auth/login/page.tsx` con feedback de estado, validación y redirección automática tras iniciar sesión.
+- 💬 Página principal `frontend/src/app/page.tsx` transformada en un clon inspiracional de ChatGPT para actividades juveniles, accesible solo para usuarios autenticados y con botón de cierre de sesión.
+- 🧩 Componentes Shadcn añadidos (`textarea`, `avatar`) para construir la interfaz de chat respetando las directrices de UI establecidas.
+- 🔁 Redirecciones gestionadas desde el frontend: usuarios no autenticados se envían a `/auth/login`, mientras que las sesiones válidas se conducen al panel principal inmediatamente.
+- 🛠️ Ajuste de metadatos en `frontend/src/app/layout.tsx` para cumplir con la exportación `viewport` de Next.js 14 y eliminar advertencias en el build.
