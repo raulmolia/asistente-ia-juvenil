@@ -17,9 +17,10 @@ Ver también el [registro completo de desarrollo](../.github/registro.md) en `.g
 ## 🚀 Enlaces Rápidos
 
 - **Repositorio GitHub**: https://github.com/raulmolia/asistente-ia-juvenil
-- **Backend**: Puerto 3001
-- **Frontend**: Puerto 3000
+- **Backend**: https://ia.rpj.es/api (proxy Apache → 127.0.0.1:3001)
+- **Frontend**: https://ia.rpj.es (proxy Apache → 127.0.0.1:3000)
 - **Base de datos**: MariaDB (rpjia)
+- **Gestión documental**: `/documentacion` (subida de PDFs y biblioteca vectorial)
 
 ## 📝 Convenciones
 
@@ -29,6 +30,6 @@ Ver también el [registro completo de desarrollo](../.github/registro.md) en `.g
 
 ## 🔄 Última Actualización
 
-**Fecha**: 2 de noviembre de 2025  
-**Estado**: Proyecto operativo con MariaDB + ChromaDB, UI con alternancia claro/oscuro y panel /admin para gestión de usuarios
+**Fecha**: 3 de noviembre de 2025  
+**Estado**: Proyecto operativo con MariaDB + ChromaDB, UI con alternancia claro/oscuro, panel /admin y CORS configurado para dominio `https://ia.rpj.es`
 **Nota**: Servidor ChromaDB disponible con `python3 backend/scripts/run_chromadb.py` (persistencia en `database/chroma`).

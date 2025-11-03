@@ -1,14 +1,18 @@
 // Rutas principales de la API
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prismaPackage from '@prisma/client';
 import chromaService from '../services/chromaService.js';
 import authRoutes from './auth.js';
+import documentosRoutes from './documentos.js';
+
+const { PrismaClient } = prismaPackage;
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Subrutas
 router.use('/auth', authRoutes);
+router.use('/documentos', documentosRoutes);
 
 // Ruta de health check
 router.get('/health', async (req, res) => {
@@ -51,7 +55,9 @@ router.get('/info', (req, res) => {
         },
         endpoints: {
             health: '/api/health',
-            info: '/api/info'
+            info: '/api/info',
+            auth: '/api/auth',
+            documentos: '/api/documentos'
         }
     });
 });

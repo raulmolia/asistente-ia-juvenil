@@ -14,6 +14,7 @@ import {
     Share2,
     Sparkles,
     Trash2,
+    AlertTriangle,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -168,9 +169,13 @@ export default function ChatHomePage() {
     })
     const [profileSaving, setProfileSaving] = useState(false)
     const [profileFeedback, setProfileFeedback] = useState<string | null>(null)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [chatPendingDeletion, setChatPendingDeletion] = useState<Chat | null>(null)
     const scrollRef = useRef<HTMLDivElement | null>(null)
 
     const activeChat = useMemo(() => chats.find((chat) => chat.id === activeChatId) ?? null, [chats, activeChatId])
+    const sidebarChats = useMemo(() => chats.filter((chat) => !chat.archived), [chats])
+    const archivedChats = useMemo(() => chats.filter((chat) => chat.archived), [chats])
     const messageCount = activeChat?.messages.length ?? 0
 
     const initials = useMemo(() => {
@@ -206,8 +211,11 @@ export default function ChatHomePage() {
     }, [router, status])
 
     useEffect(() => {
-        if (!activeChatId && chats.length > 0) {
-            setActiveChatId(chats[0].id)
+        if (!activeChatId) {
+            const firstActiveChat = chats.find((chat) => !chat.archived)
+            if (firstActiveChat) {
+                setActiveChatId(firstActiveChat.id)
+            }
         }
     }, [activeChatId, chats])
 
@@ -360,27 +368,80 @@ export default function ChatHomePage() {
         setInputValue("")
     }
 
-    const handleDeleteChat = (chatId: string) => {
+    const handleRequestDeleteChat = (chat: Chat) => {
+        setChatPendingDeletion(chat)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const handleCancelDeleteChat = () => {
+        setIsDeleteDialogOpen(false)
+        setChatPendingDeletion(null)
+    }
+
+    const handleConfirmDeleteChat = () => {
+        if (!chatPendingDeletion) {
+            return
+        }
+
+        const chatId = chatPendingDeletion.id
+        let nextActiveChatId = activeChatId === chatId ? "" : activeChatId
+
         setChats((prevChats) => {
             const updated = prevChats.filter((chat) => chat.id !== chatId)
             if (chatId === activeChatId) {
-                setActiveChatId(updated[0]?.id ?? "")
+                const fallback = updated.find((chat) => !chat.archived)
+                nextActiveChatId = fallback?.id ?? ""
             }
             return updated
         })
+
+        if (nextActiveChatId !== activeChatId) {
+            setActiveChatId(nextActiveChatId)
+        }
+
+        setIsDeleteDialogOpen(false)
+        setChatPendingDeletion(null)
     }
 
     const handleArchiveChat = (chatId: string) => {
-        setChats((prevChats) =>
-            prevChats.map((chat) =>
-                chat.id === chatId
-                    ? {
+        let toggledChat: Chat | null = null
+        let nextActiveChatId = activeChatId
+
+        setChats((prevChats) => {
+            const updated = prevChats.map((chat) => {
+                if (chat.id === chatId) {
+                    const updatedChat = {
                         ...chat,
                         archived: !chat.archived,
                     }
-                    : chat,
-            ),
-        )
+                    toggledChat = updatedChat
+                    return updatedChat
+                }
+                return chat
+            })
+
+            if (toggledChat) {
+                if (toggledChat.archived) {
+                    if (nextActiveChatId === chatId) {
+                        const fallback = updated.find((chat) => !chat.archived)
+                        nextActiveChatId = fallback?.id ?? ""
+                    }
+                } else {
+                    nextActiveChatId = chatId
+                }
+            }
+
+            return updated
+        })
+
+        if (toggledChat && nextActiveChatId !== activeChatId) {
+            setActiveChatId(nextActiveChatId)
+        }
+    }
+
+    const handleRestoreArchivedChat = (chatId: string) => {
+        handleArchiveChat(chatId)
+        setIsArchivedDialogOpen(false)
     }
 
     const handleShareChat = async (chatId: string) => {
@@ -412,7 +473,7 @@ export default function ChatHomePage() {
     }
 
     if (!isAuthenticated) {
-        return null
+        <DialogDescription>Los chats archivados se ocultan del panel lateral. Desarchívalos para recuperarlos cuando los necesites.</DialogDescription>
     }
 
     const sidebarWidthClass = isSidebarCollapsed ? "w-20" : "w-80"
@@ -462,13 +523,13 @@ export default function ChatHomePage() {
 
                 <ScrollArea className="flex-1 px-2">
                     <div className="space-y-2 pb-4">
-                        {chats.length === 0 && (
+                        {sidebarChats.length === 0 && (
                             <div className="rounded-xl border border-dashed border-border/60 bg-background/60 px-3 py-8 text-center text-xs text-muted-foreground">
                                 No hay conversaciones todavía. Crea un nuevo chat para empezar.
                             </div>
                         )}
 
-                        {chats.map((chat) => {
+                        {sidebarChats.map((chat) => {
                             const isActive = chat.id === activeChatId
 
                             return (
@@ -485,7 +546,6 @@ export default function ChatHomePage() {
                                             "flex flex-1 items-center gap-3 rounded-xl px-3 py-3 text-sm",
                                             "transition hover:bg-muted",
                                             isActive && "bg-primary/10 text-primary",
-                                            chat.archived && "opacity-70",
                                             isSidebarCollapsed && "justify-center px-2",
                                         )}
                                         onClick={() => handleSelectChat(chat.id)}
@@ -494,9 +554,6 @@ export default function ChatHomePage() {
                                         {!isSidebarCollapsed && (
                                             <div className="flex flex-1 flex-col items-start">
                                                 <span className="text-left font-medium leading-tight">{chat.title}</span>
-                                                {chat.archived && (
-                                                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Archivado</span>
-                                                )}
                                             </div>
                                         )}
                                     </Button>
@@ -524,13 +581,13 @@ export default function ChatHomePage() {
                                                     }}
                                                 >
                                                     <Archive className="mr-2 h-4 w-4" aria-hidden="true" />
-                                                    {chat.archived ? "Desarchivar" : "Archivar"}
+                                                    Archivar
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     className="text-destructive"
                                                     onSelect={(event) => {
                                                         event.preventDefault()
-                                                        handleDeleteChat(chat.id)
+                                                        handleRequestDeleteChat(chat)
                                                     }}
                                                 >
                                                     <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" /> Eliminar
@@ -759,32 +816,60 @@ export default function ChatHomePage() {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Chats archivados</DialogTitle>
-                        <DialogDescription>Mantén como máximo 3 chats archivados para evitar ocupar demasiado espacio en la base de datos.</DialogDescription>
+                        <DialogDescription>Los chats archivados se ocultan del panel lateral. Desarchívalos para recuperarlos cuando los necesites.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3">
-                        {chats.filter((chat) => chat.archived).length === 0 ? (
+                        {archivedChats.length === 0 ? (
                             <p className="text-sm text-muted-foreground">No hay chats archivados por ahora.</p>
                         ) : (
-                            chats
-                                .filter((chat) => chat.archived)
-                                .slice(0, 3)
-                                .map((chat) => (
-                                    <div key={chat.id} className="rounded-lg border border-border/60 bg-muted/20 px-3 py-3 text-sm">
-                                        <div className="font-medium">{chat.title}</div>
-                                        <div className="mt-1 text-xs text-muted-foreground">Archivado el {chat.createdAt.toLocaleString("es-ES")}</div>
-                                        <div className="mt-2 flex gap-2">
-                                            <Button size="sm" variant="outline" onClick={() => { setIsArchivedDialogOpen(false); setActiveChatId(chat.id) }}>Abrir</Button>
-                                            <Button size="sm" variant="ghost" onClick={() => handleArchiveChat(chat.id)}>Desarchivar</Button>
-                                        </div>
+                            archivedChats.map((chat) => (
+                                <div key={chat.id} className="rounded-lg border border-border/60 bg-muted/20 px-3 py-3 text-sm">
+                                    <div className="font-medium">{chat.title}</div>
+                                    <div className="mt-1 text-xs text-muted-foreground">Archivado el {chat.createdAt.toLocaleString("es-ES")}</div>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        <Button size="sm" variant="outline" onClick={() => handleRestoreArchivedChat(chat.id)}>
+                                            Abrir
+                                        </Button>
+                                        <Button size="sm" variant="ghost" onClick={() => handleArchiveChat(chat.id)}>
+                                            Desarchivar
+                                        </Button>
                                     </div>
-                                ))
-                        )}
-                        {chats.filter((chat) => chat.archived).length > 3 && (
-                            <p className="text-xs text-muted-foreground">Mostrando solo los 3 más recientes.</p>
+                                </div>
+                            ))
                         )}
                     </div>
                     <DialogFooter>
                         <Button type="button" onClick={() => setIsArchivedDialogOpen(false)} variant="outline">Cerrar</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Dialog
+                open={isDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setIsDeleteDialogOpen(open)
+                    if (!open) {
+                        setChatPendingDeletion(null)
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Eliminar chat</DialogTitle>
+                        <DialogDescription>Esta acción no se puede deshacer. El historial y las respuestas generadas se perderán definitivamente.</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-3 text-sm">
+                        <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
+                        <p>
+                            ¿Seguro que quieres eliminar <span className="font-semibold">{chatPendingDeletion?.title ?? "esta conversación"}</span>?
+                        </p>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={handleCancelDeleteChat}>
+                            Cancelar
+                        </Button>
+                        <Button type="button" variant="destructive" onClick={handleConfirmDeleteChat}>
+                            Eliminar definitivamente
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

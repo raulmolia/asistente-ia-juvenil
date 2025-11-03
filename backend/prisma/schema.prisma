@@ -48,6 +48,7 @@ model Usuario {
   actividades     Actividad[]
   configuraciones ConfiguracionUsuario[]
   favoritos       ActividadFavorita[]
+  documentos      Documento[]
   
   @@map("usuarios")
 }
@@ -188,4 +189,50 @@ model ConfiguracionUsuario {
   
   @@unique([usuarioId, clave])
   @@map("configuraciones_usuario")
+}
+
+// Modelo para el repositorio documental
+model Documento {
+  id                   String                 @id @default(cuid())
+  usuarioId            String?
+  titulo               String
+  nombreOriginal       String
+  rutaArchivo          String
+  tamanoBytes          Int
+  tipoMime             String
+  etiquetas            Json
+  descripcionGenerada  String?
+  estadoProcesamiento  EstadoProcesamiento    @default(PENDIENTE)
+  mensajeError         String?
+  fechaProcesamiento   DateTime?
+  contenidoExtraido    String?                @db.LongText
+  vectorDocumentoId    String?
+  coleccionVectorial   String?
+  fechaCreacion        DateTime               @default(now())
+  fechaActualizacion   DateTime               @updatedAt
+
+  // Relaciones
+  usuario              Usuario?               @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@map("documentos")
+  @@index([fechaCreacion], name: "idx_documentos_fecha")
+  @@index([estadoProcesamiento], name: "idx_documentos_estado")
+}
+
+// Enum de estado de procesamiento documental
+enum EstadoProcesamiento {
+  PENDIENTE
+  PROCESANDO
+  COMPLETADO
+  ERROR
+}
+
+// Enum de etiquetas documentales
+enum EtiquetaDocumento {
+  PROGRAMACIONES
+  DINAMICAS
+  ORACIONES
+  REVISTAS
+  CONTENIDO_MIXTO
+  OTROS
 }

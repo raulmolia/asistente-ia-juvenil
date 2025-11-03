@@ -222,6 +222,13 @@ Crear archivo `backend/prisma/seed.js` con:
 - Añadidos scripts npm (`pm2:start`, `pm2:reload`, `pm2:stop`, `deploy`) y dependencia `pm2`
 - Cada despliegue añade una entrada automática en `.github/registro.md`
 
+## 🔄 Actualización posterior: Repositorio documental (2 Nov 2025)
+
+- Nuevo modelo `Documento` en Prisma y endpoints `/api/documentos` para subir/consultar PDFs con etiquetas (programaciones, dinamicas, oraciones, revistas, contenido mixto, otros).
+- Extracción automática de texto vía `pdf-parse`, generación de resumen (OpenAI opcional) y persistencia en ChromaDB (`CHROMA_COLLECTION_DOCUMENTOS`).
+- Configuración de almacenamiento físico (`DOCUMENTS_STORAGE_PATH`, `DOCUMENTS_MAX_SIZE`) y badges visuales en el frontend.
+- Página `/documentacion` rediseñada con drag & drop, selección múltiple de etiquetas, feedback de estado y tabla de biblioteca.
+
 ---
 
 ## 💡 Notas Técnicas
@@ -249,5 +256,14 @@ Si en el futuro se soluciona la configuración de PostgreSQL:
 
 ---
 
-*Última actualización: 2 de noviembre de 2025*
-*Estado del proyecto: **Operativo y listo para desarrollo***
+## 🔄 Actualización 3 de noviembre de 2025 - Integración Proxy Apache y CORS en Producción
+
+- 🌐 Dominio `https://ia.rpj.es` apuntado al bundle Next.js mediante proxy inverso Apache (`.htaccess` actualizado)
+- 🔁 Proxy `/api` hacia backend Express (`127.0.0.1:3001`) con cabeceras adecuadas para peticiones `fetch`
+- 🛡️ CORS dinamizado (`backend/src/index.js`) aceptando `https://ia.rpj.es`, `https://www.ia.rpj.es` y orígenes definidos en `FRONTEND_URLS`
+- 🔒 Variables de entorno ajustadas (`backend/.env`, `.env.example`, `frontend/.env.local`) para usar URLs HTTPS en producción
+- 🧱 Scripts de despliegue PM2 actualizados y reinicio de procesos con `npx pm2 restart ... --update-env`
+- 📄 Documentación y README sincronizados con los nuevos endpoints y dominio
+
+*Última actualización: 3 de noviembre de 2025*
+*Estado del proyecto: **Operativo en producción bajo dominio ia.rpj.es***

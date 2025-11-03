@@ -1,0 +1,2 @@
+# Este archivo lo usa Prisma para bloquear el proveedor de migraciones
+provider = "mysql"

@@ -2,8 +2,18 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { PrismaClient, Rol } from '@prisma/client';
+import prismaPackage from '@prisma/client';
 import { authenticate, authorize, getRolePriority } from '../middleware/auth.js';
+
+const { PrismaClient } = prismaPackage;
+const PrismaEnums = prismaPackage.$Enums || {};
+const DEFAULT_ROLES = {
+    SUPERADMIN: 'SUPERADMIN',
+    ADMINISTRADOR: 'ADMINISTRADOR',
+    DOCUMENTADOR: 'DOCUMENTADOR',
+    USUARIO: 'USUARIO',
+};
+const Rol = PrismaEnums.Rol || DEFAULT_ROLES;
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -12,7 +22,7 @@ const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'cha
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '12h';
 
 const DEFAULT_PASSWORD_ROUNDS = parseInt(process.env.AUTH_SALT_ROUNDS || '12', 10);
-const ALLOWED_ROLES = Object.values(Rol);
+const ALLOWED_ROLES = Object.values(Rol || DEFAULT_ROLES);
 
 function durationToMs(duration) {
     if (!duration) {
@@ -53,7 +63,7 @@ function sanitizeUser(user) {
 
 function resolveRole(rawRole, currentUserRole) {
     if (!rawRole) {
-        return Rol.USUARIO;
+        return Rol.USUARIO || DEFAULT_ROLES.USUARIO;
     }
 
     const normalized = String(rawRole).trim().toUpperCase();
@@ -66,7 +76,7 @@ function resolveRole(rawRole, currentUserRole) {
         throw new Error('No puedes asignar un rol superior al tuyo');
     }
 
-    return Rol[normalized];
+    return Rol[normalized] || DEFAULT_ROLES[normalized];
 }
 
 router.post('/login', async (req, res) => {

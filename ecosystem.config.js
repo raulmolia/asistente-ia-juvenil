@@ -17,12 +17,14 @@ module.exports = {
         {
             name: "rpjia-frontend",
             cwd: "./frontend",
-            script: "npm",
-            args: "run start -- --hostname 0.0.0.0 --port 3000",
+            script: "node",
+            args: ".next/standalone/server.js",
             watch: false,
             env: {
                 NODE_ENV: "production",
-                PORT: "3000"
+                PORT: "3000",
+                HOSTNAME: "127.0.0.1",
+                HOST: "127.0.0.1"
             },
             autorestart: true,
             max_restarts: 5,

@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useEffect, useMemo, useState } from "react"
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "")
+import { buildApiUrl } from "@/lib/utils"
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated"
 
@@ -89,7 +89,7 @@ function setStoredValue<T>(key: string, value: T | null) {
 }
 
 async function fetchProfile(token: string): Promise<AuthUser> {
-    const response = await fetch(`${API_URL}/api/auth/me`, {
+    const response = await fetch(buildApiUrl("/api/auth/me"), {
         method: "GET",
         headers: {
             Authorization: `Bearer ${token}`,
@@ -174,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setStatus("loading")
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/login`, {
+            const response = await fetch(buildApiUrl("/api/auth/login"), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -225,7 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-            await fetch(`${API_URL}/api/auth/logout`, {
+            await fetch(buildApiUrl("/api/auth/logout"), {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${currentToken}`,
@@ -242,7 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/me`, {
+            const response = await fetch(buildApiUrl("/api/auth/me"), {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",

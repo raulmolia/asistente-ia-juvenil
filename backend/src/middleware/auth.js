@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import prismaPackage from '@prisma/client';
 
+const { PrismaClient } = prismaPackage;
 const prisma = new PrismaClient();
 
 const ROLE_PRIORITY = {

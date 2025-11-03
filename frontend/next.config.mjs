@@ -21,17 +21,6 @@ const nextConfig = {
         API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
     },
 
-    // Configuración de redirects
-    async redirects() {
-        return [
-            {
-                source: '/admin',
-                destination: '/dashboard/admin',
-                permanent: true,
-            },
-        ];
-    },
-
     // Configuración de headers de seguridad
     async headers() {
         return [

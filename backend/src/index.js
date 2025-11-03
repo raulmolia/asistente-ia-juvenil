@@ -40,8 +40,40 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // CORS
+const defaultAllowedOrigins = [
+    'https://ia.rpj.es',
+    'https://www.ia.rpj.es',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+];
+
+const envAllowedOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.FRONTEND_URLS,
+]
+    .filter(Boolean)
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+
+const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllowedOrigins]))
+    .map((origin) => origin.replace(/\/$/, ''));
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        const normalizedOrigin = origin.replace(/\/$/, '');
+
+        if (allowedOrigins.includes(normalizedOrigin)) {
+            return callback(null, true);
+        }
+
+        console.warn(`Origen no permitido por CORS: ${origin}`);
+        return callback(new Error('Origen no permitido por CORS'));
+    },
     credentials: true,
 }));
 

@@ -64,6 +64,8 @@ JWT_SECRET="tu-clave-jwt"
 JWT_EXPIRES_IN="12h"
 AUTH_SALT_ROUNDS="12"
 SEED_DEFAULT_PASSWORD="ChangeMe123!"
+FRONTEND_URL="http://localhost:3000"
+FRONTEND_URLS="http://localhost:3000"
 ```
 
 Variables opcionales para el seed (solo si se necesitan credenciales personalizadas):
@@ -162,14 +164,15 @@ Scripts útiles:
 - **Oraciones y reflexiones** según temáticas
 - **Recomendaciones inteligentes** basadas en historial
 
-## � Interfaz de Usuario
+## 👤 Interfaz de Usuario
 
 - Panel estilo ChatGPT con chats anclados y archivados
 - Menú de usuario contextual con acceso a perfil, administración y documentación
 - Botón superior para alternar entre modo claro y oscuro gestionado por `next-themes`
 - Panel de administración con alta de usuarios, asignación de roles y eliminación segura según jerarquía
+- Gestión documental desde `/documentacion` con subida de PDFs, etiquetado y biblioteca enlazada a la base vectorial
 
-## �📋 Directrices de Desarrollo
+## 📋 Directrices de Desarrollo
 
 ### Obligatorias
 - ✅ Toda documentación en castellano
@@ -183,6 +186,25 @@ Scripts útiles:
 - Mantener arquitectura modular
 - Documentar cambios importantes
 - Realizar pruebas antes de deploy
+
+## 🌐 Despliegue en producción (ia.rpj.es)
+
+1. Compilar el frontend: `npm run build --prefix frontend` (usa `.env.local` con `NEXT_PUBLIC_API_URL=https://ia.rpj.es`).
+2. Sincronizar recursos con el bundle `standalone`:
+    ```bash
+    rsync -a --delete frontend/.next/static/ frontend/.next/standalone/.next/static/
+    rsync -a --delete frontend/public/ frontend/.next/standalone/public/
+    ```
+3. Reiniciar procesos PM2 con las variables actualizadas:
+    ```bash
+    cd httpdocs
+    npx pm2 restart rpjia-frontend --update-env
+    npx pm2 restart rpjia-backend --update-env
+    ```
+4. Verificar el proxy Apache (`httpdocs/.htaccess`) para asegurar que `/api` apunta a `http://127.0.0.1:3001` y el resto sirve el frontend.
+5. Confirmar que el bundle no contiene referencias a `http://localhost:3001` (`grep -R "localhost:3001" frontend/.next/standalone || true`).
+
+Si se requiere permitir dominios adicionales en CORS, añadirlos a `FRONTEND_URLS` (lista separada por comas) y reiniciar `rpjia-backend` con `--update-env`.
 
 ## 🔧 Configuración SSH
 

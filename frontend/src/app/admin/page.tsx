@@ -9,8 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/hooks/use-auth"
 import { ThemeToggleButton } from "@/components/theme-toggle"
-
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "")
+import { buildApiUrl } from "@/lib/utils"
 const ALLOWED_ROLES = new Set(["SUPERADMIN", "ADMINISTRADOR"])
 
 const ROLE_PRIORITY: Record<string, number> = {
@@ -97,7 +96,7 @@ export default function AdminPage() {
         setError(null)
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/users`, {
+            const response = await fetch(buildApiUrl("/api/auth/users"), {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -176,7 +175,7 @@ export default function AdminPage() {
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/users`, {
+            const response = await fetch(buildApiUrl("/api/auth/users"), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -207,7 +206,7 @@ export default function AdminPage() {
         setError(null)
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/users/${userId}/role`, {
+            const response = await fetch(buildApiUrl(`/api/auth/users/${userId}/role`), {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
@@ -237,7 +236,7 @@ export default function AdminPage() {
         setError(null)
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/users/${userId}`, {
+            const response = await fetch(buildApiUrl(`/api/auth/users/${userId}`), {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,

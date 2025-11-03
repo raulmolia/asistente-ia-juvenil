@@ -6,8 +6,10 @@ class ChromaService {
     constructor() {
         this.client = null;
         this.collection = null;
+        this.collections = new Map();
         this.isAvailable = false;
         this.collectionName = process.env.CHROMA_COLLECTION || 'rpjia-actividades';
+        this.baseUrl = null;
     }
 
     async initialize() {
@@ -33,38 +35,59 @@ class ChromaService {
 
         try {
             this.client = new ChromaClient(clientOptions);
+            this.baseUrl = `${clientOptions.ssl ? 'https' : 'http'}://${clientOptions.host}:${clientOptions.port}`;
 
-            this.collection = await this.client.getOrCreateCollection({
-                name: this.collectionName,
-                metadata: {
-                    project: 'asistente-ia-juvenil',
-                    created_at: new Date().toISOString(),
-                },
-            });
+            this.collection = await this.getOrCreateCollection(this.collectionName);
 
             // Verificar el estado conectando con una consulta mínima
             await this.collection.count();
 
             this.isAvailable = true;
-            console.log(`📚 ChromaDB conectado en ${baseUrl} (colección: ${this.collectionName})`);
+            console.log(`📚 ChromaDB conectado en ${this.baseUrl} (colección base: ${this.collectionName})`);
             return true;
         } catch (error) {
             console.error('❌ Error inicializando ChromaDB:', error.message);
             this.client = null;
             this.collection = null;
+            this.collections.clear();
             this.isAvailable = false;
             return false;
         }
     }
 
-    async addDocument(id, content, metadata = {}) {
-        if (!this.isAvailable || !this.collection) {
+    async getOrCreateCollection(name) {
+        if (!this.isAvailable && !this.client) {
+            throw new Error('ChromaDB no inicializado');
+        }
+
+        const targetName = name || this.collectionName;
+
+        if (this.collections.has(targetName)) {
+            return this.collections.get(targetName);
+        }
+
+        const collection = await this.client.getOrCreateCollection({
+            name: targetName,
+            metadata: {
+                project: 'asistente-ia-juvenil',
+                created_at: new Date().toISOString(),
+            },
+        });
+
+        this.collections.set(targetName, collection);
+        return collection;
+    }
+
+    async addDocument(id, content, metadata = {}, collectionName = null) {
+        if (!this.isAvailable || !this.client) {
             console.log('⚠️ ChromaDB no disponible, omitiendo documento');
             return false;
         }
 
         try {
-            await this.collection.add({
+            const targetCollection = await this.getOrCreateCollection(collectionName || this.collectionName);
+
+            await targetCollection.add({
                 ids: [id],
                 documents: [content],
                 metadatas: [metadata],
@@ -77,14 +100,16 @@ class ChromaService {
         }
     }
 
-    async searchSimilar(query, limit = 5) {
-        if (!this.isAvailable || !this.collection) {
+    async searchSimilar(query, limit = 5, collectionName = null) {
+        if (!this.isAvailable || !this.client) {
             console.log('⚠️ ChromaDB no disponible, devolviendo resultados vacíos');
             return [];
         }
 
         try {
-            const result = await this.collection.query({
+            const targetCollection = await this.getOrCreateCollection(collectionName || this.collectionName);
+
+            const result = await targetCollection.query({
                 queryTexts: [query],
                 nResults: limit,
                 include: ['documents', 'metadatas', 'distances'],
@@ -108,11 +133,12 @@ class ChromaService {
         }
     }
 
-    async getDocumentCount() {
-        if (!this.isAvailable || !this.collection) return -1;
+    async getDocumentCount(collectionName = null) {
+        if (!this.isAvailable || !this.client) return -1;
 
         try {
-            return await this.collection.count();
+            const targetCollection = await this.getOrCreateCollection(collectionName || this.collectionName);
+            return await targetCollection.count();
         } catch (error) {
             console.error('❌ Error obteniendo conteo de ChromaDB:', error.message);
             return -1;

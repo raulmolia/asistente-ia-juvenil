@@ -1,10 +1,11 @@
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import prismaPackage from '@prisma/client';
 import chromaService from '../src/services/chromaService.js';
 
 dotenv.config();
 
+const { PrismaClient } = prismaPackage;
 const prisma = new PrismaClient();
 
 async function main() {

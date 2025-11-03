@@ -5,6 +5,31 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
 }
 
+export function resolveApiBaseUrl(): string {
+    if (typeof window !== "undefined" && window.location) {
+        return window.location.origin.replace(/\/$/, "")
+    }
+
+    const envUrl = process.env.NEXT_PUBLIC_API_URL
+
+    if (typeof envUrl === "string" && envUrl.trim().length > 0) {
+        return envUrl.trim().replace(/\/$/, "")
+    }
+
+    return ""
+}
+
+export function buildApiUrl(path: string): string {
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`
+    const baseUrl = resolveApiBaseUrl()
+
+    if (!baseUrl) {
+        return normalizedPath
+    }
+
+    return `${baseUrl}${normalizedPath}`
+}
+
 // Utilidades específicas del proyecto
 export function formatearFecha(fecha: Date, formato: 'corto' | 'largo' = 'corto'): string {
     if (formato === 'corto') {

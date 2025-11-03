@@ -399,6 +399,23 @@ Stack de Base de Datos:
 
 ## Actualización 2 de noviembre de 2025 - Seed Idempotente
 
+## Actualización 3 de noviembre de 2025 - Gestión Documental y Migraciones
+
+- ⚠️ Intento de ejecutar `npx prisma migrate dev --name add_documentos` bloqueado por falta de permisos para crear base de datos sombra con el usuario `sa`; pendiente definir `shadowDatabaseUrl` con credenciales que permitan creación temporal o aplicar la migración desde un entorno con privilegios ampliados.
+- 🔁 Se verificó nuevamente la ejecución de la migración forzando `PRISMA_MIGRATE_DEV_SKIP_SHADOW_DATABASE`, pero Prisma siguió intentando crear la base sombra y devolvió el mismo error P3014.
+- 🛠️ Ajustado el componente `frontend/src/app/documentacion/page.tsx` sustituyendo el icono inexistente `CloudUpload` por `UploadCloud` de `lucide-react`, corrigiendo el error de compilación en la línea 10.
+- ✅ Compilación del frontend (`npm run build`) completada correctamente tras la corrección del icono.
+- 🔍 Resultado pendiente: completar la migración `add_documentos` cuando se disponga de permisos adecuados o configuración alternativa de shadow database.
+
+- ✅ Ejecutado `npx prisma db push` para sincronizar el esquema con MariaDB sin necesidad de shadow database, habilitando la tabla `documentos` y las relaciones requeridas.
+- 📦 Generada la migración `20251103_add_documentos` mediante `prisma migrate diff` (sin usar shadow DB) y marcada como aplicada con `prisma migrate resolve --applied`, dejando el historial listo para `migrate deploy` en otros entornos.
+- 🔁 Regenerado Prisma Client (`npx prisma generate`) tras la sincronización para asegurar que el backend use los tipos actualizados.
+- ⚙️ Actualizado `backend/.env` con `CHROMA_COLLECTION`, `CHROMA_COLLECTION_DOCUMENTOS`, `DOCUMENTS_STORAGE_PATH` y `DOCUMENTS_MAX_SIZE` para que las rutas de documentación funcionen sin configuraciones adicionales.
+- 📂 Verificado el directorio de almacenamiento `backend/storage/documentos` como destino por defecto de los PDF cargados.
+- 🧠 Instalado `@chroma-core/default-embed` y reejecutado el seed para dejar preparada la generación automática de embeddings cuando el servidor de Chroma esté disponible.
+- 🔄 Ajustadas las importaciones de Prisma en `backend/src/routes/*.js` y `src/middleware/auth.js` para compatibilidad con Node 24 (CommonJS vs ESM), añadiendo *fallbacks* para enums cuando `$Enums` no está presente.
+- ▶️ Reiniciado el backend con PM2 (`./node_modules/.bin/pm2 start ecosystem.config.js --only rpjia-backend`) verificando que queda en estado `online` y permitiendo de nuevo las llamadas a `/api/documentos`.
+
 ## Actualización 3 de noviembre de 2025 - Páginas de Documentación y Administración
 
 - 📚 Creada `frontend/src/app/documentacion/page.tsx` con control de acceso por roles (SUPERADMIN, ADMINISTRADOR, DOCUMENTADOR) y enlaces directos a la documentación interna del proyecto y al repositorio GitHub.
@@ -407,10 +424,22 @@ Stack de Base de Datos:
 - 🌗 Integrado botón de alternancia claro/oscuro (`frontend/src/components/theme-toggle.tsx`) visible en el encabezado principal y gestionado por `next-themes` a través del proveedor global.
 - 👥 Panel `/admin` evolucionado a gestor de usuarios con creación, asignación de roles y eliminación directa (solo roles inferiores) consumiendo el endpoint `GET/POST/PATCH/DELETE` de `api/auth/users`.
 - 🧰 Backend amplía `backend/src/routes/auth.js` con `DELETE /api/auth/users/:id`, validando jerarquía de roles y evitando la autoeliminación de la cuenta activa.
+- 🔁 Eliminada redirección legacy en `frontend/next.config.mjs` que llevaba `/admin` a `/dashboard/admin`, permitiendo acceder directamente al nuevo panel sin errores 404.
+- 🗂️ Ajustado `frontend/src/app/page.tsx` para que los chats archivados se oculten del panel lateral, se gestionen desde el diálogo dedicado y vuelvan al listado principal al desarchivarse.
+- 🗑️ Añadida confirmación visual para eliminar chats, evitando borrados accidentales mediante un diálogo de advertencia.
 
 - 👤 Seed preparado para superadministradores adicionales configurables mediante variables de entorno (sin credenciales embebidas)
 - ♻️ Seed reorganizado con identificadores deterministas (upsert) para evitar duplicados en reejecuciones
 - 🔄 Hashes de contraseñas precalculados por rol para mantener coherencia entre ejecuciones
+
+## Actualización 3 de noviembre de 2025 - Dominio ia.rpj.es operativo
+
+- 🌐 Proxy inverso configurado (`httpdocs/.htaccess`) para servir el frontend de Next.js en `https://ia.rpj.es` y reenviar `/api` al backend en `127.0.0.1:3001`.
+- 🛡️ Middleware CORS del backend (`backend/src/index.js`) ahora acepta dinámicamente `https://ia.rpj.es`, `https://www.ia.rpj.es` y los orígenes definidos en `FRONTEND_URLS`.
+- 🔐 Variables de entorno actualizadas en `backend/.env`, `backend/.env.example` y `frontend/.env.local` para reflejar URLs HTTPS y el nuevo flujo de autenticación.
+- 🧱 Reconstruido el frontend (`npm run build`), sincronizados los assets con el bundle `standalone` y reiniciados los procesos PM2 (`rpjia-frontend`, `rpjia-backend`) con `--update-env`.
+- 🔍 Verificación del bundle resultante (`grep -R "localhost:3001" frontend/.next/standalone`) confirmando la eliminación de referencias a `http://localhost:3001`.
+- 📚 Documentación actualizada (`README.md`, `docs/README.md`, `docs/RESUMEN_SESION.md`) con el dominio productivo y los requisitos del proxy Apache.
 
 ## Actualización 2 de noviembre de 2025 - Login inicial
 
@@ -473,3 +502,13 @@ Stack de Base de Datos:
 - prisma migrate deploy (condicional)
 - npm run build --prefix frontend
 - npx pm2 start ecosystem.config.js --update-env && npx pm2 save
+
+## Actualización 2 de noviembre de 2025 - Gestión documental vectorial
+
+- 📁 Nuevo modelo Prisma `Documento` con seguimiento de origen, estado de procesamiento, descripción y vínculos vectoriales.
+- 📦 Endpoint `/api/documentos` (POST) permite subir PDFs etiquetados, extrae el contenido y lo almacena en MariaDB + ChromaDB; `/api/documentos` (GET) lista la biblioteca; `/api/documentos/etiquetas` expone el catálogo disponible.
+- 🧠 Integración opcional con OpenAI (`OPENAI_API_KEY` + `OPENAI_MODEL`) para generar descripciones breves; fallback heurístico cuando no hay clave.
+- 🗄️ Archivos físicos almacenados en `backend/storage/documentos` (configurable vía `DOCUMENTS_STORAGE_PATH` y `DOCUMENTS_MAX_SIZE`).
+- 🧩 Servicio `chromaService` actualizado para gestionar múltiples colecciones y corregido el log de conexión.
+- 💻 Página `/documentacion` rediseñada con carga vía drag & drop, selección de etiquetas, seguimiento de estado y tabla con badges de colores.
+- 🪪 Acceso limitado a roles `SUPERADMIN`, `ADMINISTRADOR` y `DOCUMENTADOR`, reutilizando el contexto de autenticación existente.
