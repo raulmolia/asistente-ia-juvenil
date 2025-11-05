@@ -18,9 +18,9 @@
 - [x] Normalizar la respuesta en un formato único (texto principal + puntos clave opcionales).
 
 ## 4. Backend: observabilidad y manejo de errores
-- [ ] Añadir logs estructurados (intención, tokens, duración) y manejo de timeouts/retries.
+- [x] Añadir logs estructurados (intención, tokens, duración) y manejo de timeouts/retries.
 - [x] Registrar en base de datos cada turno de conversación con metadatos relevantes.
-- [ ] Implementar respuestas de fallback cuando falle la IA o no haya contexto.
+- [x] Implementar respuestas de fallback cuando falle la IA o no haya contexto.
 
 ## 5. Frontend: integración con el nuevo endpoint
 - [x] Actualizar `/src/app/page.tsx` para consumir el endpoint real en lugar de mocks.
@@ -28,6 +28,6 @@
 - [x] Sincronizar el historial local con el backend y permitir reintentos.
 
 ## 6. Validación y despliegue
-- [ ] Escribir pruebas unitarias/integración para los servicios nuevos (detección de intención, llamada a Chutes, búsqueda vectorial).
-- [ ] Ejecutar test end-to-end básico desde el frontend.
-- [ ] Actualizar `.github/registro.md` con el progreso y ejecutar el flujo de despliegue (`npm run deploy`).
+- [x] Escribir pruebas unitarias/integración para los servicios nuevos (detección de intención, llamada a Chutes, búsqueda vectorial).
+- [x] Ejecutar test end-to-end básico desde el frontend.
+- [x] Actualizar `.github/registro.md` con el progreso y ejecutar el flujo de despliegue (`npm run deploy`).

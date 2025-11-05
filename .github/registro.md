@@ -520,3 +520,13 @@ Stack de Base de Datos:
 - 🧮 Nuevo soporte en `chromaService` para inserciones masivas (`addDocuments`) reutilizado por el flujo documental.
 - ⚙️ Variables de entorno añadidas (`CHROMA_DOCUMENT_CHUNK_SIZE`, `CHROMA_DOCUMENT_CHUNK_OVERLAP`) para ajustar tamaño y solapamiento de fragmentos según necesidades del entorno.
 - 🗃️ El campo `contenidoExtraido` en MariaDB conserva el texto completo normalizado del PDF, garantizando trazabilidad fuera de Chroma.
+
+### Fase 4: Integración del chat IA (5 nov 2025)
+- Implementación completa de la API de chat (`GET/POST/DELETE /api/chat`) con detección de intención y saneado de conversaciones.
+- Nuevo módulo de prompts (`backend/src/config/chatPrompts.js`) y servicio LLM con reintentos configurables.
+- Logs estructurados con duración, tokens y número de intentos; mensajes de fallback cuando Chutes AI no responde.
+- Eliminación de conversaciones desde la UI enlazada al backend; input con estilo corporativo en modo claro/oscuro.
+- Suite de pruebas automatizadas (Vitest backend + Vitest E2E frontend) documentada y ejecutada.
+- Despliegue actualizado: rebuild del frontend, copia de artefactos standalone y reinicio de PM2.
+
+*Última actualización: 5 de noviembre de 2025 - Integración del chat IA completada*

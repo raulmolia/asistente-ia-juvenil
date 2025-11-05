@@ -30,6 +30,6 @@ Ver también el [registro completo de desarrollo](../.github/registro.md) en `.g
 
 ## 🔄 Última Actualización
 
-**Fecha**: 3 de noviembre de 2025  
-**Estado**: Proyecto operativo con MariaDB + ChromaDB, UI con alternancia claro/oscuro, panel /admin y CORS configurado para dominio `https://ia.rpj.es`
-**Nota**: Servidor ChromaDB disponible con `python3 backend/scripts/run_chromadb.py` (persistencia en `database/chroma`).
+**Fecha**: 5 de noviembre de 2025  
+**Estado**: Plataforma conversacional conectada a Chutes AI con historial persistente, logs estructurados y eliminación de chats desde la UI. Suite de pruebas (Vitest + E2E) y despliegue vía PM2 actualizados.
+**Nota**: El servidor ChromaDB se mantiene activo con `python3 backend/scripts/run_chromadb.py` (persistencia en `database/chroma`).
