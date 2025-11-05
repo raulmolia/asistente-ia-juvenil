@@ -1,5 +1,11 @@
 # Registro de Desarrollo - Asistente IA para Actividades Juveniles
 
+## Actualización 6 de noviembre de 2025 - UX del compositor y despliegues
+- 🖥️ El compositor de prompts del chat replica el flujo de ChatGPT: envío con Enter, textarea autoajustable y badges de prompts rápidos.
+- 🎨 Paleta oscura (bordes y botones negros) aplicada al cuadro de entrada, al botón `+` y al botón de envío.
+- 🧳 Procedimiento manual de copia de artefactos (`.next/static`, `BUILD_ID`, `public/`) hacia `.next/standalone/.next` documentado tras cada build para evitar 404.
+- 📚 `docs/RESUMEN_SESION.md` actualizado con pasos de despliegue y próximos ajustes.
+
 ## Información del Proyecto
 - **Nombre**: Asistente IA para Actividades Juveniles
 - **Tipo**: Aplicación web tipo ChatGPT

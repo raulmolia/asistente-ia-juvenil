@@ -1,20 +1,26 @@
 "use client"
 
 import Image from "next/image"
-import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { ChangeEvent, FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import type { LucideIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
+    Activity,
     Archive,
+    BookOpen,
     ChevronsLeft,
     ChevronsRight,
     LogOut,
+    ListTodo,
     MessageSquare,
     MoreHorizontal,
     Send,
     Share2,
     Sparkles,
+    CalendarClock,
     Trash2,
     AlertTriangle,
+    Plus,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -67,6 +73,12 @@ type Chat = {
     isLoading?: boolean
 }
 
+type QuickPrompt = {
+    label: string
+    icon: LucideIcon
+    template: string
+}
+
 function createId() {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
         return crypto.randomUUID()
@@ -81,14 +93,6 @@ function formatChatTitle(date: Date): string {
     return `Chat ${formattedDate} - ${formattedTime}h`
 }
 
-function createWelcomeMessage(): ChatMessage {
-    return {
-        id: createId(),
-        role: "asistente",
-        content: "¡Hola! Soy tu asistente para planificar actividades juveniles. Cuéntame la edad de tu grupo y el tipo de actividad que necesitas y te propondré algo a medida.",
-    }
-}
-
 function createLocalChat(): Chat {
     const createdAt = new Date()
     return {
@@ -96,7 +100,7 @@ function createLocalChat(): Chat {
         conversationId: null,
         createdAt,
         title: formatChatTitle(createdAt),
-        messages: [createWelcomeMessage()],
+        messages: [],
         hasLoaded: true,
         intent: null,
     }
@@ -147,6 +151,42 @@ export default function ChatHomePage() {
     const [isDeletingChat, setIsDeletingChat] = useState(false)
     const scrollRef = useRef<HTMLDivElement | null>(null)
     const activeChatIdRef = useRef<string>("")
+    const promptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+    const quickPrompts = useMemo<QuickPrompt[]>(
+        () => [
+            {
+                label: "Actividades",
+                icon: ListTodo,
+                template: "Necesito una actividad para jóvenes de 15 a 17 años centrada en el trabajo en equipo.",
+            },
+            {
+                label: "Dinámicas",
+                icon: Activity,
+                template: "Propón una dinámica rompehielos para un grupo mixto de 30 adolescentes.",
+            },
+            {
+                label: "Programaciones",
+                icon: CalendarClock,
+                template: "Diseña una programación trimestral para un grupo juvenil que se reúne los sábados.",
+            },
+            {
+                label: "Oraciones",
+                icon: BookOpen,
+                template: "Necesito una oración breve para iniciar una reunión de jóvenes de 13 años.",
+            },
+            {
+                label: "Otros",
+                icon: Sparkles,
+                template: "Ayúdame con un recurso creativo para motivar a un grupo juvenil en un campamento.",
+            },
+        ],
+        [],
+    )
+    const [selectedQuickPrompts, setSelectedQuickPrompts] = useState<string[]>([])
+    const selectedQuickPromptItems = useMemo(() => {
+        const labelSet = new Set(selectedQuickPrompts)
+        return quickPrompts.filter((prompt) => labelSet.has(prompt.label))
+    }, [quickPrompts, selectedQuickPrompts])
 
     const activeChat = useMemo(() => chats.find((chat) => chat.id === activeChatId) ?? null, [chats, activeChatId])
     const sidebarChats = useMemo(() => chats.filter((chat) => !chat.archived), [chats])
@@ -355,11 +395,9 @@ export default function ChatHomePage() {
                         return chat
                     }
 
-                    const fallbackMessages = chat.messages.length > 0 ? chat.messages : [createWelcomeMessage()]
-
                     return {
                         ...chat,
-                        messages: messages.length > 0 ? messages : fallbackMessages,
+                        messages: messages.length > 0 ? messages : chat.messages,
                         hasLoaded: true,
                         isLoading: false,
                         intent: conversation?.intencionPrincipal ?? chat.intent ?? null,
@@ -380,8 +418,7 @@ export default function ChatHomePage() {
         }
     }, [token])
 
-    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
+    const submitPrompt = useCallback(async () => {
         if (!inputValue.trim() || isThinking || !activeChat) {
             return
         }
@@ -470,6 +507,33 @@ export default function ChatHomePage() {
         } finally {
             setIsThinking(false)
         }
+    }, [activeChat, fetchConversations, inputValue, isThinking, token])
+
+    const handlePromptKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
+        if (event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
+            return
+        }
+
+        if (event.nativeEvent.isComposing) {
+            return
+        }
+
+        event.preventDefault()
+        void submitPrompt()
+    }, [submitPrompt])
+
+    const handleQuickPromptToggle = useCallback((prompt: QuickPrompt) => {
+        setSelectedQuickPrompts((prev) => {
+            if (prev.includes(prompt.label)) {
+                return prev.filter((label) => label !== prompt.label)
+            }
+            return [...prev, prompt.label]
+        })
+    }, [])
+
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        await submitPrompt()
     }
 
     const handleLogout = async () => {
@@ -533,6 +597,7 @@ export default function ChatHomePage() {
         setIsThinking(false)
         setInputValue("")
         setChatError(null)
+        setSelectedQuickPrompts([])
     }
 
     const handleRequestDeleteChat = (chat: Chat) => {
@@ -666,6 +731,27 @@ export default function ChatHomePage() {
         }
     }, [fetchConversations, status, token])
 
+    const adjustPromptTextareaHeight = useCallback(() => {
+        if (typeof window === "undefined") return
+        const textarea = promptTextareaRef.current
+        if (!textarea) return
+
+        textarea.style.height = "auto"
+
+        const computed = window.getComputedStyle(textarea)
+        const lineHeight = Number.parseFloat(computed.lineHeight || "20") || 20
+        const minHeight = Math.max(lineHeight * 1.6, 44)
+        const maxHeight = lineHeight * 8
+        const nextHeight = Math.min(maxHeight, textarea.scrollHeight)
+
+        textarea.style.height = `${Math.max(nextHeight, minHeight)}px`
+        textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden"
+    }, [])
+
+    useEffect(() => {
+        adjustPromptTextareaHeight()
+    }, [adjustPromptTextareaHeight, inputValue, selectedQuickPrompts, messageCount])
+
     useEffect(() => {
         if (!activeChat?.conversationId) return
         if (activeChat.hasLoaded || activeChat.isLoading) return
@@ -689,6 +775,104 @@ export default function ChatHomePage() {
     }
 
     const sidebarWidthClass = isSidebarCollapsed ? "w-20" : "w-80"
+    const hasMessages = Boolean(activeChat && activeChat.messages.length > 0)
+
+    const renderPromptComposer = (variant: "center" | "bottom") => (
+        <form
+            onSubmit={handleSubmit}
+            className={cn(
+                "w-full",
+                variant === "center" ? "mx-auto max-w-3xl px-4" : "px-8 pb-8 pt-0",
+            )}
+        >
+            <div className="space-y-4">
+                {chatError && (
+                    <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                        <AlertTriangle className="mt-0.5 h-4 w-4" aria-hidden="true" />
+                        <span>{chatError}</span>
+                    </div>
+                )}
+                <div
+                    className={cn(
+                        "flex items-end gap-3 rounded-[32px] border-2 border-black/60 bg-white/95 px-4 py-3 shadow-sm",
+                        "dark:border-white/30 dark:bg-white/5",
+                    )}
+                >
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-full border border-black bg-black text-white hover:bg-black/80 dark:border-white/40"
+                                aria-label="Insertar plantilla"
+                            >
+                                <Plus className="h-5 w-5" aria-hidden="true" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56">
+                            {quickPrompts.map((item) => {
+                                const Icon = item.icon
+                                const isSelected = selectedQuickPrompts.includes(item.label)
+                                return (
+                                    <DropdownMenuItem
+                                        key={item.label}
+                                        className={cn(isSelected && "bg-primary/10 text-primary")}
+                                        onSelect={() => handleQuickPromptToggle(item)}
+                                    >
+                                        <Icon className="mr-2 h-4 w-4 text-primary" aria-hidden="true" />
+                                        {item.label}
+                                    </DropdownMenuItem>
+                                )
+                            })}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <div className="flex flex-1 flex-col gap-1">
+                        {selectedQuickPromptItems.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2">
+                                {selectedQuickPromptItems.map((item) => {
+                                    const Icon = item.icon
+                                    return (
+                                        <button
+                                            key={item.label}
+                                            type="button"
+                                            onClick={() => handleQuickPromptToggle(item)}
+                                            className="flex items-center gap-2 rounded-full border border-black/40 bg-white px-3 py-1 text-xs font-medium text-black transition hover:bg-black/5 dark:border-white/30 dark:bg-transparent"
+                                        >
+                                            <Icon className="h-4 w-4" aria-hidden="true" />
+                                            {item.label}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        )}
+                        <Textarea
+                            ref={promptTextareaRef}
+                            value={inputValue}
+                            onChange={(event) => setInputValue(event.target.value)}
+                            onKeyDown={handlePromptKeyDown}
+                            placeholder=""
+                            className={cn(
+                                "h-auto min-h-0 flex-1 resize-none border-none bg-transparent px-0 py-2 text-sm leading-6 shadow-none",
+                                "focus-visible:ring-0 focus-visible:ring-offset-0",
+                            )}
+                            style={{ overflowY: "hidden" }}
+                            disabled={isThinking || !activeChat}
+                        />
+                    </div>
+                    <Button
+                        type="submit"
+                        size="icon"
+                        className="h-10 w-10 rounded-full bg-black text-white hover:bg-black/80 disabled:bg-zinc-400 disabled:text-zinc-100"
+                        disabled={isThinking || inputValue.trim().length === 0 || !activeChat}
+                        aria-label="Enviar"
+                    >
+                        <Send className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                </div>
+            </div>
+        </form>
+    )
 
     return (
         <div className="flex min-h-screen bg-background text-foreground">
@@ -897,9 +1081,20 @@ export default function ChatHomePage() {
                     </div>
                 </header>
 
-                <section className="flex flex-1 flex-col bg-gradient-to-b from-background via-background to-muted/40 px-8 py-8">
-                    <div className="flex h-full flex-col rounded-3xl border border-border/70 bg-background/90 shadow-xl">
-                        <div ref={scrollRef} className="flex-1 space-y-6 overflow-y-auto px-8 py-8">
+                <section className="flex flex-1 flex-col bg-gradient-to-b from-background via-background to-muted/40">
+                    {!hasMessages ? (
+                        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8">
+                            <div className="flex flex-col items-center gap-3 text-center">
+                                <div className="relative h-14 w-14 overflow-hidden rounded-full bg-white shadow">
+                                    <Image src="/logo.png" alt="RPJ" fill className="object-contain" sizes="56px" />
+                                </div>
+                                <p className="text-lg font-semibold">¿En qué puedo ayudarte?</p>
+                            </div>
+                            {renderPromptComposer("center")}
+                        </div>
+                    ) : (
+                        <div className="flex h-full flex-col">
+                            <div ref={scrollRef} className="flex-1 space-y-6 overflow-y-auto px-8 py-8">
                             {activeChat?.isLoading && activeChat.messages.length === 0 && (
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <Sparkles className="h-4 w-4 animate-pulse" aria-hidden="true" />
@@ -955,41 +1150,9 @@ export default function ChatHomePage() {
                                 </div>
                             )}
                         </div>
-
-                        <form onSubmit={handleSubmit} className="border-t border-border/70 bg-background/80 p-6">
-                            <div className="space-y-4">
-                                {chatError && (
-                                    <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                                        <AlertTriangle className="mt-0.5 h-4 w-4" aria-hidden="true" />
-                                        <span>{chatError}</span>
-                                    </div>
-                                )}
-                                <Textarea
-                                    value={inputValue}
-                                    onChange={(event) => setInputValue(event.target.value)}
-                                    placeholder="Describe la actividad que necesitas. Ejemplo: 'Necesito una dinámica de bienvenida para chicos de 12 a 14 años que fomente la confianza'."
-                                    className={cn(
-                                        "min-h-[140px] resize-none",
-                                        "border-2 border-[rgba(0,152,70,0.35)] bg-white/95",
-                                        "focus-visible:ring-[rgba(0,152,70,0.55)] focus-visible:ring-offset-background",
-                                        "dark:border-[rgba(0,152,70,0.2)] dark:bg-[rgba(0,152,70,0.12)] dark:focus-visible:ring-[rgba(0,152,70,0.35)]",
-                                    )}
-                                    disabled={isThinking || !activeChat}
-                                />
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                        <span className="rounded-full border border-border px-3 py-1">Dinámicas cooperativas</span>
-                                        <span className="rounded-full border border-border px-3 py-1">Programaciones trimestrales</span>
-                                        <span className="rounded-full border border-border px-3 py-1">Oraciones temáticas</span>
-                                    </div>
-                                    <Button type="submit" disabled={isThinking || inputValue.trim().length === 0 || !activeChat}>
-                                        <Send className="mr-2 h-4 w-4" aria-hidden="true" />
-                                        Generar propuesta
-                                    </Button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+                            {renderPromptComposer("bottom")}
+                        </div>
+                    )}
                 </section>
             </main>
             <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>

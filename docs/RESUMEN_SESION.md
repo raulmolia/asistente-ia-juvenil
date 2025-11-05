@@ -1,7 +1,7 @@
 # Resumen técnico de la iteración
-**Fecha:** 5 de noviembre de 2025  
+**Fecha:** 6 de noviembre de 2025  
 **Participantes:** Equipo RPJ + asistente IA  
-**Objetivo:** Cerrar integración del chat con Chutes AI, reforzar observabilidad, pruebas y documentación.
+**Objetivo:** Pulir la experiencia del chat (UX/UI), estabilizar despliegues y dejar constancia documental.
 
 ---
 
@@ -11,7 +11,7 @@
 - **Servicio LLM robusto** (`backend/src/services/llmService.js`) con reintentos, timeouts y logs estructurados.
 - **Fallback controlado** cuando Chutes AI no responde: se registra el fallo y se devuelve mensaje guía.
 - **Eliminación de conversaciones** desde el frontend integrada con `DELETE /api/chat/:id`.
-- **Estilo corporativo** en el textarea de prompts (verde RPJ) con soporte modo claro/oscuro.
+- **Compositor de prompts tipo ChatGPT**: textarea autoajustable con envío por Enter, quick prompts en badges y esquema cromático basado en negros para modo claro/oscuro.
 - **Suite de pruebas**: Vitest (backend) + E2E (frontend) ejecutada y documentada.
 - **Despliegue actualizado** en PM2 tras rebuild de frontend.
 
@@ -39,7 +39,7 @@
 
 ## 3. Frontend
 - `src/app/page.tsx` consume las nuevas rutas REST, gestiona estados y confirma eliminaciones.
-- Input de mensajes con borde verde en modo claro y fondo verde suave en modo oscuro.
+- Compositor de mensajes con borde/botones negros, badges seleccionables y autoajuste hasta 8 líneas.
 - Prueba E2E `frontend/tests/auth-login.e2e.test.tsx` valida login + redirección.
 - Configuración de Vitest (`vitest.config.ts`, `vitest.setup.ts`) con mocks de `next/navigation` y `jest-dom`.
 
@@ -49,6 +49,7 @@
 - `scripts/deploy.sh` ejecutado para reconstruir frontend, copiar artefactos standalone y reiniciar PM2.
 - PM2: servicios `rpjia-backend`, `rpjia-frontend`, `rpjia-chromadb` reiniciados tras cambios.
 - Variables de entorno documentadas (`backend/.env.example`), incluyendo parámetros de Chutes.
+- Copia manual de `.next/static`, `BUILD_ID` y `public/` a `.next/standalone/.next` tras cada build para evitar 404 de activos.
 
 ---
 
@@ -63,7 +64,8 @@
 1. `npm run test --prefix backend`
 2. `npm run test:e2e --prefix frontend`
 3. `npm run build --prefix frontend`
-4. `pm2 restart rpjia-backend && pm2 restart rpjia-frontend`
+4. `rsync` de artefactos `.next/static` hacia `./.next/standalone/.next/static`
+5. `pm2 restart rpjia-backend && pm2 restart rpjia-frontend`
 
 ---
 
@@ -72,5 +74,6 @@
 - Añadir seeds y fixtures para ambientes de staging/QA.
 - Evaluar streaming de respuestas y métricas externas (Prometheus/Grafana).
 - Diseñar informes de uso a partir de los logs estructurados.
+- Automatizar la copia de artefactos `.next/static` dentro de `scripts/deploy.sh`.
 
-**Estado final:** Plataforma desplegada en producción con historial de chat persistente, integración IA estable y documentación actualizada.
+**Estado final:** Plataforma desplegada en producción con historial de chat persistente, integración IA estable, compositor refinado y documentación al día.
