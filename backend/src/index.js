@@ -17,6 +17,9 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Reconoce cabeceras X-Forwarded-* al estar tras un proxy reverso
+app.set('trust proxy', 1);
+
 // Middleware de seguridad
 app.use(helmet({
     contentSecurityPolicy: {

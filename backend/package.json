@@ -11,7 +11,9 @@
         "prisma:generate": "prisma generate",
         "prisma:migrate": "prisma migrate dev",
         "prisma:studio": "prisma studio",
-        "prisma:seed": "node prisma/seed.js"
+        "prisma:seed": "node prisma/seed.js",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "keywords": [
         "nodejs",
@@ -47,7 +49,8 @@
     "devDependencies": {
         "@types/node": "^20.10.0",
         "nodemon": "^3.0.2",
-        "prisma": "^5.7.0"
+        "prisma": "^5.7.0",
+        "vitest": "^1.5.0"
     },
     "engines": {
         "node": ">=18.0.0",

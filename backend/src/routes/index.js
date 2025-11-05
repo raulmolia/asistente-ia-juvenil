@@ -4,6 +4,7 @@ import prismaPackage from '@prisma/client';
 import chromaService from '../services/chromaService.js';
 import authRoutes from './auth.js';
 import documentosRoutes from './documentos.js';
+import chatRoutes from './chat.js';
 
 const { PrismaClient } = prismaPackage;
 
@@ -13,6 +14,7 @@ const prisma = new PrismaClient();
 // Subrutas
 router.use('/auth', authRoutes);
 router.use('/documentos', documentosRoutes);
+router.use('/chat', chatRoutes);
 
 // Ruta de health check
 router.get('/health', async (req, res) => {
@@ -57,7 +59,8 @@ router.get('/info', (req, res) => {
             health: '/api/health',
             info: '/api/info',
             auth: '/api/auth',
-            documentos: '/api/documentos'
+            documentos: '/api/documentos',
+            chat: '/api/chat'
         }
     });
 });

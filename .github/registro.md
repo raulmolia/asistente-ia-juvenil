@@ -512,3 +512,11 @@ Stack de Base de Datos:
 - 🧩 Servicio `chromaService` actualizado para gestionar múltiples colecciones y corregido el log de conexión.
 - 💻 Página `/documentacion` rediseñada con carga vía drag & drop, selección de etiquetas, seguimiento de estado y tabla con badges de colores.
 - 🪪 Acceso limitado a roles `SUPERADMIN`, `ADMINISTRADOR` y `DOCUMENTADOR`, reutilizando el contexto de autenticación existente.
+
+## Actualización 5 de noviembre de 2025 - Ingesta completa en ChromaDB
+
+- 📄 El procesamiento de subida de PDFs guarda ahora el contenido íntegro en la base vectorial, dividiendo el texto en fragmentos solapados para evitar pérdidas por truncado.
+- 🧱 Cada fragmento se almacena con metadatos enriquecidos (`documentoId`, `chunkIndex`, `totalChunks`, `etiquetas`, `nombreOriginal`, tamaño y resumen generado) para facilitar búsquedas semánticas precisas.
+- 🧮 Nuevo soporte en `chromaService` para inserciones masivas (`addDocuments`) reutilizado por el flujo documental.
+- ⚙️ Variables de entorno añadidas (`CHROMA_DOCUMENT_CHUNK_SIZE`, `CHROMA_DOCUMENT_CHUNK_OVERLAP`) para ajustar tamaño y solapamiento de fragmentos según necesidades del entorno.
+- 🗃️ El campo `contenidoExtraido` en MariaDB conserva el texto completo normalizado del PDF, garantizando trazabilidad fuera de Chroma.

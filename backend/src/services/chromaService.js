@@ -79,8 +79,22 @@ class ChromaService {
     }
 
     async addDocument(id, content, metadata = {}, collectionName = null) {
+        return this.addDocuments([
+            {
+                id,
+                document: content,
+                metadata,
+            },
+        ], collectionName);
+    }
+
+    async addDocuments(entries, collectionName = null) {
         if (!this.isAvailable || !this.client) {
-            console.log('⚠️ ChromaDB no disponible, omitiendo documento');
+            console.log('⚠️ ChromaDB no disponible, omitiendo documentos');
+            return false;
+        }
+
+        if (!Array.isArray(entries) || entries.length === 0) {
             return false;
         }
 
@@ -88,14 +102,14 @@ class ChromaService {
             const targetCollection = await this.getOrCreateCollection(collectionName || this.collectionName);
 
             await targetCollection.add({
-                ids: [id],
-                documents: [content],
-                metadatas: [metadata],
+                ids: entries.map((entry) => entry.id),
+                documents: entries.map((entry) => entry.document || ''),
+                metadatas: entries.map((entry) => entry.metadata || {}),
             });
 
             return true;
         } catch (error) {
-            console.error('❌ Error añadiendo documento a ChromaDB:', error.message);
+            console.error('❌ Error añadiendo documentos a ChromaDB:', error.message);
             return false;
         }
     }

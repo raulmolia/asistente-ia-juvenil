@@ -42,6 +42,8 @@ const STORAGE_DIR = process.env.DOCUMENTS_STORAGE_PATH
 const CHROMA_DOCUMENT_COLLECTION = process.env.CHROMA_COLLECTION_DOCUMENTOS || 'rpjia-documentos';
 const MAX_FILE_SIZE_BYTES = parseInt(process.env.DOCUMENTS_MAX_SIZE || `${20 * 1024 * 1024}`, 10); // 20 MB por defecto
 const ALLOWED_MIME_TYPES = new Set(['application/pdf']);
+const CHROMA_DOCUMENT_CHUNK_SIZE = parseInt(process.env.CHROMA_DOCUMENT_CHUNK_SIZE || '1500', 10);
+const CHROMA_DOCUMENT_CHUNK_OVERLAP = parseInt(process.env.CHROMA_DOCUMENT_CHUNK_OVERLAP || '200', 10);
 
 const ETIQUETAS_DISPONIBLES = Object.values(EtiquetaDocumento);
 const ETIQUETA_LABELS = {
@@ -139,6 +141,39 @@ function parseEtiquetas(rawEtiquetas) {
     return uniqueValues;
 }
 
+function splitIntoChunks(text, chunkSize, overlap) {
+    if (!text) return [];
+
+    const safeChunkSize = Math.max(Number.isFinite(chunkSize) ? chunkSize : 1500, 1);
+    const safeOverlap = Math.min(
+        Math.max(Number.isFinite(overlap) ? overlap : 0, 0),
+        safeChunkSize - 1,
+    );
+
+    const chunks = [];
+    const length = text.length;
+    let start = 0;
+
+    while (start < length) {
+        const end = Math.min(start + safeChunkSize, length);
+        const fragment = text.slice(start, end).trim();
+        if (fragment) {
+            chunks.push(fragment);
+        }
+
+        if (end >= length) {
+            break;
+        }
+
+        start = end - safeOverlap;
+        if (start < 0) {
+            start = 0;
+        }
+    }
+
+    return chunks;
+}
+
 function sanitizeDocument(documento) {
     const etiquetas = Array.isArray(documento.etiquetas) ? documento.etiquetas : [];
     return {
@@ -209,6 +244,10 @@ async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileB
         etiquetas,
         titulo,
         fechaRegistro: new Date().toISOString(),
+        documentoId: documento.id,
+        nombreOriginal: documento.nombreOriginal,
+        tamanoBytes: documento.tamanoBytes,
+        tipoMime: documento.tipoMime,
     };
 
     let contenidoExtraido = '';
@@ -221,26 +260,39 @@ async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileB
         throw new Error(`No se pudo extraer el contenido del PDF: ${error.message}`);
     }
 
-    const contenidoLimpiado = contenidoExtraido.replace(/\s+/g, ' ').trim();
-    const descripcionGenerada = await generarDescripcion(titulo, etiquetas, contenidoLimpiado.slice(0, 8000));
+    const contenidoNormalizado = contenidoExtraido
+        .replace(/\u0000/g, '')
+        .replace(/\r\n/g, '\n')
+        .trim();
+    const descripcionGenerada = await generarDescripcion(titulo, etiquetas, contenidoNormalizado.slice(0, 8000));
 
     let vectorOk = false;
-    if (contenidoLimpiado) {
-        const payloadDocumento = JSON.stringify({
-            titulo,
-            etiquetas,
-            contenido: contenidoLimpiado.slice(0, 200000),
-        });
+    let totalChunks = 0;
 
-        vectorOk = await chromaService.addDocument(
-            documento.id,
-            payloadDocumento,
-            {
-                ...metadataBase,
-                resumen: descripcionGenerada,
-            },
-            CHROMA_DOCUMENT_COLLECTION,
+    if (contenidoNormalizado) {
+        const chunks = splitIntoChunks(
+            contenidoNormalizado,
+            CHROMA_DOCUMENT_CHUNK_SIZE,
+            CHROMA_DOCUMENT_CHUNK_OVERLAP,
         );
+
+        totalChunks = chunks.length;
+
+        if (chunks.length > 0) {
+            const entries = chunks.map((chunk, index) => ({
+                id: `${documento.id}#${index}`,
+                document: chunk,
+                metadata: {
+                    ...metadataBase,
+                    resumen: descripcionGenerada,
+                    chunkIndex: index,
+                    totalChunks,
+                    longitudCaracteres: chunk.length,
+                },
+            }));
+
+            vectorOk = await chromaService.addDocuments(entries, CHROMA_DOCUMENT_COLLECTION);
+        }
     }
 
     const actualizado = await prisma.documento.update({
@@ -250,7 +302,7 @@ async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileB
             estadoProcesamiento: EstadoProcesamiento.COMPLETADO,
             mensajeError: null,
             fechaProcesamiento: new Date(),
-            contenidoExtraido: contenidoLimpiado.slice(0, 200000),
+            contenidoExtraido: contenidoNormalizado,
             vectorDocumentoId: vectorOk ? documento.id : null,
             coleccionVectorial: vectorOk ? CHROMA_DOCUMENT_COLLECTION : null,
         },

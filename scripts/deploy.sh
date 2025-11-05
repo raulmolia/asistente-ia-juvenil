@@ -36,6 +36,12 @@ step "Aplicando migraciones Prisma"
 step "Compilando frontend"
 npm run build --prefix frontend
 
+step "Preparando artefactos frontend standalone"
+rm -rf frontend/.next/standalone/.next/static frontend/.next/standalone/public
+mkdir -p frontend/.next/standalone/.next
+cp -R frontend/.next/static frontend/.next/standalone/.next/static
+cp -R frontend/public frontend/.next/standalone/public
+
 step "Reiniciando orquestación PM2"
 npx pm2 start ecosystem.config.js --update-env
 npx pm2 save

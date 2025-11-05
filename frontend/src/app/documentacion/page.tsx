@@ -94,6 +94,7 @@ export default function DocumentacionPage() {
     const [dropping, setDropping] = useState(false)
     const [feedback, setFeedback] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [activeView, setActiveView] = useState<"upload" | "library">("upload")
 
     const canAccess = useMemo(
         () => Boolean(isAuthenticated && user && ALLOWED_ROLES.has(user.rol ?? "")),
@@ -311,17 +312,32 @@ export default function DocumentacionPage() {
                     {feedback && <p className="text-sm text-primary" role="status">{feedback}</p>}
                     {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
                 </div>
-                <div className="flex items-center gap-2">
-                    <ThemeToggleButton />
-                    <Button variant="ghost" asChild>
-                        <Link href="/docs/README.md" target="_blank" rel="noreferrer">
-                            Ver índice local
-                        </Link>
-                    </Button>
-                </div>
+                <ThemeToggleButton />
             </header>
 
-            <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+            <nav className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                    <Button
+                        type="button"
+                        variant={activeView === "upload" ? "default" : "outline"}
+                        onClick={() => setActiveView("upload")}
+                        aria-pressed={activeView === "upload"}
+                    >
+                        Subir documentos
+                    </Button>
+                    <Button
+                        type="button"
+                        variant={activeView === "library" ? "default" : "outline"}
+                        onClick={() => setActiveView("library")}
+                        aria-pressed={activeView === "library"}
+                    >
+                        Biblioteca documental
+                    </Button>
+                </div>
+                <Button variant="ghost" onClick={() => router.push("/")}>Volver al chat</Button>
+            </nav>
+
+            {activeView === "upload" ? (
                 <form
                     className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm"
                     onSubmit={handleSubmit}
@@ -431,8 +447,11 @@ export default function DocumentacionPage() {
                             )}
                         </Button>
                     </div>
+                    <div className="mt-6 flex justify-end lg:hidden">
+                        <Button variant="ghost" onClick={() => setActiveView("library")}>Ir a la biblioteca</Button>
+                    </div>
                 </form>
-
+            ) : (
                 <section className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm">
                     <header className="flex items-center justify-between gap-3">
                         <div>
@@ -538,8 +557,11 @@ export default function DocumentacionPage() {
                             </tbody>
                         </table>
                     </div>
+                    <div className="mt-6 flex justify-end lg:hidden">
+                        <Button variant="ghost" onClick={() => setActiveView("upload")}>Subir un nuevo documento</Button>
+                    </div>
                 </section>
-            </section>
+            )}
 
             <section className="rounded-2xl border border-dashed border-border/70 bg-muted/30 p-6 text-sm text-muted-foreground">
                 <p>

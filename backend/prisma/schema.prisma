@@ -9,6 +9,7 @@ generator client {
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 // Modelo de usuarios
@@ -49,6 +50,7 @@ model Usuario {
   configuraciones ConfiguracionUsuario[]
   favoritos       ActividadFavorita[]
   documentos      Documento[]
+  conversaciones  Conversacion[]
   
   @@map("usuarios")
 }
@@ -219,6 +221,41 @@ model Documento {
   @@index([estadoProcesamiento], name: "idx_documentos_estado")
 }
 
+// Conversaciones del chat IA
+model Conversacion {
+  id                 String              @id @default(cuid())
+  usuarioId          String?
+  titulo             String?
+  descripcion        String?
+  intencionPrincipal String?
+  fechaCreacion      DateTime            @default(now())
+  fechaActualizacion DateTime            @updatedAt
+
+  usuario            Usuario?            @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  mensajes           MensajeConversacion[]
+
+  @@map("conversaciones")
+  @@index([usuarioId], name: "idx_conversaciones_usuario")
+}
+
+model MensajeConversacion {
+  id             String         @id @default(cuid())
+  conversacionId String
+  rol            RolMensaje
+  contenido      String         @db.LongText
+  intencion      String?
+  tokensEntrada  Int?
+  tokensSalida   Int?
+  duracionMs     Int?
+  metadatos      Json?
+  fechaCreacion  DateTime       @default(now())
+
+  conversacion   Conversacion   @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+
+  @@map("mensajes_conversacion")
+  @@index([conversacionId], name: "idx_mensajes_conversacion_conversacionId")
+}
+
 // Enum de estado de procesamiento documental
 enum EstadoProcesamiento {
   PENDIENTE
@@ -235,4 +272,10 @@ enum EtiquetaDocumento {
   REVISTAS
   CONTENIDO_MIXTO
   OTROS
+}
+
+enum RolMensaje {
+  USUARIO
+  ASISTENTE
+  SISTEMA
 }

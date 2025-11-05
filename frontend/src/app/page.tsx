@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react"
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
     Archive,
@@ -42,7 +42,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { useAuth } from "@/hooks/use-auth"
-import { cn } from "@/lib/utils"
+import { cn, buildApiUrl } from "@/lib/utils"
 import { ThemeToggleButton } from "@/components/theme-toggle"
 
 type MessageRole = "usuario" | "asistente"
@@ -51,14 +51,20 @@ type ChatMessage = {
     id: string
     role: MessageRole
     content: string
+    createdAt?: string
+    pending?: boolean
 }
 
 type Chat = {
     id: string
+    conversationId: string | null
     title: string
     createdAt: Date
     messages: ChatMessage[]
     archived?: boolean
+    intent?: string | null
+    hasLoaded?: boolean
+    isLoading?: boolean
 }
 
 function createId() {
@@ -69,66 +75,36 @@ function createId() {
     return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-function buildSampleResponse(prompt: string): string {
-    return [
-        "Aquí tienes una propuesta rápida:",
-        "1. **Objetivo**: fomentar el trabajo en equipo y la confianza.",
-        "2. **Actividad**: dinámica 'Misión cooperación' adaptada a tu grupo.",
-        "3. **Materiales**: conos, cuerdas, antifaces y cronómetro.",
-        "4. **Duración**: 45 minutos con fases de reflexión y cierre.",
-        `Detalle adicional basado en tu petición: ${prompt.slice(0, 160)}${prompt.length > 160 ? "…" : ""}`,
-        "Si quieres otra propuesta o una variante, ¡pídemelo!",
-    ].join("\n")
-}
-
-const demoMessages: ChatMessage[] = [
-    {
-        id: createId(),
-        role: "asistente",
-        content: "¡Hola! Soy tu asistente para planificar actividades juveniles. Cuéntame la edad de tu grupo y el tipo de actividad que necesitas y te propondré algo a medida.",
-    },
-]
-
-function cloneMessages(messages: ChatMessage[]): ChatMessage[] {
-    return messages.map((message) => ({ ...message, id: createId() }))
-}
-
 function formatChatTitle(date: Date): string {
     const formattedDate = date.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit" })
     const formattedTime = date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false })
     return `Chat ${formattedDate} - ${formattedTime}h`
 }
 
-function createInitialChats(): Chat[] {
-    const now = new Date()
-    const firstChatDate = new Date(now.getTime() - 1000 * 60 * 5)
-    const secondChatDate = new Date(now.getTime() - 1000 * 60 * 120)
+function createWelcomeMessage(): ChatMessage {
+    return {
+        id: createId(),
+        role: "asistente",
+        content: "¡Hola! Soy tu asistente para planificar actividades juveniles. Cuéntame la edad de tu grupo y el tipo de actividad que necesitas y te propondré algo a medida.",
+    }
+}
 
-    return [
-        {
-            id: createId(),
-            createdAt: firstChatDate,
-            title: formatChatTitle(firstChatDate),
-            messages: cloneMessages(demoMessages),
-        },
-        {
-            id: createId(),
-            createdAt: secondChatDate,
-            title: formatChatTitle(secondChatDate),
-            messages: [
-                {
-                    id: createId(),
-                    role: "usuario",
-                    content: "¿Puedes proponer una dinámica breve para jóvenes de 15 años que fomente la confianza?",
-                },
-                {
-                    id: createId(),
-                    role: "asistente",
-                    content: buildSampleResponse("Dinámica breve para jóvenes de 15 años que fomente la confianza."),
-                },
-            ],
-        },
-    ]
+function createLocalChat(): Chat {
+    const createdAt = new Date()
+    return {
+        id: createId(),
+        conversationId: null,
+        createdAt,
+        title: formatChatTitle(createdAt),
+        messages: [createWelcomeMessage()],
+        hasLoaded: true,
+        intent: null,
+    }
+}
+
+function toFrontendRole(role: string | null | undefined): MessageRole {
+    if (role === "assistant") return "asistente"
+    return "usuario"
 }
 
 type ProfileFormState = {
@@ -143,15 +119,10 @@ type ProfileFormState = {
 
 export default function ChatHomePage() {
     const router = useRouter()
-    const { user, status, isAuthenticated, logout, updateProfile } = useAuth()
-    const initialChatsRef = useRef<Chat[]>([])
+    const { user, status, isAuthenticated, token, logout, updateProfile } = useAuth()
 
-    if (initialChatsRef.current.length === 0) {
-        initialChatsRef.current = createInitialChats()
-    }
-
-    const [chats, setChats] = useState<Chat[]>(initialChatsRef.current)
-    const [activeChatId, setActiveChatId] = useState<string>(initialChatsRef.current[0]?.id ?? "")
+    const [chats, setChats] = useState<Chat[]>([])
+    const [activeChatId, setActiveChatId] = useState<string>("")
     const [inputValue, setInputValue] = useState("")
     const [isThinking, setIsThinking] = useState(false)
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -171,7 +142,11 @@ export default function ChatHomePage() {
     const [profileFeedback, setProfileFeedback] = useState<string | null>(null)
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [chatPendingDeletion, setChatPendingDeletion] = useState<Chat | null>(null)
+    const [loadingConversations, setLoadingConversations] = useState(false)
+    const [chatError, setChatError] = useState<string | null>(null)
+    const [isDeletingChat, setIsDeletingChat] = useState(false)
     const scrollRef = useRef<HTMLDivElement | null>(null)
+    const activeChatIdRef = useRef<string>("")
 
     const activeChat = useMemo(() => chats.find((chat) => chat.id === activeChatId) ?? null, [chats, activeChatId])
     const sidebarChats = useMemo(() => chats.filter((chat) => !chat.archived), [chats])
@@ -210,6 +185,7 @@ export default function ChatHomePage() {
         }
     }, [router, status])
 
+
     useEffect(() => {
         if (!activeChatId) {
             const firstActiveChat = chats.find((chat) => !chat.archived)
@@ -220,10 +196,23 @@ export default function ChatHomePage() {
     }, [activeChatId, chats])
 
     useEffect(() => {
+        if (status === "authenticated" && !loadingConversations && chats.length === 0) {
+            const newChat = createLocalChat()
+            setChats([newChat])
+            setActiveChatId(newChat.id)
+        }
+    }, [chats.length, loadingConversations, status])
+
+    useEffect(() => {
+        activeChatIdRef.current = activeChatId
+    }, [activeChatId])
+
+    useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight
         }
     }, [messageCount, isThinking, activeChatId])
+
 
     useEffect(() => {
         if (!shareFeedback) return
@@ -254,20 +243,167 @@ export default function ChatHomePage() {
         return () => clearTimeout(timeout)
     }, [profileFeedback])
 
-    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const fetchConversations = useCallback(async () => {
+        if (!token) return
+
+        setLoadingConversations(true)
+        setChatError(null)
+
+        try {
+            const response = await fetch(buildApiUrl("/api/chat"), {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                cache: "no-store",
+            })
+
+            if (!response.ok) {
+                const message = await response.text()
+                throw new Error(message || "No se pudieron cargar las conversaciones")
+            }
+
+            const data = await response.json()
+            const conversations: Array<any> = Array.isArray(data?.conversations) ? data.conversations : []
+            let nextChats: Chat[] = []
+
+            setChats((prevChats) => {
+                const unsaved = prevChats.filter((chat) => !chat.conversationId)
+                const existingMap = new Map(
+                    prevChats
+                        .filter((chat) => chat.conversationId)
+                        .map((chat) => [chat.conversationId as string, chat]),
+                )
+
+                const mapped = conversations.map((conversation) => {
+                    const createdAt = conversation.fechaCreacion ? new Date(conversation.fechaCreacion) : new Date()
+                    const existing = existingMap.get(conversation.id)
+
+                    if (existing) {
+                        return {
+                            ...existing,
+                            conversationId: conversation.id,
+                            title: conversation.titulo ?? existing.title,
+                            intent: conversation.intencionPrincipal ?? existing.intent,
+                            createdAt,
+                        }
+                    }
+
+                    return {
+                        id: conversation.id,
+                        conversationId: conversation.id,
+                        title: conversation.titulo ?? formatChatTitle(createdAt),
+                        createdAt,
+                        messages: [],
+                        hasLoaded: false,
+                        intent: conversation.intencionPrincipal ?? null,
+                    } satisfies Chat
+                })
+
+                nextChats = [...unsaved, ...mapped]
+                return nextChats
+            })
+
+            if (!activeChatIdRef.current && nextChats.length > 0) {
+                setActiveChatId(nextChats[0]?.id ?? "")
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "No se pudieron cargar las conversaciones"
+            setChatError(message)
+        } finally {
+            setLoadingConversations(false)
+        }
+    }, [token])
+
+    const loadConversationMessages = useCallback(async (conversationId: string) => {
+        if (!token || !conversationId) return
+
+        setChats((prevChats) =>
+            prevChats.map((chat) =>
+                chat.conversationId === conversationId
+                    ? { ...chat, isLoading: true }
+                    : chat,
+            ),
+        )
+
+        try {
+            const response = await fetch(buildApiUrl(`/api/chat/${conversationId}`), {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                cache: "no-store",
+            })
+
+            if (!response.ok) {
+                const message = await response.text()
+                throw new Error(message || "No se pudo cargar la conversación")
+            }
+
+            const data = await response.json()
+            const conversation = data?.conversation
+            const messages: ChatMessage[] = Array.isArray(data?.messages)
+                ? data.messages.map((msg: any) => ({
+                    id: msg.id,
+                    role: toFrontendRole(msg.role),
+                    content: msg.content,
+                    createdAt: msg.fechaCreacion,
+                }))
+                : []
+
+            setChats((prevChats) =>
+                prevChats.map((chat) => {
+                    if (chat.conversationId !== conversationId) {
+                        return chat
+                    }
+
+                    const fallbackMessages = chat.messages.length > 0 ? chat.messages : [createWelcomeMessage()]
+
+                    return {
+                        ...chat,
+                        messages: messages.length > 0 ? messages : fallbackMessages,
+                        hasLoaded: true,
+                        isLoading: false,
+                        intent: conversation?.intencionPrincipal ?? chat.intent ?? null,
+                        title: conversation?.titulo ?? chat.title,
+                    }
+                }),
+            )
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "No se pudo cargar la conversación"
+            setChatError(message)
+            setChats((prevChats) =>
+                prevChats.map((chat) =>
+                    chat.conversationId === conversationId
+                        ? { ...chat, isLoading: false }
+                        : chat,
+                ),
+            )
+        }
+    }, [token])
+
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         if (!inputValue.trim() || isThinking || !activeChat) {
             return
         }
 
+        if (!token) {
+            setChatError("No hay sesión activa")
+            return
+        }
+
         const prompt = inputValue.trim()
         setInputValue("")
+        setChatError(null)
+
         const chatId = activeChat.id
+        const previousConversationId = activeChat.conversationId
+        const previousIntent = activeChat.intent
 
         const userMessage: ChatMessage = {
             id: createId(),
             role: "usuario",
             content: prompt,
+            createdAt: new Date().toISOString(),
         }
 
         setChats((prevChats) =>
@@ -283,11 +419,32 @@ export default function ChatHomePage() {
 
         setIsThinking(true)
 
-        setTimeout(() => {
+        try {
+            const response = await fetch(buildApiUrl("/api/chat"), {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    conversationId: previousConversationId,
+                    message: prompt,
+                    intent: previousIntent,
+                }),
+            })
+
+            const data = await response.json().catch(() => null)
+
+            if (!response.ok || !data?.message?.content) {
+                const message = data?.message || data?.error || "No se pudo generar la respuesta"
+                throw new Error(typeof message === "string" ? message : "No se pudo generar la respuesta")
+            }
+
             const assistantMessage: ChatMessage = {
                 id: createId(),
                 role: "asistente",
-                content: buildSampleResponse(prompt),
+                content: data.message.content,
+                createdAt: new Date().toISOString(),
             }
 
             setChats((prevChats) =>
@@ -295,13 +452,24 @@ export default function ChatHomePage() {
                     chat.id === chatId
                         ? {
                             ...chat,
+                            conversationId: data.conversationId ?? chat.conversationId,
+                            intent: data.intent ?? chat.intent ?? null,
                             messages: [...chat.messages, assistantMessage],
+                            hasLoaded: true,
                         }
                         : chat,
                 ),
             )
+
+            if (!previousConversationId && data.conversationId) {
+                fetchConversations()
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "No se pudo generar la respuesta"
+            setChatError(message)
+        } finally {
             setIsThinking(false)
-        }, 950)
+        }
     }
 
     const handleLogout = async () => {
@@ -351,21 +519,20 @@ export default function ChatHomePage() {
 
     const handleSelectChat = (chatId: string) => {
         setActiveChatId(chatId)
+        const targetChat = chats.find((chat) => chat.id === chatId)
+        if (targetChat?.conversationId && !targetChat.hasLoaded && !targetChat.isLoading) {
+            void loadConversationMessages(targetChat.conversationId)
+        }
     }
 
     const handleCreateNewChat = () => {
-        const createdAt = new Date()
-        const newChat: Chat = {
-            id: createId(),
-            createdAt,
-            title: formatChatTitle(createdAt),
-            messages: cloneMessages(demoMessages),
-        }
+        const newChat = createLocalChat()
 
         setChats((prevChats) => [newChat, ...prevChats])
         setActiveChatId(newChat.id)
         setIsThinking(false)
         setInputValue("")
+        setChatError(null)
     }
 
     const handleRequestDeleteChat = (chat: Chat) => {
@@ -378,12 +545,42 @@ export default function ChatHomePage() {
         setChatPendingDeletion(null)
     }
 
-    const handleConfirmDeleteChat = () => {
+    const handleConfirmDeleteChat = async () => {
         if (!chatPendingDeletion) {
             return
         }
 
-        const chatId = chatPendingDeletion.id
+        const { conversationId, id: chatId } = chatPendingDeletion
+
+        if (conversationId && !token) {
+            setChatError("No hay sesión activa. Vuelve a iniciar sesión e inténtalo de nuevo.")
+            return
+        }
+
+        if (conversationId && token) {
+            setIsDeletingChat(true)
+            try {
+                const response = await fetch(buildApiUrl(`/api/chat/${conversationId}`), {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                })
+
+                if (!response.ok) {
+                    const body = await response.json().catch(() => null)
+                    const message = body?.message || body?.error || "No se pudo eliminar el chat"
+                    throw new Error(message)
+                }
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "No se pudo eliminar el chat"
+                setChatError(message)
+                return
+            } finally {
+                setIsDeletingChat(false)
+            }
+        }
+
         let nextActiveChatId = activeChatId === chatId ? "" : activeChatId
 
         setChats((prevChats) => {
@@ -399,8 +596,10 @@ export default function ChatHomePage() {
             setActiveChatId(nextActiveChatId)
         }
 
+        setChatError(null)
         setIsDeleteDialogOpen(false)
         setChatPendingDeletion(null)
+        setIsDeletingChat(false)
     }
 
     const handleArchiveChat = (chatId: string) => {
@@ -460,6 +659,19 @@ export default function ChatHomePage() {
             setShareFeedback("No se pudo copiar la conversación")
         }
     }
+
+    useEffect(() => {
+        if (status === "authenticated" && token) {
+            void fetchConversations()
+        }
+    }, [fetchConversations, status, token])
+
+    useEffect(() => {
+        if (!activeChat?.conversationId) return
+        if (activeChat.hasLoaded || activeChat.isLoading) return
+
+        void loadConversationMessages(activeChat.conversationId)
+    }, [activeChat?.conversationId, activeChat?.hasLoaded, activeChat?.isLoading, loadConversationMessages])
 
     if (status === "loading") {
         return (
@@ -688,6 +900,13 @@ export default function ChatHomePage() {
                 <section className="flex flex-1 flex-col bg-gradient-to-b from-background via-background to-muted/40 px-8 py-8">
                     <div className="flex h-full flex-col rounded-3xl border border-border/70 bg-background/90 shadow-xl">
                         <div ref={scrollRef} className="flex-1 space-y-6 overflow-y-auto px-8 py-8">
+                            {activeChat?.isLoading && activeChat.messages.length === 0 && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Sparkles className="h-4 w-4 animate-pulse" aria-hidden="true" />
+                                    <span>Cargando conversación…</span>
+                                </div>
+                            )}
+
                             {activeChat && activeChat.messages.map((message) => (
                                 <div
                                     key={message.id}
@@ -739,11 +958,22 @@ export default function ChatHomePage() {
 
                         <form onSubmit={handleSubmit} className="border-t border-border/70 bg-background/80 p-6">
                             <div className="space-y-4">
+                                {chatError && (
+                                    <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                                        <AlertTriangle className="mt-0.5 h-4 w-4" aria-hidden="true" />
+                                        <span>{chatError}</span>
+                                    </div>
+                                )}
                                 <Textarea
                                     value={inputValue}
                                     onChange={(event) => setInputValue(event.target.value)}
                                     placeholder="Describe la actividad que necesitas. Ejemplo: 'Necesito una dinámica de bienvenida para chicos de 12 a 14 años que fomente la confianza'."
-                                    className="min-h-[140px] resize-none"
+                                    className={cn(
+                                        "min-h-[140px] resize-none",
+                                        "border-2 border-[rgba(0,152,70,0.35)] bg-white/95",
+                                        "focus-visible:ring-[rgba(0,152,70,0.55)] focus-visible:ring-offset-background",
+                                        "dark:border-[rgba(0,152,70,0.2)] dark:bg-[rgba(0,152,70,0.12)] dark:focus-visible:ring-[rgba(0,152,70,0.35)]",
+                                    )}
                                     disabled={isThinking || !activeChat}
                                 />
                                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -867,8 +1097,13 @@ export default function ChatHomePage() {
                         <Button type="button" variant="outline" onClick={handleCancelDeleteChat}>
                             Cancelar
                         </Button>
-                        <Button type="button" variant="destructive" onClick={handleConfirmDeleteChat}>
-                            Eliminar definitivamente
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={handleConfirmDeleteChat}
+                            disabled={isDeletingChat}
+                        >
+                            {isDeletingChat ? "Eliminando..." : "Eliminar definitivamente"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
