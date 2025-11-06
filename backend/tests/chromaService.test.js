@@ -2,16 +2,22 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import chromaService from '../src/services/chromaService.js';
 
 describe('chromaService.searchSimilar', () => {
+    const originalEmbeddingFunction = chromaService.embeddingFunction;
+
     beforeEach(() => {
         chromaService.collections.clear();
         chromaService.client = null;
         chromaService.isAvailable = false;
+        chromaService.embeddingFunction = {
+            generate: vi.fn(async (inputs) => inputs.map(() => [0.1, 0.2, 0.3])),
+        };
     });
 
     afterEach(() => {
         chromaService.collections.clear();
         chromaService.client = null;
         chromaService.isAvailable = false;
+        chromaService.embeddingFunction = originalEmbeddingFunction;
     });
 
     it('devuelve arreglo vacío cuando Chroma no está disponible', async () => {

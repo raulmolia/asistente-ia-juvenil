@@ -40,10 +40,18 @@ const STORAGE_DIR = process.env.DOCUMENTS_STORAGE_PATH
     : path.resolve(__dirname, '../../storage/documentos');
 
 const CHROMA_DOCUMENT_COLLECTION = process.env.CHROMA_COLLECTION_DOCUMENTOS || 'rpjia-documentos';
-const MAX_FILE_SIZE_BYTES = parseInt(process.env.DOCUMENTS_MAX_SIZE || `${20 * 1024 * 1024}`, 10); // 20 MB por defecto
+const DEFAULT_MAX_FILE_SIZE_BYTES = 40 * 1024 * 1024;
+const configuredMaxFileSize = Number.parseInt(
+    process.env.DOCUMENTS_MAX_SIZE || `${DEFAULT_MAX_FILE_SIZE_BYTES}`,
+    10,
+);
+const MAX_FILE_SIZE_BYTES = Number.isFinite(configuredMaxFileSize) && configuredMaxFileSize > 0
+    ? Math.max(configuredMaxFileSize, DEFAULT_MAX_FILE_SIZE_BYTES)
+    : DEFAULT_MAX_FILE_SIZE_BYTES;
 const ALLOWED_MIME_TYPES = new Set(['application/pdf']);
 const CHROMA_DOCUMENT_CHUNK_SIZE = parseInt(process.env.CHROMA_DOCUMENT_CHUNK_SIZE || '1500', 10);
 const CHROMA_DOCUMENT_CHUNK_OVERLAP = parseInt(process.env.CHROMA_DOCUMENT_CHUNK_OVERLAP || '200', 10);
+const CHROMA_DOCUMENT_MAX_CHUNKS = parseInt(process.env.CHROMA_DOCUMENT_MAX_CHUNKS || '200', 10);
 
 const ETIQUETAS_DISPONIBLES = Object.values(EtiquetaDocumento);
 const ETIQUETA_LABELS = {
@@ -110,6 +118,37 @@ const upload = multer({
     },
 });
 
+function handleUpload(req, res, next) {
+    upload.single('archivo')(req, res, (error) => {
+        if (!error) {
+            next();
+            return;
+        }
+
+        if (error instanceof multer.MulterError) {
+            if (error.code === 'LIMIT_FILE_SIZE') {
+                const limitMb = (MAX_FILE_SIZE_BYTES / (1024 * 1024)).toFixed(1);
+                res.status(413).json({
+                    error: 'Archivo demasiado grande',
+                    message: `El archivo supera el límite permitido de ${limitMb} MB`,
+                });
+                return;
+            }
+
+            res.status(400).json({
+                error: 'Error al subir el archivo',
+                message: `Error de carga (${error.code}). Intenta de nuevo o usa otro archivo`,
+            });
+            return;
+        }
+
+        res.status(400).json({
+            error: 'Archivo inválido',
+            message: error.message || 'No se pudo procesar el archivo subido',
+        });
+    });
+}
+
 function parseEtiquetas(rawEtiquetas) {
     if (!rawEtiquetas) return [];
 
@@ -172,6 +211,33 @@ function splitIntoChunks(text, chunkSize, overlap) {
     }
 
     return chunks;
+}
+
+function mergeChunksToLimit(chunks, maxChunks) {
+    if (!Array.isArray(chunks) || chunks.length === 0) {
+        return { mergedChunks: [], mergeFactor: 1 };
+    }
+
+    const safeLimit = Math.max(Number.isFinite(maxChunks) ? maxChunks : 0, 0);
+
+    if (safeLimit === 0 || chunks.length <= safeLimit) {
+        return { mergedChunks: chunks, mergeFactor: 1 };
+    }
+
+    const mergeFactor = Math.ceil(chunks.length / safeLimit);
+    const mergedChunks = [];
+
+    for (let index = 0; index < chunks.length; index += mergeFactor) {
+        const fragment = chunks.slice(index, index + mergeFactor).join('\n\n').trim();
+        if (fragment) {
+            mergedChunks.push(fragment);
+        }
+    }
+
+    return {
+        mergedChunks,
+        mergeFactor,
+    };
 }
 
 function sanitizeDocument(documento) {
@@ -241,7 +307,8 @@ async function generarDescripcion(titulo, etiquetas, contenido) {
 async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileBuffer }) {
     const metadataBase = {
         tipo: 'documento',
-        etiquetas,
+        etiquetas: etiquetas.join(',') || null,
+        etiquetas_json: JSON.stringify(etiquetas),
         titulo,
         fechaRegistro: new Date().toISOString(),
         documentoId: documento.id,
@@ -268,13 +335,29 @@ async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileB
 
     let vectorOk = false;
     let totalChunks = 0;
+    let mergeFactor = 1;
+    let originalChunkCount = 0;
 
     if (contenidoNormalizado) {
-        const chunks = splitIntoChunks(
+        let chunks = splitIntoChunks(
             contenidoNormalizado,
             CHROMA_DOCUMENT_CHUNK_SIZE,
             CHROMA_DOCUMENT_CHUNK_OVERLAP,
         );
+
+        originalChunkCount = chunks.length;
+
+        if (chunks.length > 0 && Number.isFinite(CHROMA_DOCUMENT_MAX_CHUNKS) && CHROMA_DOCUMENT_MAX_CHUNKS > 0 && chunks.length > CHROMA_DOCUMENT_MAX_CHUNKS) {
+            const result = mergeChunksToLimit(chunks, CHROMA_DOCUMENT_MAX_CHUNKS);
+            if (result.mergedChunks.length > 0) {
+                console.warn(
+                    `⚠️ Documento ${documento.id} generó ${chunks.length} fragmentos. `
+                    + `Agrupando en ${result.mergedChunks.length} fragmentos (factor ${result.mergeFactor}).`,
+                );
+                chunks = result.mergedChunks;
+                mergeFactor = result.mergeFactor;
+            }
+        }
 
         totalChunks = chunks.length;
 
@@ -287,6 +370,8 @@ async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileB
                     resumen: descripcionGenerada,
                     chunkIndex: index,
                     totalChunks,
+                    chunksOriginales: originalChunkCount || totalChunks,
+                    factorAgrupacion: mergeFactor,
                     longitudCaracteres: chunk.length,
                 },
             }));
@@ -351,7 +436,7 @@ router.post(
     '/',
     authenticate,
     authorize(['DOCUMENTADOR']),
-    upload.single('archivo'),
+    handleUpload,
     async (req, res) => {
         if (!req.file) {
             return res.status(400).json({
@@ -421,5 +506,7 @@ router.post(
         }
     },
 );
+
+export { procesarDocumento };
 
 export default router;

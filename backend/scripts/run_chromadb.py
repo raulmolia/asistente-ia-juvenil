@@ -30,7 +30,7 @@ def main() -> None:
     port = int(os.environ.get("CHROMA_PORT", "8000"))
     persist_directory = os.environ.get(
         "CHROMA_PERSIST_PATH",
-        "/var/www/vhosts/practical-chatelet.217-154-99-32.plesk.page/httpdocs/database/chroma",
+        "/var/www/vhosts/ia.rpj.es/httpdocs/database/chroma",
     )
 
     # Configuración de entorno esperada por el servidor oficial.

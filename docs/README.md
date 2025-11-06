@@ -30,6 +30,6 @@ Ver también el [registro completo de desarrollo](../.github/registro.md) en `.g
 
 ## 🔄 Última Actualización
 
-**Fecha**: 5 de noviembre de 2025  
-**Estado**: Plataforma conversacional conectada a Chutes AI con historial persistente, logs estructurados y eliminación de chats desde la UI. Suite de pruebas (Vitest + E2E) y despliegue vía PM2 actualizados.
-**Nota**: El servidor ChromaDB se mantiene activo con `python3 backend/scripts/run_chromadb.py` (persistencia en `database/chroma`).
+**Fecha**: 6 de noviembre de 2025  
+**Estado**: Subida de PDFs validada end-to-end, script de reprocesado documental en producción y almacenamiento vectorial depurado de duplicados. Suite de pruebas backend (Vitest) ejecutada tras la limpieza y PM2 operativo.
+**Nota**: El servidor ChromaDB se mantiene activo con `python3 backend/scripts/run_chromadb.py` (persistencia en `database/chroma`). Ejecutar `node backend/scripts/reprocesar_documentos.js` para reintentos puntuales.

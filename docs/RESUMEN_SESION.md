@@ -77,3 +77,16 @@
 - Automatizar la copia de artefactos `.next/static` dentro de `scripts/deploy.sh`.
 
 **Estado final:** Plataforma desplegada en producción con historial de chat persistente, integración IA estable, compositor refinado y documentación al día.
+
+---
+
+## 8. Subida documental y limpieza vectorial (6 de noviembre de 2025 – tarde)
+- **Validación end-to-end del upload**: se creó un usuario `DOCUMENTADOR` de pruebas con sesión y JWT manuales para realizar peticiones autenticadas directas contra `POST /api/documentos`. Con un PDF real (`dummy.pdf`) el backend respondió `201` y vectorizó correctamente; los archivos sintéticos de prueba siguen devolviendo `500` con el mensaje `Invalid PDF structure`, confirmando que el parser `pdf-parse` actúa según lo esperado frente a binarios corruptos.
+- **Script de reprocesado puntual**: se añadió `backend/scripts/reprocesar_documentos.js` para relanzar el pipeline sobre documentos atascados en estado `PROCESANDO`. El script inicializa ChromaDB y reutiliza `procesarDocumento` para normalizar estados y registrar errores coherentes.
+- **Limpieza de históricos**: mediante un script temporal se eliminaron 14 registros duplicados o fallidos (estados `PROCESANDO`/`ERROR`) junto con sus ficheros en `storage/documentos`. Se conservaron únicamente 7 documentos completados (6 de producción + `dummy.pdf`) evitando inconsistencias en la colección vectorial.
+- **Verificación posterior**: `scripts/reprocesar_documentos.js` confirma que no quedan documentos pendientes, y la carpeta `backend/storage/documentos` contiene únicamente los PDFs válidos. Se ejecutó `npm run test` (Vitest) sin fallos tras la limpieza.
+
+### Observaciones y próximos pasos
+- Revisar la subida desde el frontend con PDFs reales para asegurar que la capa UI no esté manipulando los archivos (posibles compresiones/transformaciones).
+- Añadir validaciones tempranas de cabecera (`%PDF`) en el backend para devolver `415`/`400` antes de invocar `pdf-parse` y mejorar la experiencia de error.
+- Programar una tarea periódica (cron/PM2) que ejecute el script de limpieza/reprocesado y alerte sobre documentos bloqueados.

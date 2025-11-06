@@ -39,6 +39,7 @@ const limiter = rateLimit({
     message: {
         error: 'Demasiadas solicitudes desde esta IP, inténtalo de nuevo más tarde.',
     },
+    trustProxy: true,
 });
 app.use('/api/', limiter);
 
