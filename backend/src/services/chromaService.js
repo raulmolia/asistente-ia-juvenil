@@ -11,8 +11,22 @@ class ChromaService {
         this.isAvailable = false;
         this.collectionName = process.env.CHROMA_COLLECTION || 'rpjia-actividades';
         this.baseUrl = null;
-        this.embeddingFunction = new DefaultEmbeddingFunction();
-    const parsedBatchSize = Number.parseInt(process.env.CHROMA_EMBED_BATCH_SIZE || '8', 10);
+        this.initializing = null;
+        this.retryHandle = null;
+        this.retryDelayMs = Math.max(
+            Number.parseInt(process.env.CHROMA_RETRY_DELAY_MS || '5000', 10),
+            1000,
+        );
+
+        this.embeddingFunction = null;
+
+        try {
+            this.embeddingFunction = new DefaultEmbeddingFunction();
+        } catch (error) {
+            console.error('⚠️ No se pudo cargar DefaultEmbeddingFunction de Chroma:', error.message);
+        }
+
+        const parsedBatchSize = Number.parseInt(process.env.CHROMA_EMBED_BATCH_SIZE || '8', 10);
         this.embeddingBatchSize = Number.isFinite(parsedBatchSize) && parsedBatchSize > 0
             ? parsedBatchSize
             : 16;
@@ -48,18 +62,15 @@ class ChromaService {
         return normalized;
     }
 
-    async initialize() {
+    buildClientOptions() {
         const host = process.env.CHROMA_HOST || '127.0.0.1';
         const port = Number(process.env.CHROMA_PORT || '8000');
         const ssl = process.env.CHROMA_SSL === 'true';
 
-        let clientOptions = { host, port, ssl };
-
         if (process.env.CHROMA_URL) {
             try {
                 const parsed = new URL(process.env.CHROMA_URL);
-
-                clientOptions = {
+                return {
                     host: parsed.hostname,
                     port: Number(parsed.port) || (parsed.protocol === 'https:' ? 443 : 80),
                     ssl: parsed.protocol === 'https:',
@@ -69,31 +80,96 @@ class ChromaService {
             }
         }
 
-        try {
-            this.client = new ChromaClient(clientOptions);
-            this.baseUrl = `${clientOptions.ssl ? 'https' : 'http'}://${clientOptions.host}:${clientOptions.port}`;
+        return { host, port, ssl };
+    }
 
-            this.collection = await this.getOrCreateCollection(this.collectionName);
+    scheduleRetry() {
+        if (this.retryHandle) {
+            return;
+        }
 
-            // Verificar el estado conectando con una consulta mínima
-            await this.collection.count();
+        this.retryHandle = setTimeout(() => {
+            this.retryHandle = null;
+            this.initialize().catch(() => {
+                /* la re-intentaremos en la siguiente invocación */
+            });
+        }, this.retryDelayMs);
 
-            this.isAvailable = true;
-            console.log(`📚 ChromaDB conectado en ${this.baseUrl} (colección base: ${this.collectionName})`);
-            return true;
-        } catch (error) {
-            console.error('❌ Error inicializando ChromaDB:', error.message);
-            this.client = null;
-            this.collection = null;
-            this.collections.clear();
-            this.isAvailable = false;
-            return false;
+        if (typeof this.retryHandle.unref === 'function') {
+            this.retryHandle.unref();
         }
     }
 
+    async initialize(force = false) {
+        if (this.isAvailable && !force) {
+            return true;
+        }
+
+        if (this.initializing && !force) {
+            return this.initializing;
+        }
+
+        const initPromise = (async () => {
+            const clientOptions = this.buildClientOptions();
+
+            try {
+                this.client = new ChromaClient(clientOptions);
+                this.baseUrl = `${clientOptions.ssl ? 'https' : 'http'}://${clientOptions.host}:${clientOptions.port}`;
+
+                const collection = await this.client.getOrCreateCollection({
+                    name: this.collectionName,
+                    metadata: {
+                        project: 'asistente-ia-juvenil',
+                        created_at: new Date().toISOString(),
+                    },
+                    embeddingFunction: null,
+                });
+
+                this.collections.set(this.collectionName, collection);
+                this.collection = collection;
+
+                await collection.count();
+
+                if (this.retryHandle) {
+                    clearTimeout(this.retryHandle);
+                    this.retryHandle = null;
+                }
+
+                this.isAvailable = true;
+                console.log(`📚 ChromaDB conectado en ${this.baseUrl} (colección base: ${this.collectionName})`);
+                return true;
+            } catch (error) {
+                console.error('❌ Error inicializando ChromaDB:', error.message);
+                this.client = null;
+                this.collection = null;
+                this.collections.clear();
+                this.isAvailable = false;
+                this.scheduleRetry();
+                return false;
+            } finally {
+                this.initializing = null;
+            }
+        })();
+
+        this.initializing = initPromise;
+        return initPromise;
+    }
+
+    async ensureReady() {
+        if (this.isAvailable && this.client) {
+            return true;
+        }
+
+        const initialized = await this.initialize();
+        return initialized;
+    }
+
     async getOrCreateCollection(name) {
-        if (!this.isAvailable && !this.client) {
-            throw new Error('ChromaDB no inicializado');
+        if (!this.client) {
+            const ready = await this.ensureReady();
+            if (!ready) {
+                throw new Error('ChromaDB no inicializado');
+            }
         }
 
         const targetName = name || this.collectionName;
@@ -128,7 +204,16 @@ class ChromaService {
 
     async addDocuments(entries, collectionName = null) {
         if (!this.isAvailable || !this.client) {
-            console.log('⚠️ ChromaDB no disponible, omitiendo documentos');
+            const ready = await this.ensureReady();
+
+            if (!ready) {
+                console.log('⚠️ ChromaDB no disponible, omitiendo documentos');
+                return false;
+            }
+        }
+
+        if (!this.embeddingFunction) {
+            console.log('⚠️ No hay función de embeddings configurada, imposible procesar documentos');
             return false;
         }
 
@@ -165,7 +250,16 @@ class ChromaService {
 
     async searchSimilar(query, limit = 5, collectionName = null) {
         if (!this.isAvailable || !this.client) {
-            console.log('⚠️ ChromaDB no disponible, devolviendo resultados vacíos');
+            const ready = await this.ensureReady();
+
+            if (!ready) {
+                console.log('⚠️ ChromaDB no disponible, devolviendo resultados vacíos');
+                return [];
+            }
+        }
+
+        if (!this.embeddingFunction) {
+            console.log('⚠️ No hay función de embeddings configurada para búsquedas');
             return [];
         }
 
@@ -199,7 +293,12 @@ class ChromaService {
     }
 
     async getDocumentCount(collectionName = null) {
-        if (!this.isAvailable || !this.client) return -1;
+        if (!this.isAvailable || !this.client) {
+            const ready = await this.ensureReady();
+            if (!ready) {
+                return -1;
+            }
+        }
 
         try {
             const targetCollection = await this.getOrCreateCollection(collectionName || this.collectionName);

@@ -30,6 +30,6 @@ Ver también el [registro completo de desarrollo](../.github/registro.md) en `.g
 
 ## 🔄 Última Actualización
 
-**Fecha**: 6 de noviembre de 2025  
-**Estado**: Subida de PDFs validada end-to-end, script de reprocesado documental en producción y almacenamiento vectorial depurado de duplicados. Suite de pruebas backend (Vitest) ejecutada tras la limpieza y PM2 operativo.
-**Nota**: El servidor ChromaDB se mantiene activo con `python3 backend/scripts/run_chromadb.py` (persistencia en `database/chroma`). Ejecutar `node backend/scripts/reprocesar_documentos.js` para reintentos puntuales.
+**Fecha**: 11 de noviembre de 2025  
+**Estado**: Backend reiniciado tras endurecer la reconexión de ChromaDB y ampliar los timeouts de Chutes AI; `/api/health` confirma base de datos y vector DB operativos. Vitest backend ejecutado antes del despliegue.
+**Nota**: El servidor ChromaDB se mantiene activo con `python3 backend/scripts/run_chromadb.py` (persistencia en `database/chroma`). Utilizar `npx pm2 restart rpjia-backend` para recargar cambios y `node backend/scripts/reprocesar_documentos.js` en reprocesos puntuales.

@@ -1,11 +1,20 @@
 # Resumen técnico de la iteración
-**Fecha:** 6 de noviembre de 2025  
+**Fecha:** 11 de noviembre de 2025  
 **Participantes:** Equipo RPJ + asistente IA  
-**Objetivo:** Pulir la experiencia del chat (UX/UI), estabilizar despliegues y dejar constancia documental.
+**Objetivo:** Restablecer la respuesta de la IA en producción, endurecer la reconexión de ChromaDB y mantener la documentación sincronizada.
 
 ---
 
-## 1. Cambios destacados
+## 0. Novedades del 11/11/2025
+- `backend/src/services/chromaService.js` ahora memoriza la inicialización en curso, reintenta con `setTimeout` y limpia el reintento tras recuperar la conexión; además evita operaciones si falta la función de embeddings.
+- Se amplió `CHUTES_TIMEOUT_MS` a 45 s, se redujo `CHUTES_MAX_RETRIES` y se normalizó el mensaje de `AbortError` en `backend/src/services/llmService.js` para detectar timeouts reales.
+- `.env` actualizado con los nuevos valores por defecto para Chutes, manteniendo coherencia entre código y configuración desplegada.
+- Reinicio controlado con `npx pm2 restart rpjia-backend` y verificación de `/api/health` → `database: MariaDB conectado`, `vector_db: ChromaDB conectado`.
+- Documentación (`docs/RESUMEN_SESION.md`, `docs/README.md`) alineada con el estado posterior al reinicio.
+
+---
+
+## 1. Cambios destacados (6/11/2025)
 - **Conversaciones persistentes** con nuevo módulo `backend/src/routes/chat.js` (CRUD completo + saneado para UI).
 - **Intenciones y prompts** concentrados en `backend/src/config/chatPrompts.js` para DINAMICA, ORACION, PROYECTO y GENERAL.
 - **Servicio LLM robusto** (`backend/src/services/llmService.js`) con reintentos, timeouts y logs estructurados.

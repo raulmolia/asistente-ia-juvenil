@@ -6,9 +6,9 @@ const CHUTES_API_TOKEN = process.env.CHUTES_API_TOKEN || "";
 const DEFAULT_MODEL = process.env.CHUTES_MODEL || "deepseek-ai/DeepSeek-R1";
 const DEFAULT_MAX_TOKENS = Number.parseInt(process.env.CHUTES_MAX_TOKENS || "1024", 10);
 const DEFAULT_TEMPERATURE = Number.parseFloat(process.env.CHUTES_TEMPERATURE || "0.7");
-const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.CHUTES_TIMEOUT_MS || "20000", 10);
-const DEFAULT_MAX_RETRIES = Number.parseInt(process.env.CHUTES_MAX_RETRIES || "2", 10);
-const DEFAULT_RETRY_DELAY_MS = Number.parseInt(process.env.CHUTES_RETRY_DELAY_MS || "400", 10);
+const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.CHUTES_TIMEOUT_MS || "45000", 10);
+const DEFAULT_MAX_RETRIES = Number.parseInt(process.env.CHUTES_MAX_RETRIES || "1", 10);
+const DEFAULT_RETRY_DELAY_MS = Number.parseInt(process.env.CHUTES_RETRY_DELAY_MS || "600", 10);
 
 function ensureApiToken() {
     if (!CHUTES_API_TOKEN) {
@@ -83,6 +83,10 @@ export async function callChatCompletion({
         } catch (error) {
             clearTimeout(timeout);
             lastError = error instanceof Error ? error : new Error(String(error));
+
+            if (lastError?.name === 'AbortError' && lastError?.message === 'This operation was aborted') {
+                lastError = new Error(`Timeout tras ${timeoutMs} ms`);
+            }
 
             if (attempt > maxRetries) {
                 break;
