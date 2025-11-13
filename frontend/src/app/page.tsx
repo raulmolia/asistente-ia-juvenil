@@ -875,10 +875,10 @@ export default function ChatHomePage() {
     )
 
     return (
-        <div className="flex min-h-screen bg-background text-foreground">
+        <div className="flex h-full overflow-hidden bg-background text-foreground">
             <aside
                 className={cn(
-                    "flex h-screen flex-col border-r border-border/50 bg-muted/40 backdrop-blur transition-all duration-300",
+                    "flex h-full flex-col overflow-hidden border-r border-border/50 bg-muted/40 backdrop-blur transition-all duration-300",
                     sidebarWidthClass,
                 )}
             >
@@ -932,34 +932,46 @@ export default function ChatHomePage() {
                                 <div
                                     key={chat.id}
                                     className={cn(
-                                        "group flex items-center gap-2 rounded-2xl px-2 py-1",
+                                        "group relative flex min-w-0 items-center gap-2 rounded-2xl px-2 py-1",
                                         isActive ? "bg-primary/10" : "",
                                     )}
                                 >
                                     <Button
+                                        type="button"
                                         variant="ghost"
                                         className={cn(
-                                            "flex flex-1 items-center gap-3 rounded-xl px-3 py-3 text-sm",
-                                            "transition hover:bg-muted",
+                                            "flex w-full items-center gap-3 rounded-xl px-3 py-3 pr-10 text-sm transition hover:bg-muted",
                                             isActive && "bg-primary/10 text-primary",
-                                            isSidebarCollapsed && "justify-center px-2",
+                                            isSidebarCollapsed && "justify-center pr-3",
                                         )}
                                         onClick={() => handleSelectChat(chat.id)}
                                     >
-                                        <MessageSquare className="h-4 w-4" aria-hidden="true" />
+                                        <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                                         {!isSidebarCollapsed && (
-                                            <div className="flex flex-1 flex-col items-start">
-                                                <span className="text-left font-medium leading-tight">{chat.title}</span>
-                                            </div>
+                                            <span
+                                                className="block min-w-0 flex-1 truncate text-left font-medium leading-tight"
+                                                title={chat.title}
+                                            >
+                                                {chat.title}
+                                            </span>
                                         )}
                                     </Button>
 
                                     {!isSidebarCollapsed && (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Opciones del chat">
-                                                    <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-                                                </Button>
+                                                <span className="absolute inset-y-0 right-3 z-10 flex items-center">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 rounded-full text-muted-foreground opacity-0 transition group-hover:opacity-100 focus:opacity-100"
+                                                        aria-label="Opciones del chat"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+                                                    </Button>
+                                                </span>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="w-44">
                                                 <DropdownMenuItem
@@ -1059,7 +1071,7 @@ export default function ChatHomePage() {
                 </div>
             </aside>
 
-            <main className="flex flex-1 flex-col">
+            <main className="flex flex-1 flex-col overflow-hidden">
                 <header className="flex items-center justify-between border-b border-border/60 bg-background/95 px-8 py-6">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -1081,7 +1093,7 @@ export default function ChatHomePage() {
                     </div>
                 </header>
 
-                <section className="flex flex-1 flex-col bg-gradient-to-b from-background via-background to-muted/40">
+                <section className="flex flex-1 flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/40">
                     {!hasMessages ? (
                         <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8">
                             <div className="flex flex-col items-center gap-3 text-center">
@@ -1093,7 +1105,7 @@ export default function ChatHomePage() {
                             {renderPromptComposer("center")}
                         </div>
                     ) : (
-                        <div className="flex h-full flex-col">
+                        <div className="flex h-full flex-col overflow-hidden">
                             <div ref={scrollRef} className="flex-1 space-y-6 overflow-y-auto px-8 py-8">
                             {activeChat?.isLoading && activeChat.messages.length === 0 && (
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -25,14 +25,12 @@ export default function RootLayout({
     return (
         <html lang="es" suppressHydrationWarning>
             <head />
-            <body className={inter.className}>
+            <body className={`${inter.className} h-screen overflow-hidden bg-background font-sans antialiased`}>
                 <Providers>
-                    <div className="min-h-screen bg-background font-sans antialiased">
-                        <div className="relative flex min-h-screen flex-col">
-                            <main className="flex-1">
-                                {children}
-                            </main>
-                        </div>
+                    <div className="flex h-full flex-col">
+                        <main className="flex-1 overflow-hidden">
+                            {children}
+                        </main>
                     </div>
                 </Providers>
             </body>
