@@ -1,5 +1,13 @@
 # Registro de Desarrollo - Asistente IA para Actividades Juveniles
 
+## Actualización 13 de noviembre de 2025 - Corrección UI sidebar
+- 🐛 Solucionado problema crítico en panel lateral: títulos largos ocultaban el botón de opciones ("...")
+- 🎨 Cambio de grid a flexbox para mejor control del espacio en items de chat
+- 📏 Añadido padding-right (pr-10) al botón principal para reservar espacio fijo al botón de opciones
+- 🔧 Botón de opciones ahora visible siempre en hover gracias a posicionamiento absoluto mejorado
+- 🚫 Prevención de propagación de click para evitar activar chat al abrir menú de opciones
+- 📱 Ajustado layout.tsx con altura completa (h-screen) y overflow correcto para contenedor principal
+
 ## Actualización 6 de noviembre de 2025 - UX del compositor y despliegues
 - 🖥️ El compositor de prompts del chat replica el flujo de ChatGPT: envío con Enter, textarea autoajustable y badges de prompts rápidos.
 - 🎨 Paleta oscura (bordes y botones negros) aplicada al cuadro de entrada, al botón `+` y al botón de envío.
