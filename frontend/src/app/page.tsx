@@ -932,7 +932,7 @@ export default function ChatHomePage() {
                                 <div
                                     key={chat.id}
                                     className={cn(
-                                        "group relative flex min-w-0 items-center gap-2 rounded-2xl px-2 py-1",
+                                        "group relative flex items-center gap-1 rounded-2xl px-2 py-1",
                                         isActive ? "bg-primary/10" : "",
                                     )}
                                 >
@@ -940,16 +940,16 @@ export default function ChatHomePage() {
                                         type="button"
                                         variant="ghost"
                                         className={cn(
-                                            "flex w-full items-center gap-3 rounded-xl px-3 py-3 pr-10 text-sm transition hover:bg-muted",
+                                            "flex flex-1 items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-muted",
                                             isActive && "bg-primary/10 text-primary",
-                                            isSidebarCollapsed && "justify-center pr-3",
+                                            isSidebarCollapsed && "justify-center",
                                         )}
                                         onClick={() => handleSelectChat(chat.id)}
                                     >
                                         <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                                         {!isSidebarCollapsed && (
                                             <span
-                                                className="block min-w-0 flex-1 truncate text-left font-medium leading-tight"
+                                                className="block flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left font-medium leading-tight"
                                                 title={chat.title}
                                             >
                                                 {chat.title}
@@ -960,18 +960,16 @@ export default function ChatHomePage() {
                                     {!isSidebarCollapsed && (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <span className="absolute inset-y-0 right-3 z-10 flex items-center">
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-full text-muted-foreground opacity-0 transition group-hover:opacity-100 focus:opacity-100"
-                                                        aria-label="Opciones del chat"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    >
-                                                        <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-                                                    </Button>
-                                                </span>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 flex-shrink-0 rounded-lg text-muted-foreground opacity-0 transition-all duration-200 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground focus:opacity-100"
+                                                    aria-label="Opciones del chat"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <MoreHorizontal className="h-5 w-5" aria-hidden="true" />
+                                                </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="w-44">
                                                 <DropdownMenuItem
