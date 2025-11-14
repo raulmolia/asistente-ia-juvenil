@@ -774,7 +774,7 @@ export default function ChatHomePage() {
         <DialogDescription>Los chats archivados se ocultan del panel lateral. Desarchívalos para recuperarlos cuando los necesites.</DialogDescription>
     }
 
-    const sidebarWidthClass = isSidebarCollapsed ? "w-20" : "w-80"
+    const sidebarWidthClass = isSidebarCollapsed ? "w-20" : "w-96"
     const hasMessages = Boolean(activeChat && activeChat.messages.length > 0)
 
     const renderPromptComposer = (variant: "center" | "bottom") => (
@@ -878,7 +878,7 @@ export default function ChatHomePage() {
         <div className="flex h-full overflow-hidden bg-background text-foreground">
             <aside
                 className={cn(
-                    "flex h-full flex-col overflow-hidden border-r border-border/50 bg-muted/40 backdrop-blur transition-all duration-300",
+                    "flex h-full flex-col border-r border-border/50 bg-muted/40 backdrop-blur transition-all duration-300",
                     sidebarWidthClass,
                 )}
             >
@@ -917,8 +917,8 @@ export default function ChatHomePage() {
                     <p className="px-4 pt-6 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Conversaciones</p>
                 )}
 
-                <ScrollArea className="flex-1 px-2">
-                    <div className="space-y-1 pb-4">
+                <ScrollArea className="flex-1">
+                    <div className="space-y-1 px-2 pb-4">
                         {sidebarChats.length === 0 && (
                             <div className="rounded-xl border border-dashed border-border/60 bg-background/60 px-3 py-8 text-center text-xs text-muted-foreground">
                                 No hay conversaciones todavía. Crea un nuevo chat para empezar.
@@ -932,68 +932,59 @@ export default function ChatHomePage() {
                                 <div
                                     key={chat.id}
                                     className={cn(
-                                        "group flex items-center rounded-lg transition-colors",
+                                        "group relative flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors",
                                         isActive ? "bg-primary/10" : "hover:bg-muted/50",
                                     )}
+                                    onClick={() => handleSelectChat(chat.id)}
                                 >
-                                    <button
-                                        type="button"
-                                        className="flex flex-1 items-center gap-2 overflow-hidden px-3 py-2.5 text-left"
-                                        onClick={() => handleSelectChat(chat.id)}
-                                    >
-                                        <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-                                        
-                                        {!isSidebarCollapsed && (
-                                            <span className="flex-1 truncate text-sm font-medium" title={chat.title}>
-                                                {chat.title}
-                                            </span>
-                                        )}
-                                    </button>
-
-                                    {!isSidebarCollapsed && (
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="mr-2 h-8 w-8 flex-shrink-0 opacity-0 group-hover:opacity-100"
-                                                    aria-label="Opciones del chat"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-44">
-                                                <DropdownMenuItem
-                                                    onSelect={(event) => {
-                                                        event.preventDefault()
-                                                        handleShareChat(chat.id)
-                                                    }}
-                                                >
-                                                    <Share2 className="mr-2 h-4 w-4" aria-hidden="true" /> Compartir
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onSelect={(event) => {
-                                                        event.preventDefault()
-                                                        handleArchiveChat(chat.id)
-                                                    }}
-                                                >
-                                                    <Archive className="mr-2 h-4 w-4" aria-hidden="true" />
-                                                    Archivar
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    className="text-destructive"
-                                                    onSelect={(event) => {
-                                                        event.preventDefault()
-                                                        handleRequestDeleteChat(chat)
-                                                    }}
-                                                >
-                                                    <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" /> Eliminar
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    )}
+                                    <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                                    
+                                    <div className="min-w-0 flex-1 overflow-hidden">
+                                        <span className="block truncate text-sm font-medium">
+                                            {chat.title}
+                                        </span>
+                                    </div>
+                                    
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem
+                                                onSelect={(event) => {
+                                                    event.preventDefault()
+                                                    handleShareChat(chat.id)
+                                                }}
+                                            >
+                                                <Share2 className="mr-2 h-4 w-4" aria-hidden="true" /> Compartir
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onSelect={(event) => {
+                                                    event.preventDefault()
+                                                    handleArchiveChat(chat.id)
+                                                }}
+                                            >
+                                                <Archive className="mr-2 h-4 w-4" aria-hidden="true" />
+                                                Archivar
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                className="text-destructive"
+                                                onSelect={(event) => {
+                                                    event.preventDefault()
+                                                    handleRequestDeleteChat(chat)
+                                                }}
+                                            >
+                                                <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" /> Eliminar
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                             )
                         })}
