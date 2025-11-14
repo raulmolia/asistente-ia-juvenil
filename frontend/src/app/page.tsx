@@ -914,11 +914,11 @@ export default function ChatHomePage() {
                         <MessageSquare className="h-4 w-4" aria-hidden="true" />
                     </div>
                 ) : (
-                    <p className="px-4 pt-6 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Chats</p>
+                    <p className="px-4 pt-6 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Conversaciones</p>
                 )}
 
                 <ScrollArea className="flex-1 px-2">
-                    <div className="space-y-2 pb-4">
+                    <div className="space-y-1 pb-4">
                         {sidebarChats.length === 0 && (
                             <div className="rounded-xl border border-dashed border-border/60 bg-background/60 px-3 py-8 text-center text-xs text-muted-foreground">
                                 No hay conversaciones todavía. Crea un nuevo chat para empezar.
@@ -932,72 +932,65 @@ export default function ChatHomePage() {
                                 <div
                                     key={chat.id}
                                     className={cn(
-                                        "group relative rounded-lg",
+                                        "group flex items-center gap-2 rounded-lg px-3 py-2.5 transition-colors",
                                         isActive ? "bg-primary/10" : "hover:bg-muted/50",
                                     )}
+                                    onClick={() => handleSelectChat(chat.id)}
                                 >
-                                    <div className="flex items-center gap-2 px-3 py-2">
-                                        <button
-                                            type="button"
-                                            className="flex flex-1 items-center gap-3 min-w-0 text-left"
-                                            onClick={() => handleSelectChat(chat.id)}
-                                        >
-                                            <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-                                            {!isSidebarCollapsed && (
-                                                <span
-                                                    className="flex-1 truncate text-sm font-medium"
-                                                    title={chat.title}
-                                                >
-                                                    {chat.title}
-                                                </span>
-                                            )}
-                                        </button>
+                                    <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                                    
+                                    {!isSidebarCollapsed && (
+                                        <span className="flex-1 truncate text-sm font-medium" title={chat.title}>
+                                            {chat.title}
+                                        </span>
+                                    )}
 
-                                        {!isSidebarCollapsed && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        aria-label="Opciones del chat"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    >
-                                                        <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-44">
-                                                    <DropdownMenuItem
-                                                        onSelect={(event) => {
-                                                            event.preventDefault()
-                                                            handleShareChat(chat.id)
-                                                        }}
-                                                    >
-                                                        <Share2 className="mr-2 h-4 w-4" aria-hidden="true" /> Compartir
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onSelect={(event) => {
-                                                            event.preventDefault()
-                                                            handleArchiveChat(chat.id)
-                                                        }}
-                                                    >
-                                                        <Archive className="mr-2 h-4 w-4" aria-hidden="true" />
-                                                        Archivar
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        className="text-destructive"
-                                                        onSelect={(event) => {
-                                                            event.preventDefault()
-                                                            handleRequestDeleteChat(chat)
-                                                        }}
-                                                    >
-                                                        <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" /> Eliminar
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        )}
-                                    </div>
+                                    {!isSidebarCollapsed && (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    aria-label="Opciones del chat"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                    }}
+                                                >
+                                                    <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-44">
+                                                <DropdownMenuItem
+                                                    onSelect={(event) => {
+                                                        event.preventDefault()
+                                                        handleShareChat(chat.id)
+                                                    }}
+                                                >
+                                                    <Share2 className="mr-2 h-4 w-4" aria-hidden="true" /> Compartir
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onSelect={(event) => {
+                                                        event.preventDefault()
+                                                        handleArchiveChat(chat.id)
+                                                    }}
+                                                >
+                                                    <Archive className="mr-2 h-4 w-4" aria-hidden="true" />
+                                                    Archivar
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="text-destructive"
+                                                    onSelect={(event) => {
+                                                        event.preventDefault()
+                                                        handleRequestDeleteChat(chat)
+                                                    }}
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" /> Eliminar
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    )}
                                 </div>
                             )
                         })}
