@@ -37,9 +37,10 @@ step "Compilando frontend"
 npm run build --prefix frontend
 
 step "Preparando artefactos frontend standalone"
-rm -rf frontend/.next/standalone/.next/static frontend/.next/standalone/public
+rm -rf frontend/.next/standalone/.next/static frontend/.next/standalone/.next/server frontend/.next/standalone/public
 mkdir -p frontend/.next/standalone/.next
 cp -R frontend/.next/static frontend/.next/standalone/.next/static
+cp -R frontend/.next/server frontend/.next/standalone/.next/server
 cp -R frontend/public frontend/.next/standalone/public
 
 step "Reiniciando orquestación PM2"
