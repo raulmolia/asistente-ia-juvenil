@@ -932,18 +932,23 @@ export default function ChatHomePage() {
                                 <div
                                     key={chat.id}
                                     className={cn(
-                                        "group flex items-center gap-2 rounded-lg px-3 py-2.5 transition-colors",
+                                        "group flex items-center rounded-lg transition-colors",
                                         isActive ? "bg-primary/10" : "hover:bg-muted/50",
                                     )}
-                                    onClick={() => handleSelectChat(chat.id)}
                                 >
-                                    <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-                                    
-                                    {!isSidebarCollapsed && (
-                                        <span className="flex-1 truncate text-sm font-medium" title={chat.title}>
-                                            {chat.title}
-                                        </span>
-                                    )}
+                                    <button
+                                        type="button"
+                                        className="flex flex-1 items-center gap-2 overflow-hidden px-3 py-2.5 text-left"
+                                        onClick={() => handleSelectChat(chat.id)}
+                                    >
+                                        <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                                        
+                                        {!isSidebarCollapsed && (
+                                            <span className="flex-1 truncate text-sm font-medium" title={chat.title}>
+                                                {chat.title}
+                                            </span>
+                                        )}
+                                    </button>
 
                                     {!isSidebarCollapsed && (
                                         <DropdownMenu>
@@ -952,11 +957,9 @@ export default function ChatHomePage() {
                                                     type="button"
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-7 w-7 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="mr-2 h-8 w-8 flex-shrink-0 opacity-0 group-hover:opacity-100"
                                                     aria-label="Opciones del chat"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
                                                 >
                                                     <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                                                 </Button>
