@@ -272,81 +272,103 @@ export async function downloadAsWord(content: string, filename: string = "respue
     // Parsear el markdown
     const sections = parseMarkdown(content)
 
-    // Crear HTML del documento con estilos de Word
-    let htmlContent = `
-    <!DOCTYPE html>
-    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-    <head>
-        <meta charset='utf-8'>
-        <title>Respuesta IA</title>
-        <style>
-            body { 
-                font-family: Calibri, Arial, sans-serif; 
-                font-size: 11pt;
-                line-height: 1.5;
-                margin: 1in;
-            }
-            .logo { 
-                text-align: center; 
-                margin-bottom: 20px; 
-            }
-            .logo img { 
-                max-width: 150px; 
-                height: auto;
-            }
-            h1 { 
-                font-size: 16pt; 
-                font-weight: bold;
-                margin-top: 12pt; 
-                margin-bottom: 6pt;
-                color: #000;
-            }
-            h2 { 
-                font-size: 14pt; 
-                font-weight: bold;
-                margin-top: 10pt; 
-                margin-bottom: 5pt;
-                color: #000;
-            }
-            h3 { 
-                font-size: 12pt; 
-                font-weight: bold;
-                margin-top: 8pt; 
-                margin-bottom: 4pt;
-                color: #000;
-            }
-            p { 
-                margin: 6pt 0;
-                text-align: justify;
-            }
-            ul, ol { 
-                margin: 6pt 0; 
-                padding-left: 20pt;
-            }
-            li {
-                margin-bottom: 3pt;
-            }
-            pre { 
-                font-family: 'Courier New', monospace; 
-                background: #f5f5f5; 
-                padding: 10px;
-                border: 1px solid #ddd;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-                font-size: 9pt;
-            }
-        </style>
-    </head>
-    <body>
-    `
+    // Crear HTML con namespace de Word y codificación correcta
+    let htmlContent = `<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' 
+      xmlns:w='urn:schemas-microsoft-com:office:word' 
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="ProgId" content="Word.Document">
+    <meta name="Generator" content="Microsoft Word">
+    <meta name="Originator" content="Microsoft Word">
+    <!--[if gte mso 9]>
+    <xml>
+        <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+        </w:WordDocument>
+    </xml>
+    <![endif]-->
+    <style>
+        @page Section1 {
+            size: 8.5in 11.0in;
+            margin: 1.0in 1.0in 1.0in 1.0in;
+            mso-header-margin: 0.5in;
+            mso-footer-margin: 0.5in;
+            mso-paper-source: 0;
+        }
+        div.Section1 {
+            page: Section1;
+        }
+        body {
+            font-family: Calibri, Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 20pt;
+        }
+        .logo img {
+            width: 150px;
+            height: auto;
+        }
+        h1 {
+            font-size: 16pt;
+            font-weight: bold;
+            margin-top: 12pt;
+            margin-bottom: 6pt;
+            color: #000000;
+        }
+        h2 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-top: 10pt;
+            margin-bottom: 5pt;
+            color: #000000;
+        }
+        h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-top: 8pt;
+            margin-bottom: 4pt;
+            color: #000000;
+        }
+        p {
+            margin: 6pt 0;
+            text-align: justify;
+        }
+        ul, ol {
+            margin: 6pt 0;
+            padding-left: 20pt;
+        }
+        li {
+            margin-bottom: 3pt;
+        }
+        pre {
+            font-family: 'Courier New', monospace;
+            background-color: #f5f5f5;
+            padding: 10pt;
+            border: 1pt solid #dddddd;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 9pt;
+            margin: 6pt 0;
+        }
+    </style>
+</head>
+<body>
+<div class="Section1">
+`
 
     // Añadir logo si existe
     if (logoBase64) {
         htmlContent += `
-        <div class="logo">
-            <img src="${logoBase64}" alt="Logo RPJ" />
-        </div>
-        `
+    <div class="logo">
+        <img src="${logoBase64}" alt="Logo RPJ" style="width:150px;height:auto;" />
+    </div>
+`
     }
 
     // Convertir secciones a HTML
@@ -360,97 +382,67 @@ export async function downloadAsWord(content: string, filename: string = "respue
                 inList = false
             }
             const level = section.level || 1
-            htmlContent += `<h${level}>${section.content}</h${level}>\n`
+            htmlContent += `    <h${level}>${escapeHtml(section.content)}</h${level}>\n`
         } else if (section.type === "bullet" || section.type === "numbered") {
             const newListType = section.type === "numbered" ? "ol" : "ul"
-            
+
             if (!inList) {
-                htmlContent += `<${newListType}>\n`
+                htmlContent += `    <${newListType}>\n`
                 inList = true
                 listType = newListType
             } else if (listType !== newListType) {
-                htmlContent += `</${listType}>\n<${newListType}>\n`
+                htmlContent += `    </${listType}>\n    <${newListType}>\n`
                 listType = newListType
             }
 
             if (section.items) {
                 section.items.forEach((item) => {
-                    htmlContent += `<li>${item}</li>\n`
+                    htmlContent += `        <li>${escapeHtml(item)}</li>\n`
                 })
             }
         } else if (section.type === "code") {
             if (inList) {
-                htmlContent += `</${listType}>\n`
+                htmlContent += `    </${listType}>\n`
                 inList = false
             }
-            htmlContent += `<pre>${section.content}</pre>\n`
+            htmlContent += `    <pre>${escapeHtml(section.content)}</pre>\n`
         } else {
             if (inList) {
-                htmlContent += `</${listType}>\n`
+                htmlContent += `    </${listType}>\n`
                 inList = false
             }
             if (section.content) {
-                htmlContent += `<p>${section.content}</p>\n`
+                htmlContent += `    <p>${escapeHtml(section.content)}</p>\n`
             }
         }
     }
 
     // Cerrar lista si quedó abierta
     if (inList) {
-        htmlContent += `</${listType}>\n`
+        htmlContent += `    </${listType}>\n`
     }
 
     htmlContent += `
-    </body>
-    </html>
-    `
+</div>
+</body>
+</html>`
 
-    // Crear un blob RTF que Word puede abrir
-    const rtfHeader = `{\\rtf1\\ansi\\deff0
-{\\fonttbl{\\f0 Calibri;}{\\f1 Courier New;}}
-{\\colortbl;\\red0\\green0\\blue0;\\red245\\green245\\blue245;}
-\\paperw12240\\paperh15840\\margl1440\\margr1440\\margt1440\\margb1440
-`
-
-    let rtfContent = rtfHeader
-
-    // Añadir logo como placeholder de texto
-    if (logoBase64) {
-        rtfContent += `\\pard\\qc\\f0\\fs28\\b Logo RPJ\\b0\\par\\par\n`
-    }
-
-    // Convertir secciones a RTF
-    for (const section of sections) {
-        if (section.type === "heading") {
-            const fontSize = section.level === 1 ? 32 : section.level === 2 ? 28 : 24
-            rtfContent += `\\pard\\f0\\fs${fontSize}\\b ${section.content}\\b0\\par\n`
-        } else if (section.type === "bullet" && section.items) {
-            section.items.forEach((item) => {
-                rtfContent += `\\pard\\fi-360\\li720\\f0\\fs22 \\bullet\\tab ${item}\\par\n`
-            })
-            rtfContent += `\\par\n`
-        } else if (section.type === "numbered" && section.items) {
-            section.items.forEach((item, index) => {
-                rtfContent += `\\pard\\fi-360\\li720\\f0\\fs22 ${index + 1}.\\tab ${item}\\par\n`
-            })
-            rtfContent += `\\par\n`
-        } else if (section.type === "code") {
-            rtfContent += `\\pard\\f1\\fs18\\cb2 ${section.content.replace(/\n/g, "\\par\n")}\\cb1\\par\\par\n`
-        } else if (section.content) {
-            rtfContent += `\\pard\\f0\\fs22 ${section.content}\\par\n`
-        }
-    }
-
-    rtfContent += `}`
-
-    // Crear blob RTF
-    const blob = new Blob([rtfContent], {
-        type: "application/rtf",
+    // Crear blob con tipo MIME correcto para Word y BOM UTF-8
+    const bom = new Uint8Array([0xef, 0xbb, 0xbf])
+    const htmlBlob = new Blob([bom, htmlContent], {
+        type: "application/msword;charset=utf-8",
     })
 
-    // Descargar con extensión .doc para que Word lo abra automáticamente
+    // Descargar con extensión .doc
     const docFilename = filename.replace(".docx", ".doc")
-    saveAs(blob, docFilename)
+    saveAs(htmlBlob, docFilename)
+}
+
+// Función para escapar HTML y preservar caracteres especiales
+function escapeHtml(text: string): string {
+    const div = document.createElement("div")
+    div.textContent = text
+    return div.innerHTML
 }
 
 
