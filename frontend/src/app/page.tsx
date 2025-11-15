@@ -4,6 +4,8 @@ import Image from "next/image"
 import { ChangeEvent, FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { LucideIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import {
     Activity,
     Archive,
@@ -875,14 +877,26 @@ export default function ChatHomePage() {
     )
 
     return (
-        <div className="flex h-full overflow-hidden bg-background text-foreground">
+        <div className="flex h-screen overflow-hidden bg-background text-foreground">
             <aside
                 className={cn(
                     "flex h-full flex-col border-r border-border/50 bg-muted/40 backdrop-blur transition-all duration-300",
                     sidebarWidthClass,
                 )}
             >
-                <div className="flex items-center justify-between gap-2 px-4 pt-6">
+                {!isSidebarCollapsed && (
+                    <div className="flex items-center gap-3 px-4 pt-6 pb-4">
+                        <span className="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white shadow">
+                            <Image src="/logo.png" alt="RPJ" width={40} height={40} priority className="object-contain" />
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
+                            <span className="text-sm font-semibold">Asistente IA Juvenil</span>
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex items-center justify-between gap-2 px-4 pb-4">
                     <button
                         type="button"
                         onClick={handleCreateNewChat}
@@ -892,10 +906,16 @@ export default function ChatHomePage() {
                             isSidebarCollapsed && "mx-auto border-none bg-transparent p-0 shadow-none",
                         )}
                     >
-                        <span className="relative inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white shadow">
-                            <Image src="/logo.png" alt="RPJ" width={36} height={36} priority className="object-contain" />
-                        </span>
-                        {!isSidebarCollapsed && <span>Nuevo chat</span>}
+                        {isSidebarCollapsed ? (
+                            <span className="relative inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white shadow">
+                                <Image src="/logo.png" alt="RPJ" width={36} height={36} priority className="object-contain" />
+                            </span>
+                        ) : (
+                            <>
+                                <Plus className="h-4 w-4" aria-hidden="true" />
+                                <span>Nuevo chat</span>
+                            </>
+                        )}
                     </button>
 
                     <Button
@@ -1054,23 +1074,13 @@ export default function ChatHomePage() {
             </aside>
 
             <main className="flex flex-1 flex-col overflow-hidden">
-                <header className="flex items-center justify-between border-b border-border/60 bg-background/95 px-8 py-6">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                            <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
-                            Asistente IA Juvenil
-                        </div>
-                        <h1 className="text-xl font-semibold leading-tight">Panel de actividades inteligentes</h1>
-                        <p className="text-sm text-muted-foreground">
-                            Genera dinámicas, oraciones y programaciones adaptadas a cada grupo juvenil.
-                        </p>
+                <header className="flex items-center justify-end border-b border-border/60 bg-background/95 px-8 py-4">
+                    <div className="flex items-center gap-3">
                         {shareFeedback && (
                             <p className="text-xs text-primary/80" role="status">
                                 {shareFeedback}
                             </p>
                         )}
-                    </div>
-                    <div className="flex items-center gap-3">
                         <ThemeToggleButton />
                     </div>
                 </header>
@@ -1114,7 +1124,36 @@ export default function ChatHomePage() {
                                                 : "border-border/60 bg-card text-foreground",
                                         )}
                                     >
-                                        <div className="whitespace-pre-wrap">{message.content}</div>
+                                        {message.role === "asistente" ? (
+                                            <div className="prose prose-sm dark:prose-invert max-w-none">
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                                        ul: ({ children }) => <ul className="mb-2 ml-4 list-disc">{children}</ul>,
+                                                        ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal">{children}</ol>,
+                                                        li: ({ children }) => <li className="mb-1">{children}</li>,
+                                                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                                        em: ({ children }) => <em className="italic">{children}</em>,
+                                                        h1: ({ children }) => <h1 className="mb-2 text-xl font-bold">{children}</h1>,
+                                                        h2: ({ children }) => <h2 className="mb-2 text-lg font-bold">{children}</h2>,
+                                                        h3: ({ children }) => <h3 className="mb-2 text-base font-bold">{children}</h3>,
+                                                        code: ({ children, ...props }) => {
+                                                            const isInline = !props.className
+                                                            return isInline ? (
+                                                                <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{children}</code>
+                                                            ) : (
+                                                                <code className="block rounded bg-muted p-2 font-mono text-xs">{children}</code>
+                                                            )
+                                                        },
+                                                    }}
+                                                >
+                                                    {message.content}
+                                                </ReactMarkdown>
+                                            </div>
+                                        ) : (
+                                            <div className="whitespace-pre-wrap">{message.content}</div>
+                                        )}
                                     </div>
                                     {message.role === "usuario" && (
                                         <Avatar className="h-9 w-9">
