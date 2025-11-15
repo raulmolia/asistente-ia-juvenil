@@ -311,8 +311,9 @@ export async function downloadAsWord(content: string, filename: string = "respue
             margin-bottom: 20pt;
         }
         .logo img {
-            width: 150px;
+            width: 8cm;
             height: auto;
+            max-width: 8cm;
         }
         h1 {
             font-size: 16pt;
@@ -366,7 +367,7 @@ export async function downloadAsWord(content: string, filename: string = "respue
     if (logoBase64) {
         htmlContent += `
     <div class="logo">
-        <img src="${logoBase64}" alt="Logo RPJ" style="width:150px;height:auto;" />
+        <img src="${logoBase64}" alt="Logo RPJ" style="width:8cm;height:auto;max-width:8cm;display:block;margin:0 auto;" />
     </div>
 `
     }
