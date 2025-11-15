@@ -1,29 +1,37 @@
 import { jsPDF } from "jspdf"
 import { saveAs } from "file-saver"
 
-// Función para convertir markdown a texto plano con formato básico
-function markdownToPlainText(markdown: string): string {
-    return markdown
-        .replace(/^#{1,6}\s+(.+)$/gm, "$1") // Headers
-        .replace(/\*\*(.+?)\*\*/g, "$1") // Bold
-        .replace(/\*(.+?)\*/g, "$1") // Italic
-        .replace(/`(.+?)`/g, "$1") // Code inline
-        .replace(/```[\s\S]*?```/g, "") // Code blocks
-        .replace(/^\s*[-*+]\s+/gm, "• ") // Bullets
-        .replace(/^\s*\d+\.\s+/gm, "") // Numbered lists
+// Función para parsear y limpiar texto de markdown
+function cleanMarkdownText(text: string): string {
+    return text
+        .replace(/\*\*(.+?)\*\*/g, "$1") // Eliminar negritas
+        .replace(/\*(.+?)\*/g, "$1") // Eliminar cursivas
+        .replace(/`(.+?)`/g, "$1") // Eliminar código inline
+        .trim()
 }
 
-// Función para parsear markdown en secciones
-function parseMarkdown(markdown: string): Array<{ type: string; content: string; level?: number }> {
+// Función para parsear markdown en secciones mejorada
+function parseMarkdown(markdown: string): Array<{ type: string; content: string; level?: number; items?: string[] }> {
     const lines = markdown.split("\n")
-    const sections: Array<{ type: string; content: string; level?: number }> = []
+    const sections: Array<{ type: string; content: string; level?: number; items?: string[] }> = []
 
     let inCodeBlock = false
     let codeBlockContent = ""
+    let currentList: string[] = []
+    let lastListType: "bullet" | "numbered" | null = null
 
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+
         // Manejar bloques de código
         if (line.trim().startsWith("```")) {
+            // Guardar lista acumulada si existe
+            if (currentList.length > 0) {
+                sections.push({ type: lastListType || "bullet", content: "", items: [...currentList] })
+                currentList = []
+                lastListType = null
+            }
+
             if (inCodeBlock) {
                 sections.push({ type: "code", content: codeBlockContent.trim() })
                 codeBlockContent = ""
@@ -40,26 +48,61 @@ function parseMarkdown(markdown: string): Array<{ type: string; content: string;
         // Headers
         const headerMatch = line.match(/^(#{1,6})\s+(.+)$/)
         if (headerMatch) {
-            sections.push({ type: "heading", content: headerMatch[2], level: headerMatch[1].length })
+            // Guardar lista acumulada si existe
+            if (currentList.length > 0) {
+                sections.push({ type: lastListType || "bullet", content: "", items: [...currentList] })
+                currentList = []
+                lastListType = null
+            }
+            sections.push({ type: "heading", content: cleanMarkdownText(headerMatch[2]), level: headerMatch[1].length })
             continue
         }
 
         // Bullets
-        if (line.match(/^\s*[-*+]\s+(.+)$/)) {
-            sections.push({ type: "bullet", content: line.replace(/^\s*[-*+]\s+/, "") })
+        const bulletMatch = line.match(/^\s*[-*+]\s+(.+)$/)
+        if (bulletMatch) {
+            if (lastListType !== "bullet" && currentList.length > 0) {
+                sections.push({ type: lastListType || "bullet", content: "", items: [...currentList] })
+                currentList = []
+            }
+            currentList.push(cleanMarkdownText(bulletMatch[1]))
+            lastListType = "bullet"
             continue
         }
 
         // Numbered list
-        if (line.match(/^\s*\d+\.\s+(.+)$/)) {
-            sections.push({ type: "numbered", content: line.replace(/^\s*\d+\.\s+/, "") })
+        const numberedMatch = line.match(/^\s*\d+\.\s+(.+)$/)
+        if (numberedMatch) {
+            if (lastListType !== "numbered" && currentList.length > 0) {
+                sections.push({ type: lastListType || "bullet", content: "", items: [...currentList] })
+                currentList = []
+            }
+            currentList.push(cleanMarkdownText(numberedMatch[1]))
+            lastListType = "numbered"
             continue
+        }
+
+        // Si hay una lista acumulada y encontramos algo que no es lista, guardarla
+        if (currentList.length > 0 && line.trim()) {
+            sections.push({ type: lastListType || "bullet", content: "", items: [...currentList] })
+            currentList = []
+            lastListType = null
         }
 
         // Paragraph
         if (line.trim()) {
-            sections.push({ type: "paragraph", content: line })
+            sections.push({ type: "paragraph", content: cleanMarkdownText(line) })
         }
+    }
+
+    // Guardar lista final si existe
+    if (currentList.length > 0) {
+        sections.push({ type: lastListType || "bullet", content: "", items: [...currentList] })
+    }
+
+    // Guardar código final si existe
+    if (inCodeBlock && codeBlockContent.trim()) {
+        sections.push({ type: "code", content: codeBlockContent.trim() })
     }
 
     return sections
@@ -92,7 +135,7 @@ function blobToBase64(blob: Blob): Promise<string> {
     })
 }
 
-// Función para generar PDF
+// Función para generar PDF mejorada
 export async function downloadAsPDF(content: string, filename: string = "respuesta-ia.pdf") {
     const doc = new jsPDF({
         orientation: "portrait",
@@ -126,37 +169,45 @@ export async function downloadAsPDF(content: string, filename: string = "respues
 
     for (const section of sections) {
         // Verificar si necesitamos una nueva página
-        if (yPosition > pageHeight - margin) {
+        if (yPosition > pageHeight - margin - 20) {
             doc.addPage()
             yPosition = margin
         }
 
         if (section.type === "heading") {
             // Headers
-            const fontSize = section.level === 1 ? 18 : section.level === 2 ? 14 : 12
+            const fontSize = section.level === 1 ? 16 : section.level === 2 ? 14 : 12
             doc.setFontSize(fontSize)
             doc.setFont("helvetica", "bold")
             const lines = doc.splitTextToSize(section.content, maxWidth)
             doc.text(lines, margin, yPosition)
-            yPosition += lines.length * 7 + 5
+            yPosition += lines.length * (fontSize * 0.4) + 8
             doc.setFont("helvetica", "normal")
-        } else if (section.type === "bullet") {
-            // Bullets
+        } else if (section.type === "bullet" || section.type === "numbered") {
+            // Listas
             doc.setFontSize(11)
-            const lines = doc.splitTextToSize("• " + section.content, maxWidth - 5)
-            doc.text(lines, margin + 5, yPosition)
-            yPosition += lines.length * 6 + 2
-        } else if (section.type === "numbered") {
-            // Numbered lists
-            doc.setFontSize(11)
-            const lines = doc.splitTextToSize(section.content, maxWidth - 5)
-            doc.text(lines, margin + 5, yPosition)
-            yPosition += lines.length * 6 + 2
+            if (section.items) {
+                section.items.forEach((item, index) => {
+                    const bullet = section.type === "numbered" ? `${index + 1}. ` : "• "
+                    const itemText = bullet + item
+                    const lines = doc.splitTextToSize(itemText, maxWidth - 5)
+                    
+                    // Verificar espacio para el item
+                    if (yPosition + lines.length * 5 > pageHeight - margin) {
+                        doc.addPage()
+                        yPosition = margin
+                    }
+                    
+                    doc.text(lines, margin + 5, yPosition)
+                    yPosition += lines.length * 5 + 2
+                })
+                yPosition += 3 // Espacio después de la lista
+            }
         } else if (section.type === "code") {
             // Code blocks
             doc.setFontSize(9)
             doc.setFont("courier")
-            doc.setFillColor(240, 240, 240)
+            doc.setFillColor(245, 245, 245)
             const codeLines = section.content.split("\n")
             const lineHeight = 5
 
@@ -183,9 +234,18 @@ export async function downloadAsPDF(content: string, filename: string = "respues
         } else {
             // Paragraphs
             doc.setFontSize(11)
-            const lines = doc.splitTextToSize(section.content, maxWidth)
-            doc.text(lines, margin, yPosition)
-            yPosition += lines.length * 6 + 3
+            if (section.content) {
+                const lines = doc.splitTextToSize(section.content, maxWidth)
+                
+                // Verificar espacio
+                if (yPosition + lines.length * 5 > pageHeight - margin) {
+                    doc.addPage()
+                    yPosition = margin
+                }
+                
+                doc.text(lines, margin, yPosition)
+                yPosition += lines.length * 5 + 3
+            }
         }
     }
 
@@ -193,7 +253,7 @@ export async function downloadAsPDF(content: string, filename: string = "respues
     doc.save(filename)
 }
 
-// Función para generar Word (HTML convertido a DOCX)
+// Función para generar Word mejorada
 export async function downloadAsWord(content: string, filename: string = "respuesta.docx"): Promise<void> {
     // Cargar el logo
     const logoUrl = "/Logotipo RPJ.jpg"
@@ -212,24 +272,69 @@ export async function downloadAsWord(content: string, filename: string = "respue
     // Parsear el markdown
     const sections = parseMarkdown(content)
 
-    // Crear HTML del documento
+    // Crear HTML del documento con estilos de Word
     let htmlContent = `
     <!DOCTYPE html>
-    <html>
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
     <head>
-        <meta charset="utf-8">
+        <meta charset='utf-8'>
         <title>Respuesta IA</title>
         <style>
-            body { font-family: Arial, sans-serif; margin: 1in; }
-            .logo { text-align: center; margin-bottom: 20px; }
-            .logo img { max-width: 150px; }
-            h1 { font-size: 18pt; margin-top: 12pt; margin-bottom: 6pt; }
-            h2 { font-size: 14pt; margin-top: 10pt; margin-bottom: 5pt; }
-            h3 { font-size: 12pt; margin-top: 8pt; margin-bottom: 4pt; }
-            p { margin: 6pt 0; }
-            ul, ol { margin: 6pt 0; padding-left: 20pt; }
-            code { font-family: 'Courier New', monospace; background: #f0f0f0; padding: 2px 4px; }
-            pre { font-family: 'Courier New', monospace; background: #f0f0f0; padding: 10px; }
+            body { 
+                font-family: Calibri, Arial, sans-serif; 
+                font-size: 11pt;
+                line-height: 1.5;
+                margin: 1in;
+            }
+            .logo { 
+                text-align: center; 
+                margin-bottom: 20px; 
+            }
+            .logo img { 
+                max-width: 150px; 
+                height: auto;
+            }
+            h1 { 
+                font-size: 16pt; 
+                font-weight: bold;
+                margin-top: 12pt; 
+                margin-bottom: 6pt;
+                color: #000;
+            }
+            h2 { 
+                font-size: 14pt; 
+                font-weight: bold;
+                margin-top: 10pt; 
+                margin-bottom: 5pt;
+                color: #000;
+            }
+            h3 { 
+                font-size: 12pt; 
+                font-weight: bold;
+                margin-top: 8pt; 
+                margin-bottom: 4pt;
+                color: #000;
+            }
+            p { 
+                margin: 6pt 0;
+                text-align: justify;
+            }
+            ul, ol { 
+                margin: 6pt 0; 
+                padding-left: 20pt;
+            }
+            li {
+                margin-bottom: 3pt;
+            }
+            pre { 
+                font-family: 'Courier New', monospace; 
+                background: #f5f5f5; 
+                padding: 10px;
+                border: 1px solid #ddd;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                font-size: 9pt;
+            }
         </style>
     </head>
     <body>
@@ -245,23 +350,54 @@ export async function downloadAsWord(content: string, filename: string = "respue
     }
 
     // Convertir secciones a HTML
+    let inList = false
+    let listType = ""
+
     for (const section of sections) {
         if (section.type === "heading") {
+            if (inList) {
+                htmlContent += `</${listType}>\n`
+                inList = false
+            }
             const level = section.level || 1
             htmlContent += `<h${level}>${section.content}</h${level}>\n`
-        } else if (section.type === "bullet") {
-            htmlContent += `<ul><li>${section.content}</li></ul>\n`
-        } else if (section.type === "numbered") {
-            htmlContent += `<ol><li>${section.content}</li></ol>\n`
+        } else if (section.type === "bullet" || section.type === "numbered") {
+            const newListType = section.type === "numbered" ? "ol" : "ul"
+            
+            if (!inList) {
+                htmlContent += `<${newListType}>\n`
+                inList = true
+                listType = newListType
+            } else if (listType !== newListType) {
+                htmlContent += `</${listType}>\n<${newListType}>\n`
+                listType = newListType
+            }
+
+            if (section.items) {
+                section.items.forEach((item) => {
+                    htmlContent += `<li>${item}</li>\n`
+                })
+            }
         } else if (section.type === "code") {
-            htmlContent += `<pre><code>${section.content}</code></pre>\n`
+            if (inList) {
+                htmlContent += `</${listType}>\n`
+                inList = false
+            }
+            htmlContent += `<pre>${section.content}</pre>\n`
         } else {
-            // Procesar formato en línea (negrita)
-            let text = section.content
-            text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-            text = text.replace(/\*([^*]+)\*/g, "<em>$1</em>")
-            htmlContent += `<p>${text}</p>\n`
+            if (inList) {
+                htmlContent += `</${listType}>\n`
+                inList = false
+            }
+            if (section.content) {
+                htmlContent += `<p>${section.content}</p>\n`
+            }
         }
+    }
+
+    // Cerrar lista si quedó abierta
+    if (inList) {
+        htmlContent += `</${listType}>\n`
     }
 
     htmlContent += `
@@ -269,18 +405,52 @@ export async function downloadAsWord(content: string, filename: string = "respue
     </html>
     `
 
-    // Crear blob con formato RTF/HTML que Word puede abrir
-    const blob = new Blob(
-        [
-            "\ufeff", // BOM UTF-8
-            htmlContent,
-        ],
-        {
-            type: "application/msword",
-        }
-    )
+    // Crear un blob RTF que Word puede abrir
+    const rtfHeader = `{\\rtf1\\ansi\\deff0
+{\\fonttbl{\\f0 Calibri;}{\\f1 Courier New;}}
+{\\colortbl;\\red0\\green0\\blue0;\\red245\\green245\\blue245;}
+\\paperw12240\\paperh15840\\margl1440\\margr1440\\margt1440\\margb1440
+`
 
-    // Descargar
-    saveAs(blob, filename)
+    let rtfContent = rtfHeader
+
+    // Añadir logo como placeholder de texto
+    if (logoBase64) {
+        rtfContent += `\\pard\\qc\\f0\\fs28\\b Logo RPJ\\b0\\par\\par\n`
+    }
+
+    // Convertir secciones a RTF
+    for (const section of sections) {
+        if (section.type === "heading") {
+            const fontSize = section.level === 1 ? 32 : section.level === 2 ? 28 : 24
+            rtfContent += `\\pard\\f0\\fs${fontSize}\\b ${section.content}\\b0\\par\n`
+        } else if (section.type === "bullet" && section.items) {
+            section.items.forEach((item) => {
+                rtfContent += `\\pard\\fi-360\\li720\\f0\\fs22 \\bullet\\tab ${item}\\par\n`
+            })
+            rtfContent += `\\par\n`
+        } else if (section.type === "numbered" && section.items) {
+            section.items.forEach((item, index) => {
+                rtfContent += `\\pard\\fi-360\\li720\\f0\\fs22 ${index + 1}.\\tab ${item}\\par\n`
+            })
+            rtfContent += `\\par\n`
+        } else if (section.type === "code") {
+            rtfContent += `\\pard\\f1\\fs18\\cb2 ${section.content.replace(/\n/g, "\\par\n")}\\cb1\\par\\par\n`
+        } else if (section.content) {
+            rtfContent += `\\pard\\f0\\fs22 ${section.content}\\par\n`
+        }
+    }
+
+    rtfContent += `}`
+
+    // Crear blob RTF
+    const blob = new Blob([rtfContent], {
+        type: "application/rtf",
+    })
+
+    // Descargar con extensión .doc para que Word lo abra automáticamente
+    const docFilename = filename.replace(".docx", ".doc")
+    saveAs(blob, docFilename)
 }
+
 

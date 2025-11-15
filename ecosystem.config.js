@@ -16,9 +16,9 @@ module.exports = {
         },
         {
             name: "rpjia-frontend",
-            cwd: "./frontend",
+            cwd: "./frontend/.next/standalone",
             script: "node",
-            args: ".next/standalone/server.js",
+            args: "server.js",
             watch: false,
             env: {
                 NODE_ENV: "production",
