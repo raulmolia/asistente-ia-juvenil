@@ -1,86 +1,84 @@
-# 🚀 Estado actual del proyecto (5 nov 2025)# 🎉 ESTADO FINAL DEL PROYECTO
+# 🚀 Estado actual del proyecto (15 nov 2025)
 
+## ✅ COMPLETADO CON ÉXITO
 
-
-## Panorama general## ✅ COMPLETADO CON ÉXITO
-
-- Plataforma conversacional operativa en producción (`https://ia.rpj.es`).
-
-- Backend Express + Prisma conectado a MariaDB y ChromaDB con historial de conversaciones persistente.### Documentación Actualizada
-
-- Integración con Chutes AI (`POST /api/chat`) que incluye detección de intención, contexto documental dinámico y mensajes de fallback cuando la IA no responde.- ✅ `.github/copilot-instructions.md` - Stack: MariaDB + ChromaDB
-
-- Observabilidad reforzada con logs estructurados, métricas básicas de tokens/duración y reintentos configurables.- ✅ `.github/registro.md` - Fase 2 documentada completamente
-
-- Suites de pruebas activas: Vitest (backend) y Vitest + Testing Library (frontend E2E).- ✅ `GITHUB_SETUP.md` - Instrucciones para configurar remoto
-
-- Despliegue orquestado con PM2 y script `scripts/deploy.sh` actualizado.- ✅ `RESUMEN_SESION.md` - Resumen completo de la sesión
-
+### Documentación Actualizada
+- ✅ `.github/copilot-instructions.md` - Stack: MariaDB + ChromaDB
+- ✅ `.github/registro.md` - Fase 2 documentada completamente
+- ✅ `GITHUB_SETUP.md` - Instrucciones para configurar remoto
+- ✅ `RESUMEN_SESION.md` - Resumen completo de la sesión
 - ✅ `README.md` - Información del proyecto
+
+### Código y Configuración
+- ✅ Backend operativo en puerto 3001
+- ✅ Frontend operativo en puerto 3000
+- ✅ Base de datos MariaDB `rpjia` con 7 tablas
+- ✅ Servicio ChromaDB preparado
+- ✅ API con endpoints de health check y test
+- ✅ Orquestación con PM2 (`ecosystem.config.js`) para backend, frontend y ChromaDB
+
+### UI/UX Mejorado (15 nov 2025)
+- ✅ **Tipografía moderna**: Fuente Inter con pesos 300-700 (similar a Notion/ChatGPT)
+- ✅ **Sidebar optimizado**: Ancho compacto w-80 (320px)
+- ✅ **Límite de caracteres**: Títulos truncados a 25 caracteres
+- ✅ **Botones de opciones**: Diseño compacto y visible en hover
+- ✅ **Layout simplificado**: Estructura de una sola línea con justify-between
+
+## Panorama general
+
+- Plataforma conversacional operativa en producción (`https://ia.rpj.es`)
+- Backend Express + Prisma conectado a MariaDB y ChromaDB con historial de conversaciones persistente
+- Integración con Chutes AI (`POST /api/chat`) que incluye detección de intención, contexto documental dinámico y mensajes de fallback cuando la IA no responde
+- Observabilidad reforzada con logs estructurados, métricas básicas de tokens/duración y reintentos configurables
+- Suites de pruebas activas: Vitest (backend) y Vitest + Testing Library (frontend E2E)
+- Despliegue orquestado con PM2 y script `scripts/deploy.sh` actualizado
 
 ## Hitos recientes
 
-1. **API de chat completa**### Código y Configuración
+1. **API de chat completa**
+   - Rutas REST (`GET /api/chat`, `GET /api/chat/:id`, `POST /api/chat`, `DELETE /api/chat/:id`)
+   - Conversaciones ligadas al usuario con saneado de títulos y timestamps
+   - Registro de metadatos (tokens, intentos, contexto documental utilizado)
 
-   - Rutas REST (`GET /api/chat`, `GET /api/chat/:id`, `POST /api/chat`, `DELETE /api/chat/:id`).- ✅ Backend operativo en puerto 3001
+2. **Prompts e intenciones centralizadas** en `backend/src/config/chatPrompts.js` (DINAMICA, ORACION, PROYECTO, GENERAL)
 
-   - Conversaciones ligadas al usuario con saneado de títulos y timestamps.- ✅ Frontend operativo en puerto 3000
+3. **Servicio LLM robusto** (`backend/src/services/llmService.js`) con AbortController, reintentos y gestión de errores
 
-   - Registro de metadatos (tokens, intentos, contexto documental utilizado).- ✅ Base de datos MariaDB `rpjia` con 7 tablas
+4. **Integración Chroma** mejorada (`backend/src/services/chromaService.js`) con fallback si el servicio no está disponible
 
-2. **Prompts e intenciones centralizadas** en `backend/src/config/chatPrompts.js` (DINAMICA, ORACION, PROYECTO, GENERAL).- ✅ Servicio ChromaDB preparado
+5. **Experiencia de usuario afinada**: 
+   - Tipografía Inter sans-serif moderna
+   - Sidebar compacto con límite de 25 caracteres en títulos
+   - Input con estilo corporativo
+   - Eliminación de chats desde la interfaz
+   - Feedback visual mejorado
 
-3. **Servicio LLM robusto** (`backend/src/services/llmService.js`) con AbortController, reintentos y gestión de errores.- ✅ API con endpoints de health check y test
+6. **Documentación y tareas** sincronizadas (`docs/task.md`, `.github/registro.md`)
 
-4. **Integración Chroma** mejorada (`backend/src/services/chromaService.js`) con fallback si el servicio no está disponible.- ✅ Orquestación con PM2 (`ecosystem.config.js`) para backend, frontend y ChromaDB
-
-5. **Experiencia de usuario afinada**: input con estilo corporativo, eliminación de chats desde la interfaz y feedback visual.
-
-6. **Documentación y tareas** sincronizadas (`docs/task.md`, `.github/registro.md`).### Control de Versiones
-
-```bash
-
-## Stack actualizadoCommits realizados: 5 commits
-
-```├── ca932b8 - Configuración inicial
-
-Backend   : Node.js 20, Express 4, Prisma 5, Vitest 1├── 27b16af - Backend/Frontend completo
-
-Frontend  : Next.js 14, React 18, Tailwind, Shadcn/ui, Vitest + Testing Library├── a345d34 - SQLite temporal
-
-Persistencia: MariaDB (prisma), ChromaDB (vectores persistidos en database/chroma)├── 345c6c1 - Migración MariaDB + ChromaDB ⭐
-
-Infraestructura: PM2 (backend, frontend, chroma) + proxy Apache└── 476b260 - Documentación GitHub (HEAD)
-
-IA        : Chutes AI (chat completions con intenciones)```
+## Stack actualizado
 
 ```
+Backend   : Node.js 20, Express 4, Prisma 5, Vitest 1
+Frontend  : Next.js 14, React 18, Tailwind, Shadcn/ui, Vitest + Testing Library
+Tipografía: Inter (Google Fonts) - Sans-serif moderna
+Persistencia: MariaDB (prisma), ChromaDB (vectores persistidos en database/chroma)
+Infraestructura: PM2 (backend, frontend, chroma) + proxy Apache
+IA        : Chutes AI (chat completions con intenciones)
+```
 
-### Archivos Limpios
+## API pública (resumen)
 
-## API pública (resumen)- ✅ Eliminados 10+ archivos temporales
-
-| Método | Endpoint | Descripción |- ✅ Sin archivos de test obsoletos
-
-| --- | --- | --- |- ✅ Sin migraciones SQLite
-
-| GET | `/api/health` | Estado de servicios (MariaDB & Chroma) |- ✅ Sin referencias a PostgreSQL
-
+| Método | Endpoint | Descripción |
+| --- | --- | --- |
+| GET | `/api/health` | Estado de servicios (MariaDB & Chroma) |
 | GET | `/api/info` | Metadatos de la API y rutas disponibles |
-
-| POST | `/api/test-db` | Inserción de prueba en MariaDB |---
-
+| POST | `/api/test-db` | Inserción de prueba en MariaDB |
 | POST | `/api/auth/login` | Autenticación (JWT) |
-
-| GET | `/api/documentos` | Repositorio documental |## 📊 STACK TECNOLÓGICO FINAL
-
+| GET | `/api/documentos` | Repositorio documental |
 | POST | `/api/documentos` | Subida y vectorización de documentos |
-
-| GET | `/api/chat` | Listado de conversaciones del usuario |### Backend
-
-| GET | `/api/chat/:id` | Recuperar mensajes ordenados |```
-
-| POST | `/api/chat` | Enviar mensaje al asistente (Chutes AI) |Node.js v24.11.0
+| GET | `/api/chat` | Listado de conversaciones del usuario |
+| GET | `/api/chat/:id` | Recuperar mensajes ordenados |
+| POST | `/api/chat` | Enviar mensaje al asistente (Chutes AI) |
 
 | DELETE | `/api/chat/:id` | Eliminar conversación + mensajes |├── Express.js 4.18.2
 
