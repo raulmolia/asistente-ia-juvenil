@@ -248,7 +248,7 @@ class ChromaService {
         }
     }
 
-    async searchSimilar(query, limit = 5, collectionName = null) {
+    async searchSimilar(query, limit = 5, collectionName = null, tags = null) {
         if (!this.isAvailable || !this.client) {
             const ready = await this.ensureReady();
 
@@ -268,11 +268,20 @@ class ChromaService {
 
             const [queryEmbedding] = await this.embeddingFunction.generate([query]);
 
-            const result = await targetCollection.query({
+            const queryParams = {
                 queryEmbeddings: [queryEmbedding],
                 nResults: limit,
                 include: ['documents', 'metadatas', 'distances'],
-            });
+            };
+
+            // Añadir filtro por tags si se proporcionan
+            if (tags && Array.isArray(tags) && tags.length > 0) {
+                // ChromaDB usa sintaxis de filtro where con $or para múltiples tags
+                const tagFilters = tags.map(tag => ({ etiquetas: { $contains: tag } }));
+                queryParams.where = tags.length === 1 ? tagFilters[0] : { $or: tagFilters };
+            }
+
+            const result = await targetCollection.query(queryParams);
 
             if (!result || !result.ids || result.ids.length === 0) {
                 return [];

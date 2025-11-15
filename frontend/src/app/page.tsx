@@ -23,6 +23,8 @@ import {
     Trash2,
     AlertTriangle,
     Plus,
+    PartyPopper,
+    FileText,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -79,6 +81,8 @@ type QuickPrompt = {
     label: string
     icon: LucideIcon
     template: string
+    intent: string
+    tags: string[]
 }
 
 function createId() {
@@ -157,29 +161,39 @@ export default function ChatHomePage() {
     const quickPrompts = useMemo<QuickPrompt[]>(
         () => [
             {
-                label: "Actividades",
-                icon: ListTodo,
+                label: "Dinámicas y Actividades",
+                icon: Activity,
                 template: "Necesito una actividad para jóvenes de 15 a 17 años centrada en el trabajo en equipo.",
+                intent: "DINAMICA",
+                tags: ["DINAMICAS"],
             },
             {
-                label: "Dinámicas",
-                icon: Activity,
-                template: "Propón una dinámica rompehielos para un grupo mixto de 30 adolescentes.",
+                label: "Celebraciones",
+                icon: PartyPopper,
+                template: "Diseña una celebración juvenil para el inicio del año pastoral.",
+                intent: "CELEBRACION",
+                tags: ["CELEBRACIONES"],
             },
             {
                 label: "Programaciones",
                 icon: CalendarClock,
                 template: "Diseña una programación trimestral para un grupo juvenil que se reúne los sábados.",
+                intent: "PROGRAMACION",
+                tags: ["PROGRAMACIONES"],
             },
             {
                 label: "Oraciones",
                 icon: BookOpen,
                 template: "Necesito una oración breve para iniciar una reunión de jóvenes de 13 años.",
+                intent: "ORACION",
+                tags: ["ORACIONES"],
             },
             {
                 label: "Otros",
-                icon: Sparkles,
-                template: "Ayúdame con un recurso creativo para motivar a un grupo juvenil en un campamento.",
+                icon: FileText,
+                template: "Ayúdame con un recurso creativo para motivar a un grupo juvenil.",
+                intent: "OTROS",
+                tags: ["OTROS", "CONTENIDO_MIXTO"],
             },
         ],
         [],
@@ -436,7 +450,13 @@ export default function ChatHomePage() {
 
         const chatId = activeChat.id
         const previousConversationId = activeChat.conversationId
-        const previousIntent = activeChat.intent
+        
+        // Determinar intent basado en quickPrompts seleccionados
+        let intentToSend = activeChat.intent
+        if (selectedQuickPromptItems.length > 0) {
+            // Usar el intent del primer prompt seleccionado
+            intentToSend = selectedQuickPromptItems[0].intent
+        }
 
         const userMessage: ChatMessage = {
             id: createId(),
@@ -451,6 +471,7 @@ export default function ChatHomePage() {
                     ? {
                         ...chat,
                         messages: [...chat.messages, userMessage],
+                        intent: intentToSend, // Actualizar intent del chat
                     }
                     : chat,
             ),
@@ -468,7 +489,7 @@ export default function ChatHomePage() {
                 body: JSON.stringify({
                     conversationId: previousConversationId,
                     message: prompt,
-                    intent: previousIntent,
+                    intent: intentToSend,
                 }),
             })
 
@@ -509,7 +530,7 @@ export default function ChatHomePage() {
         } finally {
             setIsThinking(false)
         }
-    }, [activeChat, fetchConversations, inputValue, isThinking, token])
+    }, [activeChat, fetchConversations, inputValue, isThinking, token, selectedQuickPromptItems])
 
     const handlePromptKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {

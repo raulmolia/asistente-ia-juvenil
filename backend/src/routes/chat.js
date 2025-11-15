@@ -261,6 +261,7 @@ router.post('/', authenticate, async (req, res) => {
             trimmedMessage,
             5,
             detectedIntent?.chromaCollection,
+            detectedIntent?.tags || null,
         );
 
         const contextPrompt = buildContextFromChroma(contextResults);

@@ -12,6 +12,12 @@ import {
     Loader2,
     RefreshCw,
     Tag,
+    Search,
+    Filter,
+    Edit,
+    Trash2,
+    X,
+    ArrowUpDown,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -45,7 +51,10 @@ type DocumentoItem = {
 const TAG_COLOR_MAP: Record<string, string> = {
     PROGRAMACIONES: "border-blue-200 bg-blue-100 text-blue-800",
     DINAMICAS: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    CELEBRACIONES: "border-pink-200 bg-pink-100 text-pink-800",
     ORACIONES: "border-violet-200 bg-violet-100 text-violet-800",
+    CONSULTA: "border-cyan-200 bg-cyan-100 text-cyan-800",
+    PASTORAL_GENERICO: "border-indigo-200 bg-indigo-100 text-indigo-800",
     REVISTAS: "border-amber-200 bg-amber-100 text-amber-800",
     CONTENIDO_MIXTO: "border-slate-200 bg-slate-100 text-slate-800",
     OTROS: "border-gray-200 bg-gray-100 text-gray-800",
@@ -95,6 +104,15 @@ export default function DocumentacionPage() {
     const [feedback, setFeedback] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [activeView, setActiveView] = useState<"upload" | "library">("upload")
+    
+    // Nuevos estados para filtrado y edición
+    const [searchTerm, setSearchTerm] = useState("")
+    const [filterTags, setFilterTags] = useState<string[]>([])
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+    const [editingDocId, setEditingDocId] = useState<string | null>(null)
+    const [editingTags, setEditingTags] = useState<string[]>([])
+    const [deletingDocId, setDeletingDocId] = useState<string | null>(null)
+    const [updatingDoc, setUpdatingDoc] = useState(false)
 
     const canAccess = useMemo(
         () => Boolean(isAuthenticated && user && ALLOWED_ROLES.has(user.rol ?? "")),
@@ -271,6 +289,147 @@ export default function DocumentacionPage() {
             setError(message)
         } finally {
             setUploading(false)
+        }
+    }
+
+    // Función para normalizar texto (sin acentos, minúsculas)
+    const normalizeText = (text: string) => {
+        return text
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+    }
+
+    // Filtrado y ordenamiento de documentos
+    const filteredAndSortedDocuments = useMemo(() => {
+        let filtered = documents
+
+        // Filtrar por término de búsqueda
+        if (searchTerm.trim()) {
+            const normalizedSearch = normalizeText(searchTerm)
+            filtered = filtered.filter((doc) => {
+                const titulo = normalizeText(doc.titulo || "")
+                const nombreOriginal = normalizeText(doc.nombreOriginal || "")
+                const descripcion = normalizeText(doc.descripcionGenerada || "")
+                return (
+                    titulo.includes(normalizedSearch) ||
+                    nombreOriginal.includes(normalizedSearch) ||
+                    descripcion.includes(normalizedSearch)
+                )
+            })
+        }
+
+        // Filtrar por etiquetas seleccionadas
+        if (filterTags.length > 0) {
+            filtered = filtered.filter((doc) =>
+                filterTags.some((tag) => doc.etiquetas.includes(tag))
+            )
+        }
+
+        // Ordenar por fecha
+        const sorted = [...filtered].sort((a, b) => {
+            const dateA = new Date(a.fechaCreacion).getTime()
+            const dateB = new Date(b.fechaCreacion).getTime()
+            return sortOrder === "desc" ? dateB - dateA : dateA - dateB
+        })
+
+        return sorted
+    }, [documents, searchTerm, filterTags, sortOrder])
+
+    // Manejar toggle de etiqueta en filtro
+    const handleFilterTagToggle = (tagId: string) => {
+        setFilterTags((prev) => {
+            if (prev.includes(tagId)) {
+                return prev.filter((t) => t !== tagId)
+            }
+            return [...prev, tagId]
+        })
+    }
+
+    // Iniciar edición de etiquetas
+    const startEditTags = (doc: DocumentoItem) => {
+        setEditingDocId(doc.id)
+        setEditingTags([...doc.etiquetas])
+    }
+
+    // Cancelar edición
+    const cancelEditTags = () => {
+        setEditingDocId(null)
+        setEditingTags([])
+    }
+
+    // Guardar etiquetas editadas
+    const saveEditedTags = async (docId: string) => {
+        if (!token) return
+        if (editingTags.length === 0) {
+            setError("Debe haber al menos una etiqueta")
+            return
+        }
+
+        setUpdatingDoc(true)
+        try {
+            const response = await fetch(buildApiUrl(`/api/documentos/${docId}`), {
+                method: "PATCH",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ etiquetas: editingTags }),
+            })
+
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}))
+                throw new Error(body?.message || "No se pudo actualizar el documento")
+            }
+
+            setFeedback("Etiquetas actualizadas correctamente")
+            setEditingDocId(null)
+            setEditingTags([])
+            fetchDocuments()
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "No se pudo actualizar"
+            setError(message)
+        } finally {
+            setUpdatingDoc(false)
+        }
+    }
+
+    // Manejar toggle de etiqueta en edición
+    const handleEditTagToggle = (tagId: string) => {
+        setEditingTags((prev) => {
+            if (prev.includes(tagId)) {
+                return prev.filter((t) => t !== tagId)
+            }
+            return [...prev, tagId]
+        })
+    }
+
+    // Eliminar documento
+    const deleteDocument = async (docId: string) => {
+        if (!token) return
+
+        setUpdatingDoc(true)
+        try {
+            const response = await fetch(buildApiUrl(`/api/documentos/${docId}`), {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}))
+                throw new Error(body?.message || "No se pudo eliminar el documento")
+            }
+
+            setFeedback("Documento eliminado correctamente")
+            setDeletingDocId(null)
+            fetchDocuments()
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "No se pudo eliminar"
+            setError(message)
+        } finally {
+            setUpdatingDoc(false)
         }
     }
 
@@ -460,7 +619,7 @@ export default function DocumentacionPage() {
                                 <h2 className="text-lg font-semibold">Biblioteca documental</h2>
                             </div>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                Consulta el estado de procesamiento y la descripción generada para cada documento.
+                                Consulta, filtra y gestiona los documentos de la biblioteca.
                             </p>
                         </div>
                         <Button variant="ghost" size="sm" onClick={fetchDocuments} disabled={loadingDocuments}>
@@ -478,6 +637,55 @@ export default function DocumentacionPage() {
                         </Button>
                     </header>
 
+                    {/* Filtros y búsqueda */}
+                    <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar documentos..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-9"
+                            />
+                        </div>
+                        <div className="relative">
+                            <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <select
+                                value=""
+                                onChange={(e) => {
+                                    if (e.target.value) handleFilterTagToggle(e.target.value)
+                                }}
+                                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-9 pr-8 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-48"
+                            >
+                                <option value="">Filtrar por etiqueta</option>
+                                {tagOptions.map((tag) => (
+                                    <option key={tag.id} value={tag.id}>
+                                        {tag.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Tags de filtro activos */}
+                    {filterTags.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {filterTags.map((tagId) => {
+                                const tagLabel = tagOptions.find((t) => t.id === tagId)?.label || tagId
+                                return (
+                                    <Badge
+                                        key={tagId}
+                                        className={`cursor-pointer ${TAG_COLOR_MAP[tagId] || "border-slate-200 bg-slate-100 text-slate-700"}`}
+                                        onClick={() => handleFilterTagToggle(tagId)}
+                                    >
+                                        {tagLabel}
+                                        <X className="ml-1 h-3 w-3" />
+                                    </Badge>
+                                )
+                            })}
+                        </div>
+                    )}
+
                     <div className="mt-5 overflow-x-auto">
                         <table className="min-w-full divide-y divide-border/80 text-sm">
                             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
@@ -486,29 +694,43 @@ export default function DocumentacionPage() {
                                     <th className="px-4 py-3 text-left font-medium">Descripción generada</th>
                                     <th className="px-4 py-3 text-left font-medium">Etiquetas</th>
                                     <th className="px-4 py-3 text-left font-medium">Estado</th>
-                                    <th className="px-4 py-3 text-left font-medium">Subida</th>
+                                    <th className="px-4 py-3 text-left font-medium">
+                                        <button
+                                            onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+                                            className="flex items-center gap-1 hover:text-foreground"
+                                        >
+                                            Subida
+                                            <ArrowUpDown className="h-3 w-3" />
+                                        </button>
+                                    </th>
+                                    <th className="px-4 py-3 text-right font-medium">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/60 text-sm">
-                                {documents.length === 0 && !loadingDocuments && (
+                                {filteredAndSortedDocuments.length === 0 && !loadingDocuments && (
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
-                                            No hay documentos registrados todavía.
+                                        <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                                            {searchTerm || filterTags.length > 0
+                                                ? "No se encontraron documentos con los filtros aplicados."
+                                                : "No hay documentos registrados todavía."}
                                         </td>
                                     </tr>
                                 )}
 
                                 {loadingDocuments && (
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
+                                        <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
                                             <Loader2 className="mr-2 inline-block h-4 w-4 animate-spin" aria-hidden="true" />
                                             Cargando biblioteca…
                                         </td>
                                     </tr>
                                 )}
 
-                                {documents.map((documento) => {
+                                {filteredAndSortedDocuments.map((documento) => {
                                     const estado = STATUS_BADGE_MAP[documento.estadoProcesamiento] || STATUS_BADGE_MAP.PENDIENTE
+                                    const isEditing = editingDocId === documento.id
+                                    const isDeleting = deletingDocId === documento.id
+
                                     return (
                                         <tr key={documento.id} className="align-top">
                                             <td className="px-4 py-4">
@@ -530,16 +752,55 @@ export default function DocumentacionPage() {
                                                 )}
                                             </td>
                                             <td className="px-4 py-4">
-                                                <div className="flex flex-wrap gap-1">
-                                                    {documento.etiquetas?.map((tag) => (
-                                                        <Badge
-                                                            key={`${documento.id}-${tag}`}
-                                                            className={TAG_COLOR_MAP[tag] || "border-slate-200 bg-slate-100 text-slate-700"}
-                                                        >
-                                                            {tagOptions.find((option) => option.id === tag)?.label || tag}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
+                                                {isEditing ? (
+                                                    <div className="space-y-2">
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {tagOptions.map((tag) => {
+                                                                const active = editingTags.includes(tag.id)
+                                                                return (
+                                                                    <Button
+                                                                        key={tag.id}
+                                                                        type="button"
+                                                                        variant={active ? "default" : "outline"}
+                                                                        size="sm"
+                                                                        className="h-6 px-2 text-xs"
+                                                                        onClick={() => handleEditTagToggle(tag.id)}
+                                                                    >
+                                                                        {tag.label}
+                                                                    </Button>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => saveEditedTags(documento.id)}
+                                                                disabled={updatingDoc || editingTags.length === 0}
+                                                            >
+                                                                {updatingDoc ? <Loader2 className="h-3 w-3 animate-spin" /> : "Guardar"}
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={cancelEditTags}
+                                                                disabled={updatingDoc}
+                                                            >
+                                                                Cancelar
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {documento.etiquetas?.map((tag) => (
+                                                            <Badge
+                                                                key={`${documento.id}-${tag}`}
+                                                                className={TAG_COLOR_MAP[tag] || "border-slate-200 bg-slate-100 text-slate-700"}
+                                                            >
+                                                                {tagOptions.find((option) => option.id === tag)?.label || tag}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-4 py-4">
                                                 <Badge className={estado.className}>{estado.label}</Badge>
@@ -551,6 +812,52 @@ export default function DocumentacionPage() {
                                                 )}
                                             </td>
                                             <td className="px-4 py-4 text-sm text-muted-foreground">{formatDate(documento.fechaCreacion)}</td>
+                                            <td className="px-4 py-4">
+                                                {isDeleting ? (
+                                                    <div className="flex flex-col gap-2">
+                                                        <p className="text-xs text-muted-foreground">¿Eliminar?</p>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="destructive"
+                                                                onClick={() => deleteDocument(documento.id)}
+                                                                disabled={updatingDoc}
+                                                            >
+                                                                {updatingDoc ? <Loader2 className="h-3 w-3 animate-spin" /> : "Sí"}
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => setDeletingDocId(null)}
+                                                                disabled={updatingDoc}
+                                                            >
+                                                                No
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => startEditTags(documento)}
+                                                            disabled={isEditing || editingDocId !== null}
+                                                            title="Editar etiquetas"
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => setDeletingDocId(documento.id)}
+                                                            disabled={deletingDocId !== null || editingDocId !== null}
+                                                            title="Eliminar documento"
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </td>
                                         </tr>
                                     )
                                 })}

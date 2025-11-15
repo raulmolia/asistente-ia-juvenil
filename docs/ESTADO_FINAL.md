@@ -24,8 +24,18 @@
 - ✅ **Botones de opciones**: Diseño compacto y visible en hover
 - ✅ **Layout simplificado**: Estructura de una sola línea con justify-between
 - ✅ **Renderizado markdown**: react-markdown para formato de mensajes del asistente
-- ✅ **Respuestas completas**: Límite de tokens aumentado a 4096
+- ✅ **Respuestas completas**: Límite de tokens aumentado a 128,000
 - ✅ **Scroll nativo**: Página de documentación usa scroll del navegador
+- ✅ **Sistema de intenciones**: 5 categorías con prompts especializados y filtrado por tags
+- ✅ **Modelo LLM**: Kimi-K2-Instruct-0905 (Moonshot AI) vía Chutes AI
+
+### Gestión Documental Avanzada (15 nov 2025)
+- ✅ **9 etiquetas disponibles**: Programaciones, Dinámicas, Celebraciones, Oraciones, Consulta, Pastoral Genérico, Revistas, Contenido Mixto, Otros
+- ✅ **Búsqueda contextual**: Filtrado en tiempo real por título, nombre y descripción (sin acentos)
+- ✅ **Filtro por etiquetas**: Selector múltiple con badges activos
+- ✅ **Ordenamiento**: Por fecha de subida (ascendente/descendente)
+- ✅ **Edición inline**: Modificar etiquetas de documentos con actualización en BD y ChromaDB
+- ✅ **Eliminación segura**: Confirmación inline, elimina de BD, ChromaDB y sistema de archivos
 
 ## Panorama general
 
@@ -64,13 +74,17 @@
 ## Stack actualizado
 
 ```
-Backend   : Node.js 20, Express 4, Prisma 5, Vitest 1
+Backend   : Node.js 24, Express 4, Prisma 5, Vitest 1
 Frontend  : Next.js 14, React 18, Tailwind, Shadcn/ui, Vitest + Testing Library
 Tipografía: Inter (Google Fonts) - Sans-serif moderna
 Markdown  : react-markdown + remark-gfm para renderizado de contenido
 Persistencia: MariaDB (prisma), ChromaDB (vectores persistidos en database/chroma)
 Infraestructura: PM2 (backend, frontend, chroma) + proxy Apache
-IA        : Chutes AI (chat completions con intenciones) - Max tokens: 4096
+IA        : Chutes AI (https://llm.chutes.ai/v1/chat/completions)
+Modelo    : Kimi-K2-Instruct-0905 (Moonshot AI)
+Max tokens: 128,000 (128K)
+Intenciones: 5 categorías con prompts especializados y filtrado por tags ChromaDB
+Etiquetas : 9 opciones para clasificación documental
 ```
 
 ## API pública (resumen)
@@ -83,6 +97,9 @@ IA        : Chutes AI (chat completions con intenciones) - Max tokens: 4096
 | POST | `/api/auth/login` | Autenticación (JWT) |
 | GET | `/api/documentos` | Repositorio documental |
 | POST | `/api/documentos` | Subida y vectorización de documentos |
+| PATCH | `/api/documentos/:id` | Actualizar etiquetas de un documento |
+| DELETE | `/api/documentos/:id` | Eliminar documento (BD, ChromaDB y archivo) |
+| GET | `/api/documentos/etiquetas` | Obtener etiquetas disponibles |
 | GET | `/api/chat` | Listado de conversaciones del usuario |
 | GET | `/api/chat/:id` | Recuperar mensajes ordenados |
 | POST | `/api/chat` | Enviar mensaje al asistente (Chutes AI) |

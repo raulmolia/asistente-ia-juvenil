@@ -21,7 +21,10 @@ const EstadoProcesamiento = prismaPackage.EstadoProcesamiento || PrismaEnums.Est
 const FALLBACK_ETIQUETAS = Object.freeze({
     PROGRAMACIONES: 'PROGRAMACIONES',
     DINAMICAS: 'DINAMICAS',
+    CELEBRACIONES: 'CELEBRACIONES',
     ORACIONES: 'ORACIONES',
+    CONSULTA: 'CONSULTA',
+    PASTORAL_GENERICO: 'PASTORAL_GENERICO',
     REVISTAS: 'REVISTAS',
     CONTENIDO_MIXTO: 'CONTENIDO_MIXTO',
     OTROS: 'OTROS',
@@ -56,8 +59,11 @@ const CHROMA_DOCUMENT_MAX_CHUNKS = parseInt(process.env.CHROMA_DOCUMENT_MAX_CHUN
 const ETIQUETAS_DISPONIBLES = Object.values(EtiquetaDocumento);
 const ETIQUETA_LABELS = {
     PROGRAMACIONES: 'Programaciones',
-    DINAMICAS: 'Dinamicas',
+    DINAMICAS: 'Dinámicas',
+    CELEBRACIONES: 'Celebraciones',
     ORACIONES: 'Oraciones',
+    CONSULTA: 'Consulta',
+    PASTORAL_GENERICO: 'Pastoral Genérico',
     REVISTAS: 'Revistas',
     CONTENIDO_MIXTO: 'Contenido mixto',
     OTROS: 'Otros',
@@ -501,6 +507,153 @@ router.post(
         } catch (error) {
             return res.status(500).json({
                 error: 'Error creando registro de documento',
+                message: error.message,
+            });
+        }
+    },
+);
+
+// PATCH /api/documentos/:id - Actualizar etiquetas de un documento
+router.patch(
+    '/:id',
+    authenticate,
+    authorize(['DOCUMENTADOR']),
+    async (req, res) => {
+        const { id } = req.params;
+        const { etiquetas } = req.body;
+
+        if (!etiquetas || !Array.isArray(etiquetas) || etiquetas.length === 0) {
+            return res.status(400).json({
+                error: 'Etiquetas inválidas',
+                message: 'Debes proporcionar al menos una etiqueta válida',
+            });
+        }
+
+        const etiquetasValidas = etiquetas.filter((tag) => ETIQUETAS_DISPONIBLES.includes(tag));
+        if (etiquetasValidas.length === 0) {
+            return res.status(400).json({
+                error: 'Etiquetas inválidas',
+                message: 'Ninguna de las etiquetas proporcionadas es válida',
+            });
+        }
+
+        try {
+            const documento = await prisma.documento.findUnique({
+                where: { id },
+            });
+
+            if (!documento) {
+                return res.status(404).json({
+                    error: 'Documento no encontrado',
+                    message: 'El documento solicitado no existe',
+                });
+            }
+
+            const documentoActualizado = await prisma.documento.update({
+                where: { id },
+                data: { etiquetas: etiquetasValidas },
+            });
+
+            // Si el documento está completado, actualizar también en ChromaDB
+            if (documento.estadoProcesamiento === EstadoProcesamiento.COMPLETADO) {
+                try {
+                    const collection = await chromaService.getOrCreateCollection(CHROMA_DOCUMENT_COLLECTION);
+                    const chunks = await collection.get({
+                        where: { document_id: id },
+                    });
+
+                    if (chunks?.ids?.length > 0) {
+                        // Actualizar metadatos de todos los chunks
+                        const updatedMetadatas = chunks.ids.map((_, index) => ({
+                            ...chunks.metadatas[index],
+                            etiquetas: etiquetasValidas,
+                        }));
+
+                        await collection.update({
+                            ids: chunks.ids,
+                            metadatas: updatedMetadatas,
+                        });
+                    }
+                } catch (chromaError) {
+                    console.error('Error actualizando etiquetas en ChromaDB:', chromaError);
+                    // No fallar la petición si ChromaDB falla
+                }
+            }
+
+            return res.json({
+                documento: sanitizeDocument(documentoActualizado),
+            });
+        } catch (error) {
+            console.error('Error actualizando documento:', error);
+            return res.status(500).json({
+                error: 'Error actualizando documento',
+                message: error.message,
+            });
+        }
+    },
+);
+
+// DELETE /api/documentos/:id - Eliminar un documento
+router.delete(
+    '/:id',
+    authenticate,
+    authorize(['DOCUMENTADOR']),
+    async (req, res) => {
+        const { id } = req.params;
+
+        try {
+            const documento = await prisma.documento.findUnique({
+                where: { id },
+            });
+
+            if (!documento) {
+                return res.status(404).json({
+                    error: 'Documento no encontrado',
+                    message: 'El documento solicitado no existe',
+                });
+            }
+
+            // Eliminar de ChromaDB si está procesado
+            if (documento.estadoProcesamiento === EstadoProcesamiento.COMPLETADO) {
+                try {
+                    const collection = await chromaService.getOrCreateCollection(CHROMA_DOCUMENT_COLLECTION);
+                    const chunks = await collection.get({
+                        where: { document_id: id },
+                    });
+
+                    if (chunks?.ids?.length > 0) {
+                        await collection.delete({
+                            ids: chunks.ids,
+                        });
+                    }
+                } catch (chromaError) {
+                    console.error('Error eliminando de ChromaDB:', chromaError);
+                    // Continuar con la eliminación aunque ChromaDB falle
+                }
+            }
+
+            // Eliminar archivo físico
+            if (documento.rutaArchivo && fs.existsSync(documento.rutaArchivo)) {
+                try {
+                    fs.unlinkSync(documento.rutaArchivo);
+                } catch (fsError) {
+                    console.error('Error eliminando archivo físico:', fsError);
+                    // Continuar con la eliminación del registro
+                }
+            }
+
+            // Eliminar de la base de datos
+            await prisma.documento.delete({
+                where: { id },
+            });
+
+            return res.json({
+                message: 'Documento eliminado correctamente',
+            });
+        } catch (error) {
+            console.error('Error eliminando documento:', error);
+            return res.status(500).json({
+                error: 'Error eliminando documento',
                 message: error.message,
             });
         }
