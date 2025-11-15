@@ -256,7 +256,7 @@ export async function downloadAsPDF(content: string, filename: string = "respues
 // Función para generar Word mejorada
 export async function downloadAsWord(content: string, filename: string = "respuesta.docx"): Promise<void> {
     // Cargar el logo
-    const logoUrl = "/Logotipo RPJ.jpg"
+    const logoUrl = `/Logotipo RPJ.jpg?v=${Date.now()}`
     let logoBase64 = ""
 
     try {
@@ -311,9 +311,8 @@ export async function downloadAsWord(content: string, filename: string = "respue
             margin-bottom: 20pt;
         }
         .logo img {
-            width: 4cm;
+            max-width: 150px;
             height: auto;
-            max-width: 4cm;
         }
         h1 {
             font-size: 16pt;
@@ -367,7 +366,7 @@ export async function downloadAsWord(content: string, filename: string = "respue
     if (logoBase64) {
         htmlContent += `
     <div class="logo">
-        <img src="${logoBase64}" alt="Logo RPJ" style="width:4cm;height:auto;max-width:4cm;display:block;margin:0 auto;" />
+        <img src="${logoBase64}" alt="Logo RPJ" width="150" height="auto" style="display:block;margin:0 auto;" />
     </div>
 `
     }

@@ -37,6 +37,12 @@
 - ✅ **Edición inline**: Modificar etiquetas de documentos con actualización en BD y ChromaDB
 - ✅ **Eliminación segura**: Confirmación inline, elimina de BD, ChromaDB y sistema de archivos
 
+### Descarga de Documentos (15 nov 2025)
+- ✅ **Formato PDF**: Generación con jsPDF incluyendo logo RPJ (150px), parsing avanzado de markdown con agrupación de listas, limpieza de sintaxis markdown, renderizado de headers (16pt/14pt/12pt), listas con bullets/números, bloques de código con fondo gris y paginación automática
+- ✅ **Formato Word**: Generación con HTML + Microsoft Office XML namespace, BOM UTF-8, logo RPJ embebido como base64 (150px), estilos en puntos (pt) para compatibilidad, encoding correcto de caracteres especiales (á, é, í, ó, ú, ñ, ¿, ¡)
+- ✅ **UI de descarga**: Dropdown menu en mensajes del asistente con opciones PDF y Word
+- ✅ **Nomenclatura**: Archivos nombrados como `respuesta-{messageId}.pdf` o `.doc`
+
 ## Panorama general
 
 - Plataforma conversacional operativa en producción (`https://ia.rpj.es`)
