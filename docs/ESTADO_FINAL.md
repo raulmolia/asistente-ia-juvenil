@@ -23,6 +23,9 @@
 - ✅ **Límite de caracteres**: Títulos truncados a 25 caracteres
 - ✅ **Botones de opciones**: Diseño compacto y visible en hover
 - ✅ **Layout simplificado**: Estructura de una sola línea con justify-between
+- ✅ **Renderizado markdown**: react-markdown para formato de mensajes del asistente
+- ✅ **Respuestas completas**: Límite de tokens aumentado a 4096
+- ✅ **Scroll nativo**: Página de documentación usa scroll del navegador
 
 ## Panorama general
 
@@ -52,6 +55,9 @@
    - Input con estilo corporativo
    - Eliminación de chats desde la interfaz
    - Feedback visual mejorado
+   - **Renderizado markdown** en mensajes del asistente (negrita, listas, código)
+   - **Respuestas completas** sin cortes (límite 4096 tokens)
+   - **Scroll optimizado** en página de documentación
 
 6. **Documentación y tareas** sincronizadas (`docs/task.md`, `.github/registro.md`)
 
@@ -61,9 +67,10 @@
 Backend   : Node.js 20, Express 4, Prisma 5, Vitest 1
 Frontend  : Next.js 14, React 18, Tailwind, Shadcn/ui, Vitest + Testing Library
 Tipografía: Inter (Google Fonts) - Sans-serif moderna
+Markdown  : react-markdown + remark-gfm para renderizado de contenido
 Persistencia: MariaDB (prisma), ChromaDB (vectores persistidos en database/chroma)
 Infraestructura: PM2 (backend, frontend, chroma) + proxy Apache
-IA        : Chutes AI (chat completions con intenciones)
+IA        : Chutes AI (chat completions con intenciones) - Max tokens: 4096
 ```
 
 ## API pública (resumen)
