@@ -27,7 +27,8 @@ import { Badge } from "@/components/ui/badge"
 import { ThemeToggleButton } from "@/components/theme-toggle"
 import { useAuth } from "@/hooks/use-auth"
 import { buildApiUrl } from "@/lib/utils"
-const ALLOWED_ROLES = new Set(["SUPERADMIN", "ADMINISTRADOR", "DOCUMENTADOR"])
+const ALLOWED_ROLES = new Set(["SUPERADMIN", "ADMINISTRADOR", "DOCUMENTADOR", "DOCUMENTADOR_JUNIOR"])
+const EDIT_DELETE_ROLES = new Set(["SUPERADMIN", "ADMINISTRADOR", "DOCUMENTADOR"])
 
 type TagOption = {
     id: string
@@ -116,6 +117,11 @@ export default function DocumentacionPage() {
 
     const canAccess = useMemo(
         () => Boolean(isAuthenticated && user && ALLOWED_ROLES.has(user.rol ?? "")),
+        [isAuthenticated, user],
+    )
+
+    const canEditDelete = useMemo(
+        () => Boolean(isAuthenticated && user && EDIT_DELETE_ROLES.has(user.rol ?? "")),
         [isAuthenticated, user],
     )
 
@@ -837,24 +843,31 @@ export default function DocumentacionPage() {
                                                     </div>
                                                 ) : (
                                                     <div className="flex justify-end gap-2">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={() => startEditTags(documento)}
-                                                            disabled={isEditing || editingDocId !== null}
-                                                            title="Editar etiquetas"
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={() => setDeletingDocId(documento.id)}
-                                                            disabled={deletingDocId !== null || editingDocId !== null}
-                                                            title="Eliminar documento"
-                                                        >
-                                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                                        </Button>
+                                                        {canEditDelete && (
+                                                            <>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => startEditTags(documento)}
+                                                                    disabled={isEditing || editingDocId !== null}
+                                                                    title="Editar etiquetas"
+                                                                >
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => setDeletingDocId(documento.id)}
+                                                                    disabled={deletingDocId !== null || editingDocId !== null}
+                                                                    title="Eliminar documento"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                        {!canEditDelete && (
+                                                            <span className="text-xs text-muted-foreground">Sin permisos</span>
+                                                        )}
                                                     </div>
                                                 )}
                                             </td>

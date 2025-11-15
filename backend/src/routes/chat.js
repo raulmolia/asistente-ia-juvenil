@@ -22,6 +22,35 @@ const router = express.Router();
 const prisma = new PrismaClient();
 const FALLBACK_MESSAGE = 'Lo siento, ahora mismo no puedo generar una propuesta. Estoy revisando el sistema; inténtalo de nuevo en unos minutos.';
 
+// Límites por rol
+const USER_LIMITS = {
+    SUPERADMIN: {
+        maxConversations: null, // Sin límite
+        maxMessagesPerConversation: null, // Sin límite
+        maxDailyInteractions: null, // Sin límite
+    },
+    ADMINISTRADOR: {
+        maxConversations: null,
+        maxMessagesPerConversation: null,
+        maxDailyInteractions: null,
+    },
+    DOCUMENTADOR: {
+        maxConversations: 10,
+        maxMessagesPerConversation: null, // Sin límite
+        maxDailyInteractions: null, // Sin límite
+    },
+    DOCUMENTADOR_JUNIOR: {
+        maxConversations: 10,
+        maxMessagesPerConversation: null, // Sin límite
+        maxDailyInteractions: null, // Sin límite
+    },
+    USUARIO: {
+        maxConversations: 6,
+        maxMessagesPerConversation: 5,
+        maxDailyInteractions: 25,
+    },
+};
+
 function mapRoleToOpenAI(role) {
     switch (role) {
         case RolMensaje.ASISTENTE:
@@ -156,6 +185,92 @@ async function fetchConversationHistory(conversationId, limit = 12) {
         }));
 }
 
+// Función para obtener estadísticas de uso del usuario
+async function getUserStats(userId, userRole) {
+    const limits = USER_LIMITS[userRole] || USER_LIMITS.USUARIO;
+
+    // Contar conversaciones totales (activas + archivadas)
+    const totalConversations = await prisma.conversacion.count({
+        where: { usuarioId: userId },
+    });
+
+    // Obtener mensajes del usuario de hoy para límite diario
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const dailyMessages = await prisma.mensajeConversacion.count({
+        where: {
+            conversacion: { usuarioId: userId },
+            rol: RolMensaje.USUARIO,
+            fechaCreacion: { gte: today },
+        },
+    });
+
+    return {
+        conversations: {
+            current: totalConversations,
+            max: limits.maxConversations,
+            available: limits.maxConversations ? Math.max(0, limits.maxConversations - totalConversations) : null,
+        },
+        dailyInteractions: {
+            current: dailyMessages,
+            max: limits.maxDailyInteractions,
+            available: limits.maxDailyInteractions ? Math.max(0, limits.maxDailyInteractions - dailyMessages) : null,
+        },
+        messagesPerConversation: {
+            max: limits.maxMessagesPerConversation,
+        },
+    };
+}
+
+// Función para validar límites antes de crear/enviar
+async function validateUserLimits(userId, userRole, conversationId = null) {
+    const limits = USER_LIMITS[userRole] || USER_LIMITS.USUARIO;
+    const stats = await getUserStats(userId, userRole);
+
+    // Validar límite de conversaciones (solo si es nueva conversación)
+    if (!conversationId && limits.maxConversations) {
+        if (stats.conversations.current >= limits.maxConversations) {
+            return {
+                allowed: false,
+                reason: 'MAX_CONVERSATIONS',
+                message: `Has alcanzado el límite de ${limits.maxConversations} conversaciones. Elimina alguna para continuar.`,
+            };
+        }
+    }
+
+    // Validar límite diario
+    if (limits.maxDailyInteractions) {
+        if (stats.dailyInteractions.current >= limits.maxDailyInteractions) {
+            return {
+                allowed: false,
+                reason: 'MAX_DAILY_INTERACTIONS',
+                message: `Has alcanzado el límite diario de ${limits.maxDailyInteractions} interacciones. Vuelve mañana.`,
+            };
+        }
+    }
+
+    // Validar límite de mensajes por conversación
+    if (conversationId && limits.maxMessagesPerConversation) {
+        const messagesInConversation = await prisma.mensajeConversacion.count({
+            where: {
+                conversacionId: conversationId,
+                rol: RolMensaje.USUARIO,
+            },
+        });
+
+        if (messagesInConversation >= limits.maxMessagesPerConversation) {
+            return {
+                allowed: false,
+                reason: 'MAX_MESSAGES_PER_CONVERSATION',
+                message: `Has alcanzado el límite de ${limits.maxMessagesPerConversation} mensajes en esta conversación. Crea una nueva.`,
+            };
+        }
+    }
+
+    return { allowed: true };
+}
+
 router.get('/', authenticate, async (req, res) => {
     try {
         const conversations = await prisma.conversacion.findMany({
@@ -176,6 +291,26 @@ router.get('/', authenticate, async (req, res) => {
         console.error('❌ Error listando conversaciones:', error);
         return res.status(500).json({
             error: 'Error listando conversaciones',
+            message: error.message,
+        });
+    }
+});
+
+// GET /api/chat/stats - Obtener estadísticas de uso del usuario
+router.get('/stats', authenticate, async (req, res) => {
+    try {
+        const userRole = req.user?.rol || 'USUARIO';
+        const stats = await getUserStats(req.user.id, userRole);
+        
+        return res.json({
+            role: userRole,
+            limits: USER_LIMITS[userRole],
+            stats,
+        });
+    } catch (error) {
+        console.error('❌ Error obteniendo estadísticas:', error);
+        return res.status(500).json({
+            error: 'Error obteniendo estadísticas',
             message: error.message,
         });
     }
@@ -236,6 +371,18 @@ router.post('/', authenticate, async (req, res) => {
     }
 
     try {
+        // Validar límites del usuario
+        const userRole = req.user?.rol || 'USUARIO';
+        const limitCheck = await validateUserLimits(req.user.id, userRole, conversationId);
+        
+        if (!limitCheck.allowed) {
+            return res.status(429).json({
+                error: limitCheck.reason,
+                message: limitCheck.message,
+                stats: await getUserStats(req.user.id, userRole),
+            });
+        }
+
         const trimmedMessage = message.trim();
         detectedIntent = rawIntent
             ? resolveIntent(rawIntent)

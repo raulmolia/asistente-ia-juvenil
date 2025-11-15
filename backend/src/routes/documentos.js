@@ -405,7 +405,7 @@ async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileB
 router.get(
     '/etiquetas',
     authenticate,
-    authorize(['DOCUMENTADOR']),
+    authorize(['DOCUMENTADOR', 'DOCUMENTADOR_JUNIOR']),
     async (req, res) => {
         const etiquetas = ETIQUETAS_DISPONIBLES.map((valor) => ({
             id: valor,
@@ -419,7 +419,7 @@ router.get(
 router.get(
     '/',
     authenticate,
-    authorize(['DOCUMENTADOR']),
+    authorize(['DOCUMENTADOR', 'DOCUMENTADOR_JUNIOR']),
     async (req, res) => {
         try {
             const documentos = await prisma.documento.findMany({
@@ -441,7 +441,7 @@ router.get(
 router.post(
     '/',
     authenticate,
-    authorize(['DOCUMENTADOR']),
+    authorize(['DOCUMENTADOR', 'DOCUMENTADOR_JUNIOR']),
     handleUpload,
     async (req, res) => {
         if (!req.file) {

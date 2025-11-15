@@ -25,6 +25,7 @@ import {
     Plus,
     PartyPopper,
     FileText,
+    Download,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -54,6 +55,8 @@ import {
 import { useAuth } from "@/hooks/use-auth"
 import { cn, buildApiUrl } from "@/lib/utils"
 import { ThemeToggleButton } from "@/components/theme-toggle"
+import { UsageStats } from "@/components/usage-stats"
+import { downloadAsPDF, downloadAsWord } from "@/lib/document-generator"
 
 type MessageRole = "usuario" | "asistente"
 
@@ -1092,6 +1095,9 @@ export default function ChatHomePage() {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
+
+                {/* Estadísticas de uso */}
+                <UsageStats token={token} />
             </aside>
 
             <main className="flex flex-1 flex-col overflow-hidden">
@@ -1139,12 +1145,53 @@ export default function ChatHomePage() {
                                     )}
                                     <div
                                         className={cn(
-                                            "max-w-[80%] rounded-2xl border px-4 py-3 text-sm leading-relaxed shadow-sm",
+                                            "relative max-w-[80%] rounded-2xl border px-4 py-3 text-sm leading-relaxed shadow-sm",
                                             message.role === "usuario"
                                                 ? "border-primary/10 bg-primary text-primary-foreground"
                                                 : "border-border/60 bg-card text-foreground",
                                         )}
                                     >
+                                        {message.role === "asistente" && (
+                                            <div className="absolute right-2 top-2">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-7 w-7 p-0 hover:bg-muted"
+                                                        >
+                                                            <Download className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            onSelect={async () => {
+                                                                try {
+                                                                    await downloadAsPDF(message.content, `respuesta-${message.id}.pdf`)
+                                                                } catch (error) {
+                                                                    console.error("Error descargando PDF:", error)
+                                                                }
+                                                            }}
+                                                        >
+                                                            <FileText className="mr-2 h-4 w-4" />
+                                                            Documento PDF (.pdf)
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onSelect={async () => {
+                                                                try {
+                                                                    await downloadAsWord(message.content, `respuesta-${message.id}.docx`)
+                                                                } catch (error) {
+                                                                    console.error("Error descargando Word:", error)
+                                                                }
+                                                            }}
+                                                        >
+                                                            <FileText className="mr-2 h-4 w-4" />
+                                                            Documento de Microsoft Word (.docx)
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        )}
                                         {message.role === "asistente" ? (
                                             <div className="prose prose-sm dark:prose-invert max-w-none">
                                                 <ReactMarkdown
