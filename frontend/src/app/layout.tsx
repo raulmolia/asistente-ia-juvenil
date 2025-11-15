@@ -3,7 +3,11 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from './providers'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+    subsets: ['latin'],
+    weight: ['300', '400', '500', '600', '700'],
+    variable: '--font-sans',
+})
 
 export const metadata: Metadata = {
     title: 'Asistente IA para Actividades Juveniles',
@@ -25,7 +29,7 @@ export default function RootLayout({
     return (
         <html lang="es" suppressHydrationWarning>
             <head />
-            <body className={`${inter.className} h-screen overflow-hidden bg-background font-sans antialiased`}>
+            <body className={`${inter.variable} h-screen overflow-hidden bg-background font-sans antialiased`}>
                 <Providers>
                     <div className="flex h-full flex-col">
                         <main className="flex-1 overflow-hidden">

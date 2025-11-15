@@ -774,7 +774,7 @@ export default function ChatHomePage() {
         <DialogDescription>Los chats archivados se ocultan del panel lateral. Desarchívalos para recuperarlos cuando los necesites.</DialogDescription>
     }
 
-    const sidebarWidthClass = isSidebarCollapsed ? "w-20" : "w-96"
+    const sidebarWidthClass = isSidebarCollapsed ? "w-20" : "w-80"
     const hasMessages = Boolean(activeChat && activeChat.messages.length > 0)
 
     const renderPromptComposer = (variant: "center" | "bottom") => (
@@ -927,21 +927,21 @@ export default function ChatHomePage() {
 
                         {sidebarChats.map((chat) => {
                             const isActive = chat.id === activeChatId
+                            const truncatedTitle = chat.title.length > 25 ? chat.title.substring(0, 25) + '...' : chat.title
 
                             return (
                                 <div
                                     key={chat.id}
                                     className={cn(
-                                        "group relative flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors",
+                                        "group relative flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2.5 transition-colors",
                                         isActive ? "bg-primary/10" : "hover:bg-muted/50",
                                     )}
                                     onClick={() => handleSelectChat(chat.id)}
                                 >
-                                    <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-                                    
-                                    <div className="min-w-0 flex-1 overflow-hidden">
-                                        <span className="block truncate text-sm font-medium">
-                                            {chat.title}
+                                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                                        <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                                        <span className="truncate text-sm font-medium">
+                                            {truncatedTitle}
                                         </span>
                                     </div>
                                     
@@ -950,7 +950,7 @@ export default function ChatHomePage() {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-8 w-8 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                                className="h-7 w-7 flex-shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 hover:bg-muted"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 <MoreHorizontal className="h-4 w-4" />
