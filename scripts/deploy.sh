@@ -43,6 +43,12 @@ cp -R frontend/.next/static frontend/.next/standalone/.next/static
 cp -R frontend/.next/server frontend/.next/standalone/.next/server
 cp -R frontend/public frontend/.next/standalone/public
 
+# Copiar también a production si existe
+if [ -d "frontend/.next/production" ]; then
+  rm -rf frontend/.next/production/public
+  cp -R frontend/public frontend/.next/production/public
+fi
+
 step "Reiniciando orquestación PM2"
 npx pm2 start ecosystem.config.js --update-env
 npx pm2 save
