@@ -43,6 +43,11 @@
 - ✅ **UI de descarga**: Dropdown menu en mensajes del asistente con opciones PDF y Word
 - ✅ **Nomenclatura**: Archivos nombrados como `respuesta-{messageId}.pdf` o `.doc`
 
+### Interfaz y Navegación (15 nov 2025)
+- ✅ **Badges de categorías coloreados**: Sistema de colores distintivos para cada categoría (Dinámicas, Celebraciones, Programaciones, Oraciones, Pastoral, Consulta, Otros) visibles tanto en modo oscuro como claro
+- ✅ **Página "Acerca de"**: Nueva página informativa (`/acerca-de`) con logo RPJ centrado, diseño atractivo con degradados, títulos grandes y espaciado generoso, enlaces con iconos externos y efecto hover, renderizado markdown del contenido de `acercade.md`
+- ✅ **Navegación mejorada**: Enlace "Acerca de" en header principal alineado a la izquierda, botón "Volver al chat" en páginas secundarias
+
 ## Panorama general
 
 - Plataforma conversacional operativa en producción (`https://ia.rpj.es`)

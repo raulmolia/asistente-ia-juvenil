@@ -4,6 +4,7 @@ import Image from "next/image"
 import { ChangeEvent, FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { LucideIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import {
@@ -858,12 +859,23 @@ export default function ChatHomePage() {
                             <div className="flex flex-wrap items-center gap-2">
                                 {selectedQuickPromptItems.map((item) => {
                                     const Icon = item.icon
+                                    // Colores específicos por categoría (visibles en ambos modos)
+                                    const categoryColors: Record<string, string> = {
+                                        "Dinámicas": "border-emerald-500 bg-emerald-100 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300",
+                                        "Celebraciones": "border-pink-500 bg-pink-100 text-pink-800 dark:border-pink-500 dark:bg-pink-950/60 dark:text-pink-300",
+                                        "Programaciones": "border-blue-500 bg-blue-100 text-blue-800 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300",
+                                        "Oraciones": "border-violet-500 bg-violet-100 text-violet-800 dark:border-violet-500 dark:bg-violet-950/60 dark:text-violet-300",
+                                        "Pastoral": "border-amber-500 bg-amber-100 text-amber-800 dark:border-amber-500 dark:bg-amber-950/60 dark:text-amber-300",
+                                        "Consulta": "border-cyan-500 bg-cyan-100 text-cyan-800 dark:border-cyan-500 dark:bg-cyan-950/60 dark:text-cyan-300",
+                                        "Otros": "border-slate-500 bg-slate-100 text-slate-800 dark:border-slate-500 dark:bg-slate-950/60 dark:text-slate-300",
+                                    }
+                                    const colorClass = categoryColors[item.label] || "border-gray-500 bg-gray-100 text-gray-800 dark:border-gray-500 dark:bg-gray-950/60 dark:text-gray-300"
                                     return (
                                         <button
                                             key={item.label}
                                             type="button"
                                             onClick={() => handleQuickPromptToggle(item)}
-                                            className="flex items-center gap-2 rounded-full border border-black/40 bg-white px-3 py-1 text-xs font-medium text-black transition hover:bg-black/5 dark:border-white/30 dark:bg-transparent"
+                                            className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition hover:opacity-80 ${colorClass}`}
                                         >
                                             <Icon className="h-4 w-4" aria-hidden="true" />
                                             {item.label}
@@ -1101,7 +1113,13 @@ export default function ChatHomePage() {
             </aside>
 
             <main className="flex flex-1 flex-col overflow-hidden">
-                <header className="flex items-center justify-end border-b border-border/60 bg-background/95 px-8 py-4">
+                <header className="flex items-center justify-between border-b border-border/60 bg-background/95 px-8 py-4">
+                    <Link 
+                        href="/acerca-de"
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        Acerca de
+                    </Link>
                     <div className="flex items-center gap-3">
                         {shareFeedback && (
                             <p className="text-xs text-primary/80" role="status">
