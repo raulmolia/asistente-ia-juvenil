@@ -214,13 +214,6 @@ export default function ChatHomePage() {
     )
     const [selectedQuickPrompts, setSelectedQuickPrompts] = useState<string[]>([])
     const [isThinkingMode, setIsThinkingMode] = useState(false)
-    const [showSuggestions, setShowSuggestions] = useState(false)
-    
-    const suggestions = useMemo(() => [
-        "Hola, cuéntame qué planes tienes para el fin de semana",
-        "Hola, ¿tienes alguna serie nueva que recomendar?",
-        "Hola, ¿qué planes tienes para el fin de semana?"
-    ], [])
     
     const selectedQuickPromptItems = useMemo(() => {
         const labelSet = new Set(selectedQuickPrompts)
@@ -849,32 +842,14 @@ export default function ChatHomePage() {
                         <span>{chatError}</span>
                     </div>
                 )}
-                <div className="relative">
-                    {showSuggestions && inputValue.trim().length > 0 && (
-                        <div className="absolute bottom-full left-0 right-0 mb-2 space-y-2">
-                            {suggestions.map((suggestion, index) => (
-                                <button
-                                    key={index}
-                                    type="button"
-                                    onClick={() => {
-                                        setInputValue(suggestion)
-                                        setShowSuggestions(false)
-                                    }}
-                                    className="w-full rounded-2xl border border-border/50 bg-background/95 px-4 py-3 text-left text-sm text-foreground/80 backdrop-blur transition hover:bg-accent hover:text-accent-foreground"
-                                >
-                                    {suggestion}
-                                </button>
-                            ))}
-                        </div>
+                <div
+                    className={cn(
+                        "flex items-center gap-3 rounded-[32px] border border-border/40 px-4 py-2 backdrop-blur",
+                        "bg-slate-50/80 dark:bg-slate-900/40",
+                        "shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_1px_2px_rgba(0,0,0,0.4)]",
+                        "focus-within:border-primary/40",
                     )}
-                    <div
-                        className={cn(
-                            "flex items-center gap-3 rounded-[32px] border border-border/40 px-4 py-2 backdrop-blur",
-                            "bg-slate-50/80 dark:bg-slate-900/40",
-                            "shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_1px_2px_rgba(0,0,0,0.4)]",
-                            "focus-within:border-primary/40",
-                        )}
-                    >
+                >
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -948,10 +923,7 @@ export default function ChatHomePage() {
                             <Textarea
                                 ref={promptTextareaRef}
                                 value={inputValue}
-                                onChange={(event) => {
-                                    setInputValue(event.target.value)
-                                    setShowSuggestions(event.target.value.trim().length > 0)
-                                }}
+                                onChange={(event) => setInputValue(event.target.value)}
                                 onKeyDown={handlePromptKeyDown}
                                 placeholder=""
                                 className={cn(
@@ -1000,11 +972,10 @@ export default function ChatHomePage() {
                         </div>
                     </div>
                 </div>
-            </div>
-        </form>
-    )
+            </form>
+        )
 
-    return (
+        return (
         <div className="flex h-screen overflow-hidden bg-background text-foreground">
             <aside
                 className={cn(
