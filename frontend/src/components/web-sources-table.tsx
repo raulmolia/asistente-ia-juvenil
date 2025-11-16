@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
     Globe,
     Loader2,
@@ -119,6 +119,11 @@ export function WebSourcesTable({ token, tagOptions, canEditDelete }: WebSources
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const [updating, setUpdating] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    // Cargar fuentes automáticamente al montar el componente
+    useEffect(() => {
+        fetchSources()
+    }, [token])
 
     const fetchSources = async () => {
         if (!token) return
