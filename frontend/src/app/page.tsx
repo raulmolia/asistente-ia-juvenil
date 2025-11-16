@@ -869,7 +869,9 @@ export default function ChatHomePage() {
                     )}
                     <div
                         className={cn(
-                            "flex items-center gap-3 rounded-[32px] border border-border/40 bg-background/95 px-4 py-2 shadow-sm backdrop-blur",
+                            "flex items-center gap-3 rounded-[32px] border border-border/40 px-4 py-2 backdrop-blur",
+                            "bg-slate-50/80 dark:bg-slate-900/40",
+                            "shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_1px_2px_rgba(0,0,0,0.4)]",
                             "focus-within:border-primary/40",
                         )}
                     >
