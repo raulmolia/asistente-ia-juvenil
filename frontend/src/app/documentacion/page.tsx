@@ -100,6 +100,7 @@ export default function DocumentacionPage() {
     const [loadingTags, setLoadingTags] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [formTitle, setFormTitle] = useState("")
+    const [formDescription, setFormDescription] = useState("")
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [dropping, setDropping] = useState(false)
     const [feedback, setFeedback] = useState<string | null>(null)
@@ -112,6 +113,8 @@ export default function DocumentacionPage() {
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
     const [editingDocId, setEditingDocId] = useState<string | null>(null)
     const [editingTags, setEditingTags] = useState<string[]>([])
+    const [editingTitle, setEditingTitle] = useState("")
+    const [editingDescription, setEditingDescription] = useState("")
     const [deletingDocId, setDeletingDocId] = useState<string | null>(null)
     const [updatingDoc, setUpdatingDoc] = useState(false)
 
@@ -267,6 +270,9 @@ export default function DocumentacionPage() {
         const formData = new FormData()
         formData.append("archivo", selectedFile)
         formData.append("titulo", formTitle.trim())
+        if (formDescription.trim()) {
+            formData.append("descripcion", formDescription.trim())
+        }
         formData.append("etiquetas", JSON.stringify(selectedTags))
 
         try {
@@ -287,6 +293,7 @@ export default function DocumentacionPage() {
 
             setFeedback("Documento subido correctamente")
             setFormTitle("")
+            setFormDescription("")
             setSelectedFile(null)
             setSelectedTags([])
             fetchDocuments()
@@ -352,23 +359,31 @@ export default function DocumentacionPage() {
         })
     }
 
-    // Iniciar edición de etiquetas
+    // Iniciar edición de documento
     const startEditTags = (doc: DocumentoItem) => {
         setEditingDocId(doc.id)
         setEditingTags([...doc.etiquetas])
+        setEditingTitle(doc.titulo)
+        setEditingDescription(doc.descripcionGenerada || "")
     }
 
     // Cancelar edición
     const cancelEditTags = () => {
         setEditingDocId(null)
         setEditingTags([])
+        setEditingTitle("")
+        setEditingDescription("")
     }
 
-    // Guardar etiquetas editadas
+    // Guardar cambios del documento
     const saveEditedTags = async (docId: string) => {
         if (!token) return
         if (editingTags.length === 0) {
             setError("Debe haber al menos una etiqueta")
+            return
+        }
+        if (!editingTitle.trim()) {
+            setError("El título no puede estar vacío")
             return
         }
 
@@ -380,7 +395,11 @@ export default function DocumentacionPage() {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ etiquetas: editingTags }),
+                body: JSON.stringify({ 
+                    etiquetas: editingTags,
+                    titulo: editingTitle.trim(),
+                    descripcion: editingDescription.trim() || null,
+                }),
             })
 
             if (!response.ok) {
@@ -388,9 +407,11 @@ export default function DocumentacionPage() {
                 throw new Error(body?.message || "No se pudo actualizar el documento")
             }
 
-            setFeedback("Etiquetas actualizadas correctamente")
+            setFeedback("Documento actualizado correctamente")
             setEditingDocId(null)
             setEditingTags([])
+            setEditingTitle("")
+            setEditingDescription("")
             fetchDocuments()
         } catch (err) {
             const message = err instanceof Error ? err.message : "No se pudo actualizar"
@@ -562,6 +583,18 @@ export default function DocumentacionPage() {
                                 onChange={(event) => setFormTitle(event.target.value)}
                             />
                             <p className="text-xs text-muted-foreground">Si lo dejas vacío se usará el nombre del archivo.</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="descripcion-documento">Descripción (opcional)</Label>
+                            <textarea
+                                id="descripcion-documento"
+                                placeholder="Descripción personalizada del documento"
+                                value={formDescription}
+                                onChange={(event) => setFormDescription(event.target.value)}
+                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                            <p className="text-xs text-muted-foreground">Si lo dejas vacío se generará automáticamente con IA.</p>
                         </div>
 
                         <div className="space-y-3">
@@ -740,26 +773,60 @@ export default function DocumentacionPage() {
                                     return (
                                         <tr key={documento.id} className="align-top">
                                             <td className="px-4 py-4">
-                                                <div className="font-medium text-foreground">{documento.titulo}</div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {documento.nombreOriginal} · {formatSize(documento.tamanoBytes)}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-4">
-                                                {documento.estadoProcesamiento === "ERROR" && documento.mensajeError ? (
-                                                    <div className="flex items-start gap-2 text-sm text-destructive">
-                                                        <AlertCircle className="mt-0.5 h-4 w-4" aria-hidden="true" />
-                                                        <span>{documento.mensajeError}</span>
+                                                {isEditing ? (
+                                                    <div className="space-y-2">
+                                                        <div>
+                                                            <Label htmlFor={`edit-titulo-${documento.id}`} className="text-xs">Título</Label>
+                                                            <Input
+                                                                id={`edit-titulo-${documento.id}`}
+                                                                value={editingTitle}
+                                                                onChange={(e) => setEditingTitle(e.target.value)}
+                                                                className="mt-1"
+                                                            />
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {documento.nombreOriginal} · {formatSize(documento.tamanoBytes)}
+                                                        </div>
                                                     </div>
                                                 ) : (
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {documento.descripcionGenerada || "En espera de procesamiento"}
-                                                    </p>
+                                                    <>
+                                                        <div className="font-medium text-foreground">{documento.titulo}</div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {documento.nombreOriginal} · {formatSize(documento.tamanoBytes)}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                {isEditing ? (
+                                                    <div>
+                                                        <Label htmlFor={`edit-descripcion-${documento.id}`} className="text-xs">Descripción</Label>
+                                                        <textarea
+                                                            id={`edit-descripcion-${documento.id}`}
+                                                            value={editingDescription}
+                                                            onChange={(e) => setEditingDescription(e.target.value)}
+                                                            className="mt-1 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {documento.estadoProcesamiento === "ERROR" && documento.mensajeError ? (
+                                                            <div className="flex items-start gap-2 text-sm text-destructive">
+                                                                <AlertCircle className="mt-0.5 h-4 w-4" aria-hidden="true" />
+                                                                <span>{documento.mensajeError}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {documento.descripcionGenerada || "En espera de procesamiento"}
+                                                            </p>
+                                                        )}
+                                                    </>
                                                 )}
                                             </td>
                                             <td className="px-4 py-4">
                                                 {isEditing ? (
                                                     <div className="space-y-2">
+                                                        <Label className="text-xs">Etiquetas</Label>
                                                         <div className="flex flex-wrap gap-1">
                                                             {tagOptions.map((tag) => {
                                                                 const active = editingTags.includes(tag.id)
@@ -777,11 +844,11 @@ export default function DocumentacionPage() {
                                                                 )
                                                             })}
                                                         </div>
-                                                        <div className="flex gap-2">
+                                                        <div className="flex gap-2 pt-2">
                                                             <Button
                                                                 size="sm"
                                                                 onClick={() => saveEditedTags(documento.id)}
-                                                                disabled={updatingDoc || editingTags.length === 0}
+                                                                disabled={updatingDoc || editingTags.length === 0 || !editingTitle.trim()}
                                                             >
                                                                 {updatingDoc ? <Loader2 className="h-3 w-3 animate-spin" /> : "Guardar"}
                                                             </Button>

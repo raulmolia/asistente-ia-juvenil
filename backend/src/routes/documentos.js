@@ -310,7 +310,7 @@ async function generarDescripcion(titulo, etiquetas, contenido) {
     return fallback || `Documento ${titulo} etiquetado como ${etiquetasLegibles || 'sin clasificar'}.`;
 }
 
-async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileBuffer }) {
+async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileBuffer, descripcionPersonalizada }) {
     const metadataBase = {
         tipo: 'documento',
         etiquetas: etiquetas.join(',') || null,
@@ -337,7 +337,11 @@ async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileB
         .replace(/\u0000/g, '')
         .replace(/\r\n/g, '\n')
         .trim();
-    const descripcionGenerada = await generarDescripcion(titulo, etiquetas, contenidoNormalizado.slice(0, 8000));
+    
+    // Usar descripción personalizada si se proporciona, sino generar una
+    const descripcionGenerada = descripcionPersonalizada 
+        ? descripcionPersonalizada.trim()
+        : await generarDescripcion(titulo, etiquetas, contenidoNormalizado.slice(0, 8000));
 
     let vectorOk = false;
     let totalChunks = 0;
@@ -461,6 +465,7 @@ router.post(
 
         const tituloOriginal = typeof req.body.titulo === 'string' ? req.body.titulo.trim() : '';
         const tituloDocumento = tituloOriginal || path.basename(req.file.originalname, path.extname(req.file.originalname));
+        const descripcionPersonalizada = typeof req.body.descripcion === 'string' ? req.body.descripcion.trim() : null;
 
         try {
             const documento = await prisma.documento.create({
@@ -482,6 +487,7 @@ router.post(
                     titulo: tituloDocumento,
                     etiquetas,
                     filePath: req.file.path,
+                    descripcionPersonalizada,
                 });
 
                 return res.status(201).json({
@@ -513,27 +519,54 @@ router.post(
     },
 );
 
-// PATCH /api/documentos/:id - Actualizar etiquetas de un documento
+// PATCH /api/documentos/:id - Actualizar etiquetas, título y descripción de un documento
 router.patch(
     '/:id',
     authenticate,
     authorize(['DOCUMENTADOR']),
     async (req, res) => {
         const { id } = req.params;
-        const { etiquetas } = req.body;
+        const { etiquetas, titulo, descripcion } = req.body;
 
-        if (!etiquetas || !Array.isArray(etiquetas) || etiquetas.length === 0) {
+        // Validar que al menos se envíe un campo para actualizar
+        if (!etiquetas && !titulo && descripcion === undefined) {
             return res.status(400).json({
-                error: 'Etiquetas inválidas',
-                message: 'Debes proporcionar al menos una etiqueta válida',
+                error: 'Datos inválidos',
+                message: 'Debes proporcionar al menos un campo para actualizar (etiquetas, titulo o descripcion)',
             });
         }
 
-        const etiquetasValidas = etiquetas.filter((tag) => ETIQUETAS_DISPONIBLES.includes(tag));
-        if (etiquetasValidas.length === 0) {
+        // Validar etiquetas si se envían
+        let etiquetasValidas = null;
+        if (etiquetas) {
+            if (!Array.isArray(etiquetas) || etiquetas.length === 0) {
+                return res.status(400).json({
+                    error: 'Etiquetas inválidas',
+                    message: 'Las etiquetas deben ser un array con al menos un elemento',
+                });
+            }
+            
+            etiquetasValidas = etiquetas.filter((tag) => ETIQUETAS_DISPONIBLES.includes(tag));
+            if (etiquetasValidas.length === 0) {
+                return res.status(400).json({
+                    error: 'Etiquetas inválidas',
+                    message: 'Ninguna de las etiquetas proporcionadas es válida',
+                });
+            }
+        }
+
+        // Validar título si se envía
+        if (titulo !== undefined && typeof titulo !== 'string') {
             return res.status(400).json({
-                error: 'Etiquetas inválidas',
-                message: 'Ninguna de las etiquetas proporcionadas es válida',
+                error: 'Título inválido',
+                message: 'El título debe ser una cadena de texto',
+            });
+        }
+
+        if (titulo !== undefined && titulo.trim().length === 0) {
+            return res.status(400).json({
+                error: 'Título inválido',
+                message: 'El título no puede estar vacío',
             });
         }
 
@@ -549,9 +582,21 @@ router.patch(
                 });
             }
 
+            // Preparar datos para actualizar
+            const dataToUpdate = {};
+            if (etiquetasValidas) {
+                dataToUpdate.etiquetas = etiquetasValidas;
+            }
+            if (titulo !== undefined) {
+                dataToUpdate.titulo = titulo.trim();
+            }
+            if (descripcion !== undefined) {
+                dataToUpdate.descripcionGenerada = descripcion ? descripcion.trim() : null;
+            }
+
             const documentoActualizado = await prisma.documento.update({
                 where: { id },
-                data: { etiquetas: etiquetasValidas },
+                data: dataToUpdate,
             });
 
             // Si el documento está completado, actualizar también en ChromaDB
@@ -564,10 +609,21 @@ router.patch(
 
                     if (chunks?.ids?.length > 0) {
                         // Actualizar metadatos de todos los chunks
-                        const updatedMetadatas = chunks.ids.map((_, index) => ({
-                            ...chunks.metadatas[index],
-                            etiquetas: etiquetasValidas,
-                        }));
+                        const updatedMetadatas = chunks.ids.map((_, index) => {
+                            const currentMetadata = { ...chunks.metadatas[index] };
+                            
+                            if (etiquetasValidas) {
+                                currentMetadata.etiquetas = etiquetasValidas;
+                            }
+                            if (titulo !== undefined) {
+                                currentMetadata.titulo = titulo.trim();
+                            }
+                            if (descripcion !== undefined) {
+                                currentMetadata.descripcion = descripcion ? descripcion.trim() : null;
+                            }
+                            
+                            return currentMetadata;
+                        });
 
                         await collection.update({
                             ids: chunks.ids,
@@ -575,7 +631,7 @@ router.patch(
                         });
                     }
                 } catch (chromaError) {
-                    console.error('Error actualizando etiquetas en ChromaDB:', chromaError);
+                    console.error('Error actualizando metadatos en ChromaDB:', chromaError);
                     // No fallar la petición si ChromaDB falla
                 }
             }

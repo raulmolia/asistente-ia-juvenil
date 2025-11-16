@@ -356,7 +356,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 router.post('/', authenticate, async (req, res) => {
-    const { message, conversationId, intent: rawIntent } = req.body || {};
+    const { message, conversationId, intent: rawIntent, tags: clientTags } = req.body || {};
 
     let conversation = null;
     let detectedIntent = DEFAULT_INTENT;
@@ -404,11 +404,16 @@ router.post('/', authenticate, async (req, res) => {
             },
         });
 
+        // Usar los tags del cliente si están disponibles, sino usar los del intent detectado
+        const tagsToSearch = (clientTags && Array.isArray(clientTags) && clientTags.length > 0)
+            ? clientTags
+            : (detectedIntent?.tags || null);
+
         contextResults = await chromaService.searchSimilar(
             trimmedMessage,
             5,
             detectedIntent?.chromaCollection,
-            detectedIntent?.tags || null,
+            tagsToSearch,
         );
 
         const contextPrompt = buildContextFromChroma(contextResults);

@@ -11,6 +11,7 @@ import {
     Activity,
     Archive,
     BookOpen,
+    BookOpenCheck,
     ChevronsLeft,
     ChevronsRight,
     LogOut,
@@ -27,6 +28,7 @@ import {
     PartyPopper,
     FileText,
     Download,
+    Info,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -458,11 +460,17 @@ export default function ChatHomePage() {
         const chatId = activeChat.id
         const previousConversationId = activeChat.conversationId
         
-        // Determinar intent basado en quickPrompts seleccionados
+        // Determinar intent y tags basados en quickPrompts seleccionados
         let intentToSend = activeChat.intent
+        let tagsToSend: string[] = []
+        
         if (selectedQuickPromptItems.length > 0) {
             // Usar el intent del primer prompt seleccionado
             intentToSend = selectedQuickPromptItems[0].intent
+            // Recopilar todos los tags de los prompts seleccionados
+            tagsToSend = Array.from(
+                new Set(selectedQuickPromptItems.flatMap(item => item.tags))
+            )
         }
 
         const userMessage: ChatMessage = {
@@ -497,6 +505,7 @@ export default function ChatHomePage() {
                     conversationId: previousConversationId,
                     message: prompt,
                     intent: intentToSend,
+                    tags: tagsToSend.length > 0 ? tagsToSend : undefined,
                 }),
             })
 
@@ -801,7 +810,8 @@ export default function ChatHomePage() {
     }
 
     if (!isAuthenticated) {
-        <DialogDescription>Los chats archivados se ocultan del panel lateral. Desarchívalos para recuperarlos cuando los necesites.</DialogDescription>
+        router.push("/auth/login")
+        return null
     }
 
     const sidebarWidthClass = isSidebarCollapsed ? "w-20" : "w-80"
@@ -1117,12 +1127,22 @@ export default function ChatHomePage() {
 
             <main className="flex flex-1 flex-col overflow-hidden">
                 <header className="flex items-center justify-between border-b border-border/60 bg-background/95 px-8 py-4">
-                    <Link 
-                        href="/acerca-de"
-                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        Acerca de
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <Link 
+                            href="/acerca-de"
+                            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <Info className="h-4 w-4" />
+                            Acerca de la RPJ
+                        </Link>
+                        <Link 
+                            href="/guia-documental"
+                            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <BookOpenCheck className="h-4 w-4" />
+                            Guía documental
+                        </Link>
+                    </div>
                     <div className="flex items-center gap-3">
                         {shareFeedback && (
                             <p className="text-xs text-primary/80" role="status">

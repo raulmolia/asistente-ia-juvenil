@@ -1,6 +1,55 @@
 // Configuración de prompts e intenciones para el asistente conversacional
 // Cada intención define un prompt de sistema base y parámetros específicos
 
+// Definición de etiquetas de documentos para clasificación en la base vectorial
+export const DOCUMENT_TAGS = {
+    PROGRAMACIONES: {
+        key: "PROGRAMACIONES",
+        label: "Programaciones",
+        description: "Planificaciones de actividades, campamentos, encuentros"
+    },
+    DINAMICAS: {
+        key: "DINAMICAS",
+        label: "Dinámicas",
+        description: "Juegos, actividades grupales, icebreakers"
+    },
+    CELEBRACIONES: {
+        key: "CELEBRACIONES",
+        label: "Celebraciones",
+        description: "Liturgias, eucaristías, celebraciones especiales"
+    },
+    ORACIONES: {
+        key: "ORACIONES",
+        label: "Oraciones",
+        description: "Reflexiones, momentos de oración, textos espirituales"
+    },
+    CONSULTA: {
+        key: "CONSULTA",
+        label: "Consulta",
+        description: "Material de referencia general"
+    },
+    PASTORAL_GENERICO: {
+        key: "PASTORAL_GENERICO",
+        label: "Pastoral Genérico",
+        description: "Contenido pastoral sin categoría específica"
+    },
+    REVISTAS: {
+        key: "REVISTAS",
+        label: "Revistas",
+        description: "Publicaciones periódicas, boletines"
+    },
+    CONTENIDO_MIXTO: {
+        key: "CONTENIDO_MIXTO",
+        label: "Contenido Mixto",
+        description: "Documentos con varios tipos de contenido"
+    },
+    OTROS: {
+        key: "OTROS",
+        label: "Otros",
+        description: "Cualquier otro tipo de documento"
+    }
+};
+
 export const CHAT_INTENTS = {
     DINAMICA: {
         id: "DINAMICA",
@@ -9,6 +58,10 @@ export const CHAT_INTENTS = {
         systemPrompt: `Eres un asistente experto en animación juvenil.
 Tu objetivo es diseñar dinámicas participativas que fomenten el encuentro, la confianza,
 la cooperación y la creatividad en grupos de adolescentes y jóvenes.
+
+Cuando respondas, consultas automáticamente la base de conocimiento vectorial buscando documentos
+etiquetados como "DINAMICAS" (juegos, actividades grupales, icebreakers). Usa esta información
+para enriquecer tus respuestas con ejemplos y contenido específico de la organización.
 
 Si el usuario no especifica una franja de edad, pregunta una sola vez con brevedad.
 El resultado debe incluir: objetivo pedagógico, descripción resumida, materiales,
@@ -25,6 +78,10 @@ Adapta el lenguaje al contexto hispanohablante y evita anglicismos innecesarios.
 Tu objetivo es crear celebraciones significativas, liturgias participativas y momentos
 especiales que conecten con la espiritualidad de adolescentes y jóvenes.
 
+Cuando respondas, consultas automáticamente la base de conocimiento vectorial buscando documentos
+etiquetados como "CELEBRACIONES" (liturgias, eucaristías, celebraciones especiales). Usa esta
+información para enriquecer tus respuestas con ejemplos y contenido específico de la organización.
+
 Incluye estructura, cantos sugeridos, símbolos, gestos, lecturas y un mensaje central.
 Adapta el tono a la edad y contexto del grupo.`,
         chromaCollection: process.env.CHROMA_COLLECTION_DOCUMENTOS || "rpjia-documentos",
@@ -37,6 +94,11 @@ Adapta el tono a la edad y contexto del grupo.`,
         systemPrompt: `Actúas como pedagogo y gestor de proyectos juveniles.
 Debes elaborar planificaciones completas: objetivos SMART, calendario, recursos necesarios,
 actores implicados, indicadores de seguimiento y recomendaciones de evaluación.
+
+Cuando respondas, consultas automáticamente la base de conocimiento vectorial buscando documentos
+etiquetados como "PROGRAMACIONES" (planificaciones de actividades, campamentos, encuentros). Usa
+esta información para enriquecer tus respuestas con ejemplos y contenido específico de la organización.
+
 Añade un resumen final que pueda compartirse con equipos animadores.`,
         chromaCollection: process.env.CHROMA_COLLECTION_DOCUMENTOS || "rpjia-documentos",
         tags: ["PROGRAMACIONES"],
@@ -48,7 +110,11 @@ Añade un resumen final que pueda compartirse con equipos animadores.`,
         systemPrompt: `Eres un asistente pastoral especializado en acompañar procesos de fe de adolescentes y jóvenes.
 Cuando el usuario solicite una oración, reflexión o momento espiritual, ofrece un texto breve,
 con lenguaje cercano y respetuoso, incluyendo una cita bíblica opcional y una invitación
-a la acción o al compromiso.`,
+a la acción o al compromiso.
+
+Cuando respondas, consultas automáticamente la base de conocimiento vectorial buscando documentos
+etiquetados como "ORACIONES" (reflexiones, momentos de oración, textos espirituales). Usa esta
+información para enriquecer tus respuestas con ejemplos y contenido específico de la organización.`,
         chromaCollection: process.env.CHROMA_COLLECTION_DOCUMENTOS || "rpjia-documentos",
         tags: ["ORACIONES"],
     },
@@ -58,9 +124,24 @@ a la acción o al compromiso.`,
         description: "Responde dudas generales sobre animación juvenil",
         systemPrompt: `Eres un asistente experto en animación y pastoral juvenil.
 Responde en castellano, con un tono cercano y profesional.
-Si necesitas más información, pide aclaraciones de forma breve.`,
+Si necesitas más información, pide aclaraciones de forma breve.
+
+Cuando respondas, consultas automáticamente la base de conocimiento vectorial. Los documentos
+están etiquetados según su contenido:
+- PROGRAMACIONES: Planificaciones de actividades, campamentos, encuentros
+- DINAMICAS: Juegos, actividades grupales, icebreakers
+- CELEBRACIONES: Liturgias, eucaristías, celebraciones especiales
+- ORACIONES: Reflexiones, momentos de oración, textos espirituales
+- CONSULTA: Material de referencia general
+- PASTORAL_GENERICO: Contenido pastoral sin categoría específica
+- REVISTAS: Publicaciones periódicas, boletines
+- CONTENIDO_MIXTO: Documentos con varios tipos de contenido
+- OTROS: Cualquier otro tipo de documento
+
+Usa esta información del repositorio documental para enriquecer tus respuestas con contenido
+específico de la organización.`,
         chromaCollection: process.env.CHROMA_COLLECTION_DOCUMENTOS || "rpjia-documentos",
-        tags: ["OTROS", "CONTENIDO_MIXTO"],
+        tags: ["OTROS", "CONTENIDO_MIXTO", "CONSULTA", "PASTORAL_GENERICO", "REVISTAS"],
     },
 };
 
