@@ -18,6 +18,7 @@ import {
     Trash2,
     X,
     ArrowUpDown,
+    Globe,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggleButton } from "@/components/theme-toggle"
+import { AddWebSourceDialog } from "@/components/add-web-source-dialog"
+import { WebSourcesTable } from "@/components/web-sources-table"
 import { useAuth } from "@/hooks/use-auth"
 import { buildApiUrl } from "@/lib/utils"
 const ALLOWED_ROLES = new Set(["SUPERADMIN", "ADMINISTRADOR", "DOCUMENTADOR", "DOCUMENTADOR_JUNIOR"])
@@ -105,7 +108,8 @@ export default function DocumentacionPage() {
     const [dropping, setDropping] = useState(false)
     const [feedback, setFeedback] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
-    const [activeView, setActiveView] = useState<"upload" | "library">("upload")
+    const [activeView, setActiveView] = useState<"upload" | "library" | "web-sources">("upload")
+    const [showAddWebDialog, setShowAddWebDialog] = useState(false)
     
     // Nuevos estados para filtrado y edición
     const [searchTerm, setSearchTerm] = useState("")
@@ -509,6 +513,7 @@ export default function DocumentacionPage() {
                         onClick={() => setActiveView("upload")}
                         aria-pressed={activeView === "upload"}
                     >
+                        <UploadCloud className="mr-2 h-4 w-4" />
                         Subir documentos
                     </Button>
                     <Button
@@ -517,7 +522,25 @@ export default function DocumentacionPage() {
                         onClick={() => setActiveView("library")}
                         aria-pressed={activeView === "library"}
                     >
+                        <FileText className="mr-2 h-4 w-4" />
                         Biblioteca documental
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowAddWebDialog(true)}
+                    >
+                        <Globe className="mr-2 h-4 w-4" />
+                        Agregar fuente web
+                    </Button>
+                    <Button
+                        type="button"
+                        variant={activeView === "web-sources" ? "default" : "outline"}
+                        onClick={() => setActiveView("web-sources")}
+                        aria-pressed={activeView === "web-sources"}
+                    >
+                        <Globe className="mr-2 h-4 w-4" />
+                        Ver fuentes web
                     </Button>
                 </div>
                 <Button variant="ghost" onClick={() => router.push("/")}>Volver al chat</Button>
@@ -950,9 +973,30 @@ export default function DocumentacionPage() {
                 </section>
             )}
 
+            {activeView === "web-sources" && (
+                <WebSourcesTable
+                    token={token}
+                    tagOptions={tagOptions}
+                    canEditDelete={canEditDelete}
+                />
+            )}
+
+            <AddWebSourceDialog
+                isOpen={showAddWebDialog}
+                onClose={() => setShowAddWebDialog(false)}
+                token={token}
+                tagOptions={tagOptions}
+                onSuccess={() => {
+                    setFeedback("Fuente web agregada correctamente. Procesando...")
+                    if (activeView === "web-sources") {
+                        // La tabla se actualizará automáticamente al cerrar el diálogo
+                    }
+                }}
+            />
+
             <section className="rounded-2xl border border-dashed border-border/70 bg-muted/30 p-6 text-sm text-muted-foreground">
                 <p>
-                    Los documentos subidos se almacenan en el servidor y su contenido se replica en la base vectorial para poder consultarlo desde la IA. Mantén actualizado este espacio con materiales útiles para monitores y animadores.
+                    Los documentos y fuentes web se almacenan en el servidor y su contenido se replica en la base vectorial para poder consultarlo desde la IA. Mantén actualizado este espacio con materiales útiles para monitores y animadores.
                 </p>
             </section>
         </div>

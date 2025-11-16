@@ -129,6 +129,22 @@ Scripts útiles:
 5. Priorización de herramientas MCP
 6. Despliegue productivo: `npm run deploy` (incluye `git pull`, instalación, migraciones, build, reinicio PM2)
 
+### Build y Despliegue Frontend
+
+**Importante:** El build del frontend incluye automáticamente la copia de archivos estáticos necesarios para Next.js standalone.
+
+```bash
+# Build automático (recomendado) - copia archivos automáticamente
+cd frontend
+npm run build
+
+# Si la aplicación se queda en "Preparando tu espacio de trabajo..."
+bash ../scripts/post-build-frontend.sh
+npx pm2 restart rpjia-frontend
+```
+
+Ver documentación completa en [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+
 ## 🗃️ Base de Datos
 
 ### MariaDB Principal

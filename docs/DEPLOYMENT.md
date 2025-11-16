@@ -43,11 +43,18 @@ frontend/.next/standalone/
 ```bash
 cd /var/www/vhosts/ia.rpj.es/httpdocs/frontend
 npm run build
+# Esto ejecutará automáticamente el postbuild que copia los archivos estáticos
 ```
 
-### 2. Copiar archivos estáticos (CRÍTICO)
+**Nota:** El script `npm run build` ahora ejecuta automáticamente `../scripts/post-build-frontend.sh` que copia los archivos estáticos. Si por alguna razón necesitas hacerlo manualmente:
+
+### 2. Copiar archivos estáticos manualmente (solo si falla el postbuild automático)
 ```bash
-# Desde el directorio frontend/
+# Desde el directorio raíz del proyecto
+bash scripts/post-build-frontend.sh
+
+# O manualmente:
+cd frontend
 rm -rf .next/standalone/.next/static .next/standalone/public
 cp -R .next/static .next/standalone/.next/
 cp -R public .next/standalone/
@@ -109,18 +116,36 @@ npx pm2 restart rpjia-frontend
 
 ### Aplicación se queda en "Preparando tu espacio de trabajo..."
 
-**Causas posibles:**
-1. Error en el código del frontend (revisar logs)
-2. Archivos estáticos no disponibles (ver arriba)
-3. Problema de autenticación/permisos
+**Causa:** Los archivos estáticos de Next.js no están disponibles en `.next/standalone/.next/static` o `.next/standalone/public`
+
+**Solución automática (recomendada):**
+```bash
+cd /var/www/vhosts/ia.rpj.es/httpdocs
+bash scripts/post-build-frontend.sh
+npx pm2 restart rpjia-frontend
+```
+
+**Solución manual:**
+```bash
+cd /var/www/vhosts/ia.rpj.es/httpdocs/frontend
+cp -R .next/static .next/standalone/.next/
+cp -R public .next/standalone/
+cd ..
+npx pm2 restart rpjia-frontend
+```
+
+**Prevención:** A partir de ahora, `npm run build` ejecuta automáticamente el script post-build que copia los archivos. Si encuentras este problema, significa que:
+1. Se hizo un build sin usar el comando npm oficial
+2. El script post-build falló (revisar permisos o logs)
 
 **Diagnóstico:**
 ```bash
 # Ver logs del frontend
 npx pm2 logs rpjia-frontend --lines 50
 
-# Ver errores de compilación
-cd frontend && npm run build
+# Verificar que existen los archivos estáticos
+ls -la frontend/.next/standalone/.next/static/
+ls -la frontend/.next/standalone/public/
 ```
 
 ### PM2 no inicia el frontend
