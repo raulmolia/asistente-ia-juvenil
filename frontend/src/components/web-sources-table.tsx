@@ -189,11 +189,6 @@ export function WebSourcesTable({ token, tagOptions, canEditDelete }: WebSources
     }
 
     const handleDelete = async (sourceId: string) => {
-        if (!confirm("¿Eliminar esta fuente web? Esta acción no se puede deshacer.")) {
-            setDeletingId(null)
-            return
-        }
-
         setUpdating(true)
         try {
             const response = await fetch(buildApiUrl(`/api/fuentes-web/${sourceId}`), {
@@ -214,10 +209,6 @@ export function WebSourcesTable({ token, tagOptions, canEditDelete }: WebSources
     }
 
     const handleReprocess = async (sourceId: string) => {
-        if (!confirm("¿Reprocesar esta fuente web? Se volverá a descargar y vectorizar el contenido.")) {
-            return
-        }
-
         setUpdating(true)
         try {
             const response = await fetch(buildApiUrl(`/api/fuentes-web/${sourceId}/reprocesar`), {
@@ -281,8 +272,8 @@ export function WebSourcesTable({ token, tagOptions, canEditDelete }: WebSources
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
-                        <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                        <Globe className="h-5 w-5 text-foreground" />
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -516,68 +507,89 @@ export function WebSourcesTable({ token, tagOptions, canEditDelete }: WebSources
                                             </td>
                                             {canEditDelete && (
                                                 <td className="px-4 py-3">
-                                                    <div className="flex justify-end gap-1">
-                                                        {isEditing ? (
-                                                            <>
+                                                    {deletingId === source.id ? (
+                                                        <div className="flex flex-col gap-2">
+                                                            <p className="text-xs text-muted-foreground">¿Eliminar?</p>
+                                                            <div className="flex gap-2">
                                                                 <Button
                                                                     size="sm"
-                                                                    variant="ghost"
-                                                                    onClick={() => handleSaveEdit(source.id)}
+                                                                    variant="destructive"
+                                                                    onClick={() => handleDelete(source.id)}
                                                                     disabled={updating}
-                                                                    className="h-7 px-2"
                                                                 >
-                                                                    Guardar
+                                                                    {updating ? <Loader2 className="h-3 w-3 animate-spin" /> : "Sí"}
                                                                 </Button>
                                                                 <Button
                                                                     size="sm"
                                                                     variant="ghost"
-                                                                    onClick={handleCancelEdit}
+                                                                    onClick={() => setDeletingId(null)}
                                                                     disabled={updating}
-                                                                    className="h-7 px-2"
                                                                 >
-                                                                    Cancelar
+                                                                    No
                                                                 </Button>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                {source.estadoProcesamiento === "ERROR" && (
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex justify-end gap-1">
+                                                            {isEditing ? (
+                                                                <>
                                                                     <Button
                                                                         size="sm"
                                                                         variant="ghost"
-                                                                        onClick={() => handleReprocess(source.id)}
+                                                                        onClick={() => handleSaveEdit(source.id)}
                                                                         disabled={updating}
-                                                                        title="Reprocesar"
+                                                                        className="h-7 px-2"
+                                                                    >
+                                                                        Guardar
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        onClick={handleCancelEdit}
+                                                                        disabled={updating}
+                                                                        className="h-7 px-2"
+                                                                    >
+                                                                        Cancelar
+                                                                    </Button>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    {source.estadoProcesamiento === "ERROR" && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            onClick={() => handleReprocess(source.id)}
+                                                                            disabled={updating}
+                                                                            title="Reprocesar"
+                                                                            className="h-7 w-7 p-0"
+                                                                        >
+                                                                            <RefreshCw className="h-3.5 w-3.5" />
+                                                                        </Button>
+                                                                    )}
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        onClick={() => handleEdit(source)}
+                                                                        disabled={updating || deletingId !== null}
+                                                                        title="Editar"
                                                                         className="h-7 w-7 p-0"
                                                                     >
-                                                                        <RefreshCw className="h-3.5 w-3.5" />
+                                                                        <Edit className="h-3.5 w-3.5" />
                                                                     </Button>
-                                                                )}
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                    onClick={() => handleEdit(source)}
-                                                                    disabled={updating}
-                                                                    title="Editar"
-                                                                    className="h-7 w-7 p-0"
-                                                                >
-                                                                    <Edit className="h-3.5 w-3.5" />
-                                                                </Button>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                    onClick={() => {
-                                                                        setDeletingId(source.id)
-                                                                        handleDelete(source.id)
-                                                                    }}
-                                                                    disabled={updating}
-                                                                    title="Eliminar"
-                                                                    className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
-                                                                >
-                                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                                </Button>
-                                                            </>
-                                                        )}
-                                                    </div>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        onClick={() => setDeletingId(source.id)}
+                                                                        disabled={updating || deletingId !== null || editingId !== null}
+                                                                        title="Eliminar"
+                                                                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+                                                                    >
+                                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </td>
                                             )}
                                         </tr>

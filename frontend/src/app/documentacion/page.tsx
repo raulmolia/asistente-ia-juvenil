@@ -646,7 +646,7 @@ export default function DocumentacionPage() {
                                         checked={webTipoFuente === "PAGINA"}
                                         onChange={(e) => setWebTipoFuente(e.target.value)}
                                         disabled={submittingWeb}
-                                        className="mt-1" 
+                                        className="mt-1 accent-foreground" 
                                     />
                                     <div className="flex-1">
                                         <div className="font-medium text-sm">Página individual</div>
@@ -661,7 +661,7 @@ export default function DocumentacionPage() {
                                         checked={webTipoFuente === "DOMINIO"}
                                         onChange={(e) => setWebTipoFuente(e.target.value)}
                                         disabled={submittingWeb}
-                                        className="mt-1" 
+                                        className="mt-1 accent-foreground" 
                                     />
                                     <div className="flex-1">
                                         <div className="font-medium text-sm">Dominio completo</div>
@@ -676,7 +676,7 @@ export default function DocumentacionPage() {
                                         checked={webTipoFuente === "SITEMAP"}
                                         onChange={(e) => setWebTipoFuente(e.target.value)}
                                         disabled={submittingWeb}
-                                        className="mt-1" 
+                                        className="mt-1 accent-foreground" 
                                     />
                                     <div className="flex-1">
                                         <div className="font-medium text-sm">Sitemap XML</div>
