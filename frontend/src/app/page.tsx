@@ -49,6 +49,12 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -841,50 +847,70 @@ export default function ChatHomePage() {
                         "dark:border-white/30 dark:bg-white/5",
                     )}
                 >
-                    <button
-                        type="button"
-                        onClick={() => setIsThinkingMode(!isThinkingMode)}
-                        className={cn(
-                            "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition hover:opacity-80",
-                            isThinkingMode
-                                ? "border-orange-500 bg-orange-100 text-orange-800 dark:border-orange-500 dark:bg-orange-950/60 dark:text-orange-300"
-                                : "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                        )}
-                        aria-label="Modo Thinking"
-                        aria-pressed={isThinkingMode}
-                    >
-                        <Brain className="h-4 w-4" aria-hidden="true" />
-                        Thinking
-                    </button>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-10 w-10 rounded-full border border-black bg-black text-white hover:bg-black/80 dark:border-white/40"
-                                aria-label="Insertar plantilla"
-                            >
-                                <Plus className="h-5 w-5" aria-hidden="true" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-56">
-                            {quickPrompts.map((item) => {
-                                const Icon = item.icon
-                                const isSelected = selectedQuickPrompts.includes(item.label)
-                                return (
-                                    <DropdownMenuItem
-                                        key={item.label}
-                                        className={cn(isSelected && "bg-primary/10 text-primary")}
-                                        onSelect={() => handleQuickPromptToggle(item)}
-                                    >
-                                        <Icon className="mr-2 h-4 w-4 text-primary" aria-hidden="true" />
-                                        {item.label}
-                                    </DropdownMenuItem>
-                                )
-                            })}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-10 w-10 rounded-full border border-black bg-black text-white hover:bg-black/80 dark:border-white/40"
+                                                aria-label="Seleccionar categorías"
+                                            >
+                                                <Plus className="h-5 w-5" aria-hidden="true" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start" className="w-56">
+                                            {quickPrompts.map((item) => {
+                                                const Icon = item.icon
+                                                const isSelected = selectedQuickPrompts.includes(item.label)
+                                                return (
+                                                    <DropdownMenuItem
+                                                        key={item.label}
+                                                        className={cn(isSelected && "bg-primary/10 text-primary")}
+                                                        onSelect={() => handleQuickPromptToggle(item)}
+                                                    >
+                                                        <Icon className="mr-2 h-4 w-4 text-primary" aria-hidden="true" />
+                                                        {item.label}
+                                                    </DropdownMenuItem>
+                                                )
+                                            })}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                                <p>Selecciona categorías para filtrar los documentos</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsThinkingMode(!isThinkingMode)}
+                                    className={cn(
+                                        "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition hover:opacity-80",
+                                        isThinkingMode
+                                            ? "border-orange-500 bg-orange-100 text-orange-800 dark:border-orange-500 dark:bg-orange-950/60 dark:text-orange-300"
+                                            : "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                                    )}
+                                    aria-label="Modo Thinking"
+                                    aria-pressed={isThinkingMode}
+                                >
+                                    <Brain className="h-4 w-4" aria-hidden="true" />
+                                    Thinking
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                                <p>Activa el modelo de razonamiento profundo para respuestas más elaboradas</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                     <div className="flex flex-1 flex-col gap-1">
                         {selectedQuickPromptItems.length > 0 && (
                             <div className="flex flex-wrap items-center gap-2">
