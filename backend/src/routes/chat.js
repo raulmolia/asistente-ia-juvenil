@@ -356,7 +356,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 router.post('/', authenticate, async (req, res) => {
-    const { message, conversationId, intent: rawIntent, tags: clientTags } = req.body || {};
+    const { message, conversationId, intent: rawIntent, tags: clientTags, useThinkingModel } = req.body || {};
 
     let conversation = null;
     let detectedIntent = DEFAULT_INTENT;
@@ -436,6 +436,7 @@ router.post('/', authenticate, async (req, res) => {
         try {
             llmResponse = await callChatCompletion({
                 messages: llmMessages,
+                model: useThinkingModel === true ? 'moonshotai/Kimi-K2-Thinking' : undefined,
             });
         } catch (error) {
             throw new Error(`El modelo no pudo generar una respuesta: ${error.message}`);

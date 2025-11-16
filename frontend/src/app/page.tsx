@@ -29,6 +29,7 @@ import {
     FileText,
     Download,
     Info,
+    Brain,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -206,6 +207,7 @@ export default function ChatHomePage() {
         [],
     )
     const [selectedQuickPrompts, setSelectedQuickPrompts] = useState<string[]>([])
+    const [isThinkingMode, setIsThinkingMode] = useState(false)
     const selectedQuickPromptItems = useMemo(() => {
         const labelSet = new Set(selectedQuickPrompts)
         return quickPrompts.filter((prompt) => labelSet.has(prompt.label))
@@ -506,6 +508,7 @@ export default function ChatHomePage() {
                     message: prompt,
                     intent: intentToSend,
                     tags: tagsToSend.length > 0 ? tagsToSend : undefined,
+                    useThinkingModel: isThinkingMode,
                 }),
             })
 
@@ -838,6 +841,21 @@ export default function ChatHomePage() {
                         "dark:border-white/30 dark:bg-white/5",
                     )}
                 >
+                    <button
+                        type="button"
+                        onClick={() => setIsThinkingMode(!isThinkingMode)}
+                        className={cn(
+                            "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition hover:opacity-80",
+                            isThinkingMode
+                                ? "border-orange-500 bg-orange-100 text-orange-800 dark:border-orange-500 dark:bg-orange-950/60 dark:text-orange-300"
+                                : "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                        )}
+                        aria-label="Modo Thinking"
+                        aria-pressed={isThinkingMode}
+                    >
+                        <Brain className="h-4 w-4" aria-hidden="true" />
+                        Thinking
+                    </button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
