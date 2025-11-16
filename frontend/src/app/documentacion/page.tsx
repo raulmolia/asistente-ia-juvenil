@@ -757,7 +757,7 @@ export default function DocumentacionPage() {
                 </section>
             )}
 
-            {activeView === "upload" ? (
+            {activeView === "upload" && (
                 <form
                     className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm"
                     onSubmit={handleSubmit}
@@ -883,7 +883,9 @@ export default function DocumentacionPage() {
                         <Button variant="ghost" onClick={() => setActiveView("library")}>Ir a la biblioteca</Button>
                     </div>
                 </form>
-            ) : (
+            )}
+
+            {activeView === "library" && (
                 <section className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm">
                     <header className="flex items-center justify-between gap-3">
                         <div>
