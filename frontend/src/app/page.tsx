@@ -1206,11 +1206,8 @@ export default function ChatHomePage() {
                 <section className="flex flex-1 flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/40">
                     {!hasMessages ? (
                         <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8">
-                            <div className="flex flex-col items-center gap-3 text-center">
-                                <div className="relative h-14 w-14 overflow-hidden rounded-full bg-white shadow">
-                                    <Image src="/logo.png" alt="RPJ" fill className="object-contain" sizes="56px" />
-                                </div>
-                                <p className="text-lg font-semibold">¿En qué puedo ayudarte?</p>
+                            <div className="flex flex-col items-center gap-6 text-center">
+                                <p className="text-2xl font-medium text-foreground">¿En qué puedo ayudarte?</p>
                             </div>
                             {renderPromptComposer("center")}
                         </div>
