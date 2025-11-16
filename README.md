@@ -163,6 +163,9 @@ Scripts útiles:
 - **Dinámicas de grupo** adaptadas al contexto
 - **Oraciones y reflexiones** según temáticas
 - **Recomendaciones inteligentes** basadas en historial
+- **Restricción temática**: Solo responde sobre pastoral juvenil, religión católica y temas relacionados
+- **RAG flexible**: Prioriza documentación vectorial pero usa conocimiento del modelo cuando es necesario
+- **Fuentes web**: Consulta páginas web, dominios completos y sitemaps como fuentes adicionales de información
 
 ## 👤 Interfaz de Usuario
 
@@ -171,6 +174,7 @@ Scripts útiles:
 - Botón superior para alternar entre modo claro y oscuro gestionado por `next-themes`
 - Panel de administración con alta de usuarios, asignación de roles y eliminación segura según jerarquía
 - Gestión documental desde `/documentacion` con subida de PDFs, etiquetado y biblioteca enlazada a la base vectorial
+- Gestión de fuentes web desde `/fuentes-web` con scraping de URLs, dominios y sitemaps
 
 ## 📋 Directrices de Desarrollo
 

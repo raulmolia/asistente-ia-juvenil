@@ -1,5 +1,24 @@
 # Registro de Desarrollo - Asistente IA para Actividades Juveniles
 
+## Actualización 16 de noviembre de 2025 - Sistema de fuentes web
+- 🌐 **Scraping web integrado**: El asistente ahora puede consultar páginas web además de documentos PDF
+- 📄 **Tres tipos de fuente**: PAGINA (URL individual), DOMINIO (crawling completo hasta 50 páginas), SITEMAP (procesamiento de XML)
+- 🛠️ **Servicio webScraperService**: Implementado con cheerio para extracción de HTML limpio, límites configurables, timeout 30s
+- 🗄️ **Modelo FuenteWeb**: Nueva tabla con campos para URL, dominio, etiquetas, tipo, estado de procesamiento y vectorización
+- 🔌 **API REST**: Endpoints en `/api/fuentes-web` para listar, agregar, editar, eliminar y reprocesar fuentes
+- 🔍 **Búsqueda combinada**: Chat busca en paralelo en documentos PDF y fuentes web, ordena por relevancia vectorial
+- 📦 **Dependencia cheerio**: Versión 1.0.0-rc.12 para parsing HTML avanzado
+- ⚙️ **Variables de entorno**: WEB_SCRAPER_MAX_PAGES, WEB_SCRAPER_MAX_SIZE, WEB_SCRAPER_USER_AGENT, WEB_SCRAPER_TIMEOUT_MS, WEB_CHUNK_SIZE, WEB_CHUNK_OVERLAP, WEB_MAX_CHUNKS, CHROMA_COLLECTION_WEB
+
+## Actualización 16 de noviembre de 2025 - Restricciones temáticas y RAG flexible
+- 🎯 Restricción temática estricta implementada en todos los prompts del sistema
+- 🚫 El asistente SOLO responde preguntas sobre pastoral juvenil, religión católica y temas relacionados
+- 💬 Mensaje de rechazo educado para preguntas fuera de tema
+- 📚 Uso flexible de documentación RAG: prioritaria pero no exclusiva
+- 🧠 El modelo puede usar su conocimiento cuando la documentación es insuficiente
+- ✅ Actualizado en las 5 intenciones: DINAMICA, CELEBRACION, PROGRAMACION, ORACION, OTROS
+- 📝 Prompts restructurados con secciones claras de restricción temática y uso de documentación
+
 ## Actualización 13 de noviembre de 2025 - Corrección UI sidebar
 - 🐛 Solucionado problema crítico en panel lateral: títulos largos ocultaban el botón de opciones ("...")
 - 🎨 Cambio de grid a flexbox para mejor control del espacio en items de chat

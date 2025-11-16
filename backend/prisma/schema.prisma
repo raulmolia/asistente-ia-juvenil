@@ -52,6 +52,7 @@ model Usuario {
   favoritos       ActividadFavorita[]
   documentos      Documento[]
   conversaciones  Conversacion[]
+  fuentesWeb      FuenteWeb[]
   
   @@map("usuarios")
 }
@@ -223,6 +224,35 @@ model Documento {
   @@index([estadoProcesamiento], name: "idx_documentos_estado")
 }
 
+// Fuentes web para búsqueda y scraping
+model FuenteWeb {
+  id                   String                 @id @default(cuid())
+  usuarioId            String?
+  url                  String
+  dominio              String
+  titulo               String?
+  descripcion          String?
+  etiquetas            Json
+  tipoFuente           TipoFuenteWeb          @default(PAGINA)
+  estadoProcesamiento  EstadoProcesamiento    @default(PENDIENTE)
+  mensajeError         String?
+  fechaProcesamiento   DateTime?
+  contenidoExtraido    String?                @db.LongText
+  vectorDocumentoId    String?
+  coleccionVectorial   String?
+  activa               Boolean                @default(true)
+  fechaCreacion        DateTime               @default(now())
+  fechaActualizacion   DateTime               @updatedAt
+
+  // Relaciones
+  usuario              Usuario?               @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@map("fuentes_web")
+  @@index([dominio], name: "idx_fuentes_web_dominio")
+  @@index([estadoProcesamiento], name: "idx_fuentes_web_estado")
+  @@index([activa], name: "idx_fuentes_web_activa")
+}
+
 // Conversaciones del chat IA
 model Conversacion {
   id                 String              @id @default(cuid())
@@ -283,4 +313,11 @@ enum RolMensaje {
   USUARIO
   ASISTENTE
   SISTEMA
+}
+
+// Enum de tipo de fuente web
+enum TipoFuenteWeb {
+  PAGINA      // URL específica
+  DOMINIO     // Dominio completo para scraping
+  SITEMAP     // URL de sitemap XML
 }

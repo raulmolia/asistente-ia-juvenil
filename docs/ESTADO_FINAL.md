@@ -68,6 +68,25 @@
 - ✅ **DKIM activado**: Firma de mensajes salientes habilitada en Plesk
 - ⏳ **Pendiente DNS**: Registros MX necesarios para entrega de emails (en gestión externa)
 
+### Restricciones Temáticas y Uso de RAG (16 nov 2025)
+- ✅ **Restricción temática estricta**: El asistente SOLO responde preguntas sobre pastoral juvenil, religión católica y temas relacionados
+- ✅ **Mensaje de rechazo amable**: Preguntas fuera de tema reciben respuesta educada explicando la especialización del asistente
+- ✅ **Uso flexible de documentación RAG**: La documentación vectorial es prioritaria pero NO exclusiva
+- ✅ **Conocimiento del modelo**: Si no hay suficiente documentación, el modelo puede usar su entrenamiento sobre pastoral y religión católica
+- ✅ **Aplicado a todas las intenciones**: DINAMICA, CELEBRACION, PROGRAMACION, ORACION y OTROS incluyen ambas directrices
+- ✅ **Prompts actualizados**: Sistema de prompts en `backend/src/config/chatPrompts.js` con secciones claras de restricción temática y uso de documentación
+
+### Sistema de Fuentes Web (16 nov 2025)
+- ✅ **Modelo FuenteWeb**: Tabla en base de datos con campos para URL, dominio, título, descripción, etiquetas, tipo de fuente, estado de procesamiento y contenido extraído
+- ✅ **Tipos de fuente**: PAGINA (URL individual), DOMINIO (crawling completo), SITEMAP (procesamiento de XML sitemap)
+- ✅ **Servicio de scraping**: `webScraperService.js` con cheerio para extracción de HTML, límites configurables (50 páginas máximo por dominio), timeout de 30 segundos, tamaño máximo 5MB
+- ✅ **API REST completa**: Endpoints CRUD en `/api/fuentes-web` (GET etiquetas, GET listar, POST agregar, PATCH actualizar, DELETE eliminar, POST reprocesar)
+- ✅ **Vectorización automática**: Contenido web se divide en chunks (1500 caracteres, overlap 200) y se indexa en ChromaDB colección `rpjia-fuentes-web`
+- ✅ **Integración con chat**: Búsqueda paralela en documentos PDF y fuentes web, combinación por relevancia (distancia vectorial), contexto enriquecido con URLs de origen
+- ✅ **Procesamiento en background**: Scraping y vectorización no bloquean la respuesta HTTP, actualización de estado en BD
+- ✅ **Dependencia cheerio**: Versión 1.0.0-rc.12 instalada para parsing HTML avanzado
+- ✅ **Variables de entorno**: WEB_SCRAPER_MAX_PAGES, WEB_SCRAPER_MAX_SIZE, WEB_SCRAPER_USER_AGENT, WEB_SCRAPER_TIMEOUT_MS, WEB_CHUNK_SIZE, WEB_CHUNK_OVERLAP, WEB_MAX_CHUNKS, CHROMA_COLLECTION_WEB
+
 ## Panorama general
 
 - Plataforma conversacional operativa en producción (`https://ia.rpj.es`)

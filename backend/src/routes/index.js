@@ -4,6 +4,7 @@ import prismaPackage from '@prisma/client';
 import chromaService from '../services/chromaService.js';
 import authRoutes from './auth.js';
 import documentosRoutes from './documentos.js';
+import fuentesWebRoutes from './fuentesWeb.js';
 import chatRoutes from './chat.js';
 import passwordRoutes from './password.js';
 
@@ -15,6 +16,7 @@ const prisma = new PrismaClient();
 // Subrutas
 router.use('/auth', authRoutes);
 router.use('/documentos', documentosRoutes);
+router.use('/fuentes-web', fuentesWebRoutes);
 router.use('/chat', chatRoutes);
 router.use('/password', passwordRoutes);
 

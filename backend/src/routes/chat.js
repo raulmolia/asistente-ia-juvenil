@@ -120,7 +120,14 @@ function buildContextFromChroma(results = []) {
         const etiquetas = Array.isArray(item?.metadata?.etiquetas)
             ? `Etiquetas: ${item.metadata.etiquetas.join(', ')}`
             : '';
-        const source = item?.metadata?.nombreOriginal || item?.metadata?.documentoId || item?.id;
+        
+        // Identificar tipo de fuente
+        const tipo = item?.metadata?.tipo || 'documento';
+        const sourceUrl = item?.metadata?.url || item?.metadata?.pagina_url;
+        const source = sourceUrl 
+            ? `${tipo === 'fuente_web' ? 'Web: ' : ''}${sourceUrl}`
+            : (item?.metadata?.nombreOriginal || item?.metadata?.documentoId || item?.id);
+        
         const fragment = (item?.document || '').trim().slice(0, 1200);
         return [`### Fuente: ${title}`, etiquetas, fragment, `Referencia: ${source}`]
             .filter((value) => value && value.length > 0)
@@ -409,12 +416,36 @@ router.post('/', authenticate, async (req, res) => {
             ? clientTags
             : (detectedIntent?.tags || null);
 
-        contextResults = await chromaService.searchSimilar(
-            trimmedMessage,
-            5,
-            detectedIntent?.chromaCollection,
-            tagsToSearch,
-        );
+        // Buscar en ambas colecciones: documentos y fuentes web
+        const CHROMA_COLLECTION_DOCUMENTOS = process.env.CHROMA_COLLECTION_DOCUMENTOS || detectedIntent?.chromaCollection;
+        const CHROMA_WEB_COLLECTION = process.env.CHROMA_COLLECTION_WEB || 'rpjia-fuentes-web';
+
+        // Realizar búsquedas en paralelo
+        const [documentResults, webResults] = await Promise.all([
+            chromaService.searchSimilar(
+                trimmedMessage,
+                3,
+                CHROMA_COLLECTION_DOCUMENTOS,
+                tagsToSearch,
+            ).catch(err => {
+                console.warn('Error buscando en documentos:', err.message);
+                return [];
+            }),
+            chromaService.searchSimilar(
+                trimmedMessage,
+                2,
+                CHROMA_WEB_COLLECTION,
+                tagsToSearch,
+            ).catch(err => {
+                console.warn('Error buscando en fuentes web:', err.message);
+                return [];
+            }),
+        ]);
+
+        // Combinar y ordenar por relevancia (distancia)
+        contextResults = [...documentResults, ...webResults]
+            .sort((a, b) => (a.distance || 999) - (b.distance || 999))
+            .slice(0, 5);
 
         const contextPrompt = buildContextFromChroma(contextResults);
 
