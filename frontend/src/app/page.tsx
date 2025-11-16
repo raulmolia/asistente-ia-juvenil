@@ -843,7 +843,7 @@ export default function ChatHomePage() {
                 )}
                 <div
                     className={cn(
-                        "flex items-end gap-3 rounded-[32px] border-2 border-black/60 bg-white/95 px-4 py-3 shadow-sm",
+                        "flex flex-col gap-3 rounded-[32px] border-2 border-black/60 bg-white/95 px-4 py-3 shadow-sm",
                         "dark:border-white/30 dark:bg-white/5",
                     )}
                 >
@@ -911,7 +911,7 @@ export default function ChatHomePage() {
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                    <div className="flex flex-1 flex-col gap-1">
+                    <div className="flex w-full flex-col gap-1">
                         {selectedQuickPromptItems.length > 0 && (
                             <div className="flex flex-wrap items-center gap-2">
                                 {selectedQuickPromptItems.map((item) => {
@@ -948,22 +948,23 @@ export default function ChatHomePage() {
                             onKeyDown={handlePromptKeyDown}
                             placeholder=""
                             className={cn(
-                                "h-auto min-h-0 flex-1 resize-none border-none bg-transparent px-0 py-2 text-sm leading-6 shadow-none",
+                                "min-h-[120px] resize-none border-none bg-transparent px-0 py-2 text-sm leading-6 shadow-none",
                                 "focus-visible:ring-0 focus-visible:ring-offset-0",
                             )}
-                            style={{ overflowY: "hidden" }}
                             disabled={isThinking || !activeChat}
                         />
                     </div>
-                    <Button
-                        type="submit"
-                        size="icon"
-                        className="h-10 w-10 rounded-full bg-black text-white hover:bg-black/80 disabled:bg-zinc-400 disabled:text-zinc-100"
-                        disabled={isThinking || inputValue.trim().length === 0 || !activeChat}
-                        aria-label="Enviar"
-                    >
-                        <Send className="h-4 w-4" aria-hidden="true" />
-                    </Button>
+                    <div className="flex items-center justify-end">
+                        <Button
+                            type="submit"
+                            size="icon"
+                            className="h-10 w-10 rounded-full bg-black text-white hover:bg-black/80 disabled:bg-zinc-400 disabled:text-zinc-100"
+                            disabled={isThinking || inputValue.trim().length === 0 || !activeChat}
+                            aria-label="Enviar"
+                        >
+                            <Send className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                    </div>
                 </div>
             </div>
         </form>
