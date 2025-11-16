@@ -214,6 +214,14 @@ export default function ChatHomePage() {
     )
     const [selectedQuickPrompts, setSelectedQuickPrompts] = useState<string[]>([])
     const [isThinkingMode, setIsThinkingMode] = useState(false)
+    const [showSuggestions, setShowSuggestions] = useState(false)
+    
+    const suggestions = useMemo(() => [
+        "Hola, cuéntame qué planes tienes para el fin de semana",
+        "Hola, ¿tienes alguna serie nueva que recomendar?",
+        "Hola, ¿qué planes tienes para el fin de semana?"
+    ], [])
+    
     const selectedQuickPromptItems = useMemo(() => {
         const labelSet = new Set(selectedQuickPrompts)
         return quickPrompts.filter((prompt) => labelSet.has(prompt.label))
@@ -841,129 +849,153 @@ export default function ChatHomePage() {
                         <span>{chatError}</span>
                     </div>
                 )}
-                <div
-                    className={cn(
-                        "flex flex-col gap-3 rounded-[32px] border-2 border-black/60 bg-white/95 px-4 py-3 shadow-sm",
-                        "dark:border-white/30 dark:bg-white/5",
-                    )}
-                >
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-10 w-10 rounded-full border border-black bg-black text-white hover:bg-black/80 dark:border-white/40"
-                                                aria-label="Seleccionar categorías"
-                                            >
-                                                <Plus className="h-5 w-5" aria-hidden="true" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="start" className="w-56">
-                                            {quickPrompts.map((item) => {
-                                                const Icon = item.icon
-                                                const isSelected = selectedQuickPrompts.includes(item.label)
-                                                return (
-                                                    <DropdownMenuItem
-                                                        key={item.label}
-                                                        className={cn(isSelected && "bg-primary/10 text-primary")}
-                                                        onSelect={() => handleQuickPromptToggle(item)}
-                                                    >
-                                                        <Icon className="mr-2 h-4 w-4 text-primary" aria-hidden="true" />
-                                                        {item.label}
-                                                    </DropdownMenuItem>
-                                                )
-                                            })}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                                <p>Selecciona categorías para filtrar los documentos</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
+                <div className="relative">
+                    {showSuggestions && inputValue.trim().length > 0 && (
+                        <div className="absolute bottom-full left-0 right-0 mb-2 space-y-2">
+                            {suggestions.map((suggestion, index) => (
                                 <button
+                                    key={index}
                                     type="button"
-                                    onClick={() => setIsThinkingMode(!isThinkingMode)}
-                                    className={cn(
-                                        "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition hover:opacity-80",
-                                        isThinkingMode
-                                            ? "border-orange-500 bg-orange-100 text-orange-800 dark:border-orange-500 dark:bg-orange-950/60 dark:text-orange-300"
-                                            : "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                                    )}
-                                    aria-label="Modo Thinking"
-                                    aria-pressed={isThinkingMode}
+                                    onClick={() => {
+                                        setInputValue(suggestion)
+                                        setShowSuggestions(false)
+                                    }}
+                                    className="w-full rounded-2xl border border-border/50 bg-background/95 px-4 py-3 text-left text-sm text-foreground/80 backdrop-blur transition hover:bg-accent hover:text-accent-foreground"
                                 >
-                                    <Brain className="h-4 w-4" aria-hidden="true" />
-                                    Thinking
+                                    {suggestion}
                                 </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                                <p>Activa el modelo de razonamiento profundo para respuestas más elaboradas</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                    <div className="flex w-full flex-col gap-1">
-                        {selectedQuickPromptItems.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-2">
-                                {selectedQuickPromptItems.map((item) => {
-                                    const Icon = item.icon
-                                    // Colores específicos por categoría (visibles en ambos modos)
-                                    const categoryColors: Record<string, string> = {
-                                        "Dinámicas": "border-emerald-500 bg-emerald-100 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300",
-                                        "Celebraciones": "border-pink-500 bg-pink-100 text-pink-800 dark:border-pink-500 dark:bg-pink-950/60 dark:text-pink-300",
-                                        "Programaciones": "border-blue-500 bg-blue-100 text-blue-800 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300",
-                                        "Oraciones": "border-violet-500 bg-violet-100 text-violet-800 dark:border-violet-500 dark:bg-violet-950/60 dark:text-violet-300",
-                                        "Pastoral": "border-amber-500 bg-amber-100 text-amber-800 dark:border-amber-500 dark:bg-amber-950/60 dark:text-amber-300",
-                                        "Consulta": "border-cyan-500 bg-cyan-100 text-cyan-800 dark:border-cyan-500 dark:bg-cyan-950/60 dark:text-cyan-300",
-                                        "Otros": "border-slate-500 bg-slate-100 text-slate-800 dark:border-slate-500 dark:bg-slate-950/60 dark:text-slate-300",
-                                    }
-                                    const colorClass = categoryColors[item.label] || "border-gray-500 bg-gray-100 text-gray-800 dark:border-gray-500 dark:bg-gray-950/60 dark:text-gray-300"
-                                    return (
-                                        <button
-                                            key={item.label}
-                                            type="button"
-                                            onClick={() => handleQuickPromptToggle(item)}
-                                            className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition hover:opacity-80 ${colorClass}`}
-                                        >
-                                            <Icon className="h-4 w-4" aria-hidden="true" />
-                                            {item.label}
-                                        </button>
-                                    )
-                                })}
-                            </div>
+                            ))}
+                        </div>
+                    )}
+                    <div
+                        className={cn(
+                            "flex items-center gap-3 rounded-[32px] border border-border/40 bg-background/95 px-4 py-2 shadow-sm backdrop-blur",
+                            "focus-within:border-primary/40",
                         )}
-                        <Textarea
-                            ref={promptTextareaRef}
-                            value={inputValue}
-                            onChange={(event) => setInputValue(event.target.value)}
-                            onKeyDown={handlePromptKeyDown}
-                            placeholder=""
-                            className={cn(
-                                "min-h-[120px] resize-none border-none bg-transparent px-0 py-2 text-sm leading-6 shadow-none",
-                                "focus-visible:ring-0 focus-visible:ring-offset-0",
+                    >
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-9 w-9 shrink-0 rounded-full"
+                                                    aria-label="Seleccionar categorías"
+                                                >
+                                                    <Plus className="h-5 w-5" aria-hidden="true" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="start" className="w-56">
+                                                {quickPrompts.map((item) => {
+                                                    const Icon = item.icon
+                                                    const isSelected = selectedQuickPrompts.includes(item.label)
+                                                    return (
+                                                        <DropdownMenuItem
+                                                            key={item.label}
+                                                            className={cn(isSelected && "bg-primary/10 text-primary")}
+                                                            onSelect={() => handleQuickPromptToggle(item)}
+                                                        >
+                                                            <Icon className="mr-2 h-4 w-4 text-primary" aria-hidden="true" />
+                                                            {item.label}
+                                                        </DropdownMenuItem>
+                                                    )
+                                                })}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                    <p>Selecciona categorías para filtrar los documentos</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                        
+                        <div className="flex min-w-0 flex-1 flex-col gap-2">
+                            {selectedQuickPromptItems.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {selectedQuickPromptItems.map((item) => {
+                                        const Icon = item.icon
+                                        const categoryColors: Record<string, string> = {
+                                            "Dinámicas": "border-emerald-500 bg-emerald-100 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300",
+                                            "Celebraciones": "border-pink-500 bg-pink-100 text-pink-800 dark:border-pink-500 dark:bg-pink-950/60 dark:text-pink-300",
+                                            "Programaciones": "border-blue-500 bg-blue-100 text-blue-800 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300",
+                                            "Oraciones": "border-violet-500 bg-violet-100 text-violet-800 dark:border-violet-500 dark:bg-violet-950/60 dark:text-violet-300",
+                                            "Pastoral": "border-amber-500 bg-amber-100 text-amber-800 dark:border-amber-500 dark:bg-amber-950/60 dark:text-amber-300",
+                                            "Consulta": "border-cyan-500 bg-cyan-100 text-cyan-800 dark:border-cyan-500 dark:bg-cyan-950/60 dark:text-cyan-300",
+                                            "Otros": "border-slate-500 bg-slate-100 text-slate-800 dark:border-slate-500 dark:bg-slate-950/60 dark:text-slate-300",
+                                        }
+                                        const colorClass = categoryColors[item.label] || "border-gray-500 bg-gray-100 text-gray-800 dark:border-gray-500 dark:bg-gray-950/60 dark:text-gray-300"
+                                        return (
+                                            <button
+                                                key={item.label}
+                                                type="button"
+                                                onClick={() => handleQuickPromptToggle(item)}
+                                                className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition hover:opacity-80 ${colorClass}`}
+                                            >
+                                                <Icon className="h-4 w-4" aria-hidden="true" />
+                                                {item.label}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
                             )}
-                            disabled={isThinking || !activeChat}
-                        />
-                    </div>
-                    <div className="flex items-center justify-end">
-                        <Button
-                            type="submit"
-                            size="icon"
-                            className="h-10 w-10 rounded-full bg-black text-white hover:bg-black/80 disabled:bg-zinc-400 disabled:text-zinc-100"
-                            disabled={isThinking || inputValue.trim().length === 0 || !activeChat}
-                            aria-label="Enviar"
-                        >
-                            <Send className="h-4 w-4" aria-hidden="true" />
-                        </Button>
+                            <Textarea
+                                ref={promptTextareaRef}
+                                value={inputValue}
+                                onChange={(event) => {
+                                    setInputValue(event.target.value)
+                                    setShowSuggestions(event.target.value.trim().length > 0)
+                                }}
+                                onKeyDown={handlePromptKeyDown}
+                                placeholder=""
+                                className={cn(
+                                    "min-h-0 max-h-32 resize-none border-none bg-transparent px-0 py-0 text-sm leading-6 shadow-none",
+                                    "focus-visible:ring-0 focus-visible:ring-offset-0",
+                                )}
+                                rows={1}
+                                disabled={isThinking || !activeChat}
+                            />
+                        </div>
+                        
+                        <div className="flex shrink-0 items-center gap-2">
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsThinkingMode(!isThinkingMode)}
+                                            className={cn(
+                                                "h-9 w-9 shrink-0 rounded-full transition flex items-center justify-center",
+                                                isThinkingMode
+                                                    ? "bg-orange-500 text-white hover:bg-orange-600"
+                                                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                            )}
+                                            aria-label="Modo Thinking"
+                                            aria-pressed={isThinkingMode}
+                                        >
+                                            <Brain className="h-5 w-5" aria-hidden="true" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                        <p>Activa el modelo de razonamiento profundo</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                            
+                            <Button
+                                type="submit"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 rounded-full"
+                                disabled={isThinking || inputValue.trim().length === 0 || !activeChat}
+                                aria-label="Enviar"
+                            >
+                                <Send className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>
