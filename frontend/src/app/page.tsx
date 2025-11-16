@@ -30,6 +30,11 @@ import {
     Download,
     Info,
     Brain,
+    User,
+    Settings,
+    ChevronRight,
+    FileStack,
+    UserCog,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -168,6 +173,7 @@ export default function ChatHomePage() {
     const [chatPendingDeletion, setChatPendingDeletion] = useState<Chat | null>(null)
     const [loadingConversations, setLoadingConversations] = useState(false)
     const [chatError, setChatError] = useState<string | null>(null)
+    const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false)
     const [isDeletingChat, setIsDeletingChat] = useState(false)
     const scrollRef = useRef<HTMLDivElement | null>(null)
     const activeChatIdRef = useRef<string>("")
@@ -1138,22 +1144,33 @@ export default function ChatHomePage() {
                             className="w-56"
                         >
                             <DropdownMenuItem onSelect={() => setIsUserDialogOpen(true)}>
+                                <User className="mr-2 h-4 w-4" />
                                 Usuario
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => setIsArchivedDialogOpen(true)}>
+                                <Archive className="mr-2 h-4 w-4" />
                                 Chats archivados
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setIsSettingsDialogOpen(true)}>
+                                <Settings className="mr-2 h-4 w-4" />
+                                Configuración
                             </DropdownMenuItem>
                             {canShowOptions && (
                                 <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>Opciones</DropdownMenuSubTrigger>
+                                    <DropdownMenuSubTrigger>
+                                        <FileStack className="mr-2 h-4 w-4" />
+                                        Opciones
+                                    </DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent className="w-48">
                                         {canAccessDocumentation && (
                                             <DropdownMenuItem onSelect={() => router.push("/documentacion")}>
+                                                <FileText className="mr-2 h-4 w-4" />
                                                 Documentación
                                             </DropdownMenuItem>
                                         )}
                                         {canAccessAdministration && (
                                             <DropdownMenuItem onSelect={() => router.push("/admin")}>
+                                                <UserCog className="mr-2 h-4 w-4" />
                                                 Administración
                                             </DropdownMenuItem>
                                         )}
@@ -1165,6 +1182,7 @@ export default function ChatHomePage() {
                                 onSelect={() => handleLogout()}
                                 className="text-destructive"
                             >
+                                <LogOut className="mr-2 h-4 w-4" />
                                 Salir
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -1458,6 +1476,55 @@ export default function ChatHomePage() {
                             {isDeletingChat ? "Eliminando..." : "Eliminar definitivamente"}
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog de Configuración */}
+            <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">Configuración</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-1 gap-6 overflow-hidden">
+                        {/* Sidebar de navegación */}
+                        <div className="w-48 shrink-0 space-y-1">
+                            <button
+                                type="button"
+                                className="w-full flex items-center gap-3 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-left"
+                            >
+                                <Settings className="h-4 w-4" />
+                                General
+                            </button>
+                        </div>
+                        
+                        {/* Contenido de configuración */}
+                        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-sm font-medium">Apariencia</Label>
+                                    </div>
+                                    <ThemeToggleButton />
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-sm font-medium">Idioma</Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            Selecciona el idioma de la interfaz
+                                        </p>
+                                    </div>
+                                    <select 
+                                        className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                                        defaultValue="es"
+                                    >
+                                        <option value="es">Español</option>
+                                        <option value="en">English</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
             
