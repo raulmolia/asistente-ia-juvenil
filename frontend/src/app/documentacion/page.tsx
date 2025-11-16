@@ -26,7 +26,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggleButton } from "@/components/theme-toggle"
-import { AddWebSourceDialog } from "@/components/add-web-source-dialog"
 import { WebSourcesTable } from "@/components/web-sources-table"
 import { useAuth } from "@/hooks/use-auth"
 import { buildApiUrl } from "@/lib/utils"
@@ -108,8 +107,14 @@ export default function DocumentacionPage() {
     const [dropping, setDropping] = useState(false)
     const [feedback, setFeedback] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
-    const [activeView, setActiveView] = useState<"upload" | "library" | "web-sources">("upload")
-    const [showAddWebDialog, setShowAddWebDialog] = useState(false)
+    const [activeView, setActiveView] = useState<"upload" | "library" | "web-sources" | "add-web-source">("upload")
+    
+    // Estados para fuentes web
+    const [webUrl, setWebUrl] = useState("")
+    const [webTipoFuente, setWebTipoFuente] = useState("PAGINA")
+    const [webSelectedTags, setWebSelectedTags] = useState<string[]>([])
+    const [webDescripcion, setWebDescripcion] = useState("")
+    const [submittingWeb, setSubmittingWeb] = useState(false)
     
     // Nuevos estados para filtrado y edición
     const [searchTerm, setSearchTerm] = useState("")
@@ -527,8 +532,9 @@ export default function DocumentacionPage() {
                     </Button>
                     <Button
                         type="button"
-                        variant="outline"
-                        onClick={() => setShowAddWebDialog(true)}
+                        variant={activeView === "add-web-source" ? "default" : "outline"}
+                        onClick={() => setActiveView("add-web-source")}
+                        aria-pressed={activeView === "add-web-source"}
                     >
                         <Globe className="mr-2 h-4 w-4" />
                         Agregar fuente web
@@ -545,6 +551,211 @@ export default function DocumentacionPage() {
                 </div>
                 <Button variant="ghost" onClick={() => router.push("/")}>Volver al chat</Button>
             </nav>
+
+            {activeView === "add-web-source" && (
+                <section className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm">
+                    <header className="flex items-center gap-3">
+                        <Globe className="h-5 w-5 text-foreground" aria-hidden="true" />
+                        <h2 className="text-lg font-semibold">Agregar fuente web</h2>
+                    </header>
+                    <p className="mt-3 text-sm text-muted-foreground">
+                        Proporciona una URL para scrapear su contenido. El sistema procesará el texto y lo añadirá a la base vectorial.
+                    </p>
+
+                    <form className="mt-6 space-y-6" onSubmit={async (e) => {
+                        e.preventDefault()
+                        
+                        if (!token) {
+                            setError("No tienes autorización")
+                            return
+                        }
+
+                        if (!webUrl || webSelectedTags.length === 0) {
+                            setError("URL y al menos una etiqueta son obligatorios")
+                            return
+                        }
+
+                        setSubmittingWeb(true)
+                        setError(null)
+                        setFeedback(null)
+
+                        try {
+                            const response = await fetch(buildApiUrl("/api/fuentes-web"), {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${token}`,
+                                },
+                                body: JSON.stringify({
+                                    url: webUrl,
+                                    tipo_fuente: webTipoFuente,
+                                    etiquetas: webSelectedTags,
+                                    descripcion: webDescripcion || undefined,
+                                }),
+                            })
+
+                            if (!response.ok) {
+                                const errorData = await response.json()
+                                throw new Error(errorData.error || "Error al agregar la fuente web")
+                            }
+
+                            setFeedback("Fuente web agregada correctamente. Procesando...")
+                            setWebUrl("")
+                            setWebTipoFuente("PAGINA")
+                            setWebSelectedTags([])
+                            setWebDescripcion("")
+                            
+                            // Cambiar a la vista de fuentes web después de 1.5 segundos
+                            setTimeout(() => {
+                                setActiveView("web-sources")
+                                setFeedback(null)
+                            }, 1500)
+                        } catch (err) {
+                            const message = err instanceof Error ? err.message : "Error al agregar la fuente web"
+                            setError(message)
+                        } finally {
+                            setSubmittingWeb(false)
+                        }
+                    }}>
+                        <div className="space-y-2">
+                            <Label htmlFor="web-url" className="text-sm font-medium">
+                                URL <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                                id="web-url"
+                                type="url"
+                                placeholder="https://ejemplo.com/pagina"
+                                required
+                                value={webUrl}
+                                onChange={(e) => setWebUrl(e.target.value)}
+                                disabled={submittingWeb}
+                                className="h-11"
+                            />
+                        </div>
+
+                        <div className="space-y-3">
+                            <Label className="text-sm font-medium">
+                                Tipo de fuente <span className="text-destructive">*</span>
+                            </Label>
+                            <div className="grid gap-3">
+                                <label className={`flex cursor-pointer items-start gap-3 rounded-lg border border-border p-4 transition hover:border-foreground/50 ${webTipoFuente === "PAGINA" ? "border-foreground bg-muted/50" : ""}`}>
+                                    <input 
+                                        type="radio" 
+                                        name="tipoFuente" 
+                                        value="PAGINA" 
+                                        checked={webTipoFuente === "PAGINA"}
+                                        onChange={(e) => setWebTipoFuente(e.target.value)}
+                                        disabled={submittingWeb}
+                                        className="mt-1" 
+                                    />
+                                    <div className="flex-1">
+                                        <div className="font-medium text-sm">Página individual</div>
+                                        <div className="text-sm text-muted-foreground">Scraping de una URL específica</div>
+                                    </div>
+                                </label>
+                                <label className={`flex cursor-pointer items-start gap-3 rounded-lg border border-border p-4 transition hover:border-foreground/50 ${webTipoFuente === "DOMINIO" ? "border-foreground bg-muted/50" : ""}`}>
+                                    <input 
+                                        type="radio" 
+                                        name="tipoFuente" 
+                                        value="DOMINIO" 
+                                        checked={webTipoFuente === "DOMINIO"}
+                                        onChange={(e) => setWebTipoFuente(e.target.value)}
+                                        disabled={submittingWeb}
+                                        className="mt-1" 
+                                    />
+                                    <div className="flex-1">
+                                        <div className="font-medium text-sm">Dominio completo</div>
+                                        <div className="text-sm text-muted-foreground">Crawling del dominio (máx. 50 páginas)</div>
+                                    </div>
+                                </label>
+                                <label className={`flex cursor-pointer items-start gap-3 rounded-lg border border-border p-4 transition hover:border-foreground/50 ${webTipoFuente === "SITEMAP" ? "border-foreground bg-muted/50" : ""}`}>
+                                    <input 
+                                        type="radio" 
+                                        name="tipoFuente" 
+                                        value="SITEMAP" 
+                                        checked={webTipoFuente === "SITEMAP"}
+                                        onChange={(e) => setWebTipoFuente(e.target.value)}
+                                        disabled={submittingWeb}
+                                        className="mt-1" 
+                                    />
+                                    <div className="flex-1">
+                                        <div className="font-medium text-sm">Sitemap XML</div>
+                                        <div className="text-sm text-muted-foreground">Procesar todas las URLs del sitemap</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <Label className="text-sm font-medium">
+                                Etiquetas <span className="text-destructive">*</span>
+                            </Label>
+                            <div className="flex flex-wrap gap-2">
+                                {tagOptions.map((tag) => {
+                                    const isSelected = webSelectedTags.includes(tag.id)
+                                    return (
+                                        <Badge
+                                            key={tag.id}
+                                            variant="outline"
+                                            className={`cursor-pointer px-3 py-1.5 transition-colors ${
+                                                isSelected
+                                                    ? "border-foreground bg-foreground text-background"
+                                                    : "border-border bg-background text-foreground hover:border-foreground/50"
+                                            }`}
+                                            onClick={() => {
+                                                if (!submittingWeb) {
+                                                    setWebSelectedTags(prev =>
+                                                        isSelected
+                                                            ? prev.filter(t => t !== tag.id)
+                                                            : [...prev, tag.id]
+                                                    )
+                                                }
+                                            }}
+                                        >
+                                            {tag.label}
+                                        </Badge>
+                                    )
+                                })}
+                            </div>
+                            {webSelectedTags.length === 0 && (
+                                <p className="text-sm text-muted-foreground">
+                                    Selecciona al menos una etiqueta
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="web-descripcion" className="text-sm font-medium">
+                                Descripción (opcional)
+                            </Label>
+                            <Input
+                                id="web-descripcion"
+                                placeholder="Añade una descripción o nota sobre esta fuente"
+                                value={webDescripcion}
+                                onChange={(e) => setWebDescripcion(e.target.value)}
+                                disabled={submittingWeb}
+                                className="h-11"
+                            />
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Button type="submit" className="min-w-32" disabled={submittingWeb || webSelectedTags.length === 0}>
+                                {submittingWeb ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Agregando...
+                                    </>
+                                ) : (
+                                    "Agregar fuente"
+                                )}
+                            </Button>
+                            <Button type="button" variant="ghost" onClick={() => setActiveView("web-sources")} disabled={submittingWeb}>
+                                Cancelar
+                            </Button>
+                        </div>
+                    </form>
+                </section>
+            )}
 
             {activeView === "upload" ? (
                 <form
@@ -980,19 +1191,6 @@ export default function DocumentacionPage() {
                     canEditDelete={canEditDelete}
                 />
             )}
-
-            <AddWebSourceDialog
-                isOpen={showAddWebDialog}
-                onClose={() => setShowAddWebDialog(false)}
-                token={token}
-                tagOptions={tagOptions}
-                onSuccess={() => {
-                    setFeedback("Fuente web agregada correctamente. Procesando...")
-                    if (activeView === "web-sources") {
-                        // La tabla se actualizará automáticamente al cerrar el diálogo
-                    }
-                }}
-            />
 
             <section className="rounded-2xl border border-dashed border-border/70 bg-muted/30 p-6 text-sm text-muted-foreground">
                 <p>
