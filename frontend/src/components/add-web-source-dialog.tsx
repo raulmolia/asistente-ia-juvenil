@@ -27,6 +27,18 @@ const SOURCE_TYPES = [
     { value: "SITEMAP", label: "Sitemap XML", description: "Procesar todas las URLs del sitemap" },
 ]
 
+const TAG_COLOR_MAP: Record<string, string> = {
+    PROGRAMACIONES: "border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200",
+    DINAMICAS: "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+    CELEBRACIONES: "border-pink-200 bg-pink-100 text-pink-800 dark:border-pink-800 dark:bg-pink-950 dark:text-pink-200",
+    ORACIONES: "border-violet-200 bg-violet-100 text-violet-800 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-200",
+    CONSULTA: "border-cyan-200 bg-cyan-100 text-cyan-800 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-200",
+    PASTORAL_GENERICO: "border-indigo-200 bg-indigo-100 text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200",
+    REVISTAS: "border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200",
+    CONTENIDO_MIXTO: "border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200",
+    OTROS: "border-gray-200 bg-gray-100 text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200",
+}
+
 export function AddWebSourceDialog({ isOpen, onClose, token, tagOptions, onSuccess }: AddWebSourceDialogProps) {
     const [url, setUrl] = useState("")
     const [descripcion, setDescripcion] = useState("")
@@ -111,7 +123,7 @@ export function AddWebSourceDialog({ isOpen, onClose, token, tagOptions, onSucce
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="relative w-full max-w-2xl rounded-lg border bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="relative w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
                 {/* Header */}
                 <div className="flex items-center justify-between border-b p-6 dark:border-slate-700">
                     <div className="flex items-center gap-3">
@@ -206,8 +218,8 @@ export function AddWebSourceDialog({ isOpen, onClose, token, tagOptions, onSucce
                                     variant="outline"
                                     className={`cursor-pointer px-3 py-1.5 transition-colors ${
                                         selectedTags.includes(tag.id)
-                                            ? "border-blue-500 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200"
-                                            : "hover:border-slate-400 dark:hover:border-slate-500"
+                                            ? TAG_COLOR_MAP[tag.id] || ""
+                                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-500"
                                     }`}
                                     onClick={() => !submitting && toggleTag(tag.id)}
                                 >
