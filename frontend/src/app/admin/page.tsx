@@ -48,6 +48,8 @@ type UserFormState = {
     organizacion: string
     cargo: string
     experiencia: string
+    generarPassword: boolean
+    enviarEmail: boolean
 }
 
 const INITIAL_FORM_STATE: UserFormState = {
@@ -60,6 +62,8 @@ const INITIAL_FORM_STATE: UserFormState = {
     organizacion: "",
     cargo: "",
     experiencia: "",
+    generarPassword: true,
+    enviarEmail: true,
 }
 
 export default function AdminPage() {
@@ -154,24 +158,35 @@ export default function AdminPage() {
         event.preventDefault()
         if (!token) return
 
-        if (!formState.nombre.trim() || !formState.email.trim() || !formState.password.trim()) {
-            setError("Nombre, email y contraseña son obligatorios")
+        if (!formState.nombre.trim() || !formState.email.trim()) {
+            setError("Nombre y email son obligatorios")
+            return
+        }
+
+        // Si no se genera contraseña automática, es obligatoria
+        if (!formState.generarPassword && !formState.password.trim()) {
+            setError("Debes proporcionar una contraseña o activar la generación automática")
             return
         }
 
         setCreatingUser(true)
         setError(null)
 
-        const payload = {
+        const payload: any = {
             nombre: formState.nombre.trim(),
             apellidos: formState.apellidos.trim() || null,
             email: formState.email.trim(),
-            password: formState.password,
             rol: formState.rol,
             telefono: formState.telefono.trim() || null,
             organizacion: formState.organizacion.trim() || null,
             cargo: formState.cargo.trim() || null,
             experiencia: formState.experiencia.trim() ? Number.parseInt(formState.experiencia, 10) : null,
+            enviarEmail: formState.enviarEmail,
+        }
+
+        // Solo enviar password si no se genera automáticamente
+        if (!formState.generarPassword && formState.password) {
+            payload.password = formState.password
         }
 
         try {
@@ -184,13 +199,22 @@ export default function AdminPage() {
                 body: JSON.stringify(payload),
             })
 
+            const body = await response.json().catch(() => ({ message: "Error creando usuario" }))
+
             if (!response.ok) {
-                const body = await response.json().catch(() => ({ message: "Error creando usuario" }))
                 throw new Error(body?.message || "Error creando usuario")
             }
 
+            // Mostrar mensaje especial si se envió email
+            if (body.emailSent) {
+                setFeedback("Usuario creado correctamente. Se ha enviado un email con las credenciales.")
+            } else if (body.temporaryPassword) {
+                setFeedback(`Usuario creado. Contraseña temporal: ${body.temporaryPassword} (guárdala, no se volverá a mostrar)`)
+            } else {
+                setFeedback("Usuario creado correctamente")
+            }
+
             setFormState(INITIAL_FORM_STATE)
-            setFeedback("Usuario creado correctamente")
             fetchUsers()
         } catch (err) {
             const message = err instanceof Error ? err.message : "No se pudo crear el usuario"
@@ -329,10 +353,53 @@ export default function AdminPage() {
                                 <Label htmlFor="admin-email">Email *</Label>
                                 <Input id="admin-email" type="email" value={formState.email} onChange={handleFormChange("email")} required autoComplete="email" placeholder="nombre@dominio.com" />
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="admin-password">Contraseña inicial *</Label>
-                                <Input id="admin-password" type="password" value={formState.password} onChange={handleFormChange("password")} required placeholder="Contraseña temporal" />
+                            
+                            <div className="grid gap-3 rounded-lg border border-border/50 bg-muted/30 p-3">
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        id="admin-generar-password"
+                                        type="checkbox"
+                                        checked={formState.generarPassword}
+                                        onChange={(e) => setFormState(prev => ({ ...prev, generarPassword: e.target.checked }))}
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                    <Label htmlFor="admin-generar-password" className="text-sm font-medium cursor-pointer">
+                                        Generar contraseña automática
+                                    </Label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        id="admin-enviar-email"
+                                        type="checkbox"
+                                        checked={formState.enviarEmail}
+                                        onChange={(e) => setFormState(prev => ({ ...prev, enviarEmail: e.target.checked }))}
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                    <Label htmlFor="admin-enviar-email" className="text-sm font-medium cursor-pointer">
+                                        Enviar email con credenciales
+                                    </Label>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    {formState.generarPassword 
+                                        ? "Se generará una contraseña segura que el usuario deberá cambiar en su primer login."
+                                        : "Deberás especificar una contraseña temporal manualmente."}
+                                </p>
                             </div>
+                            
+                            {!formState.generarPassword && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="admin-password">Contraseña temporal *</Label>
+                                    <Input 
+                                        id="admin-password" 
+                                        type="password" 
+                                        value={formState.password} 
+                                        onChange={handleFormChange("password")} 
+                                        required={!formState.generarPassword}
+                                        placeholder="Mínimo 8 caracteres" 
+                                    />
+                                </div>
+                            )}
+                            
                             <div className="grid gap-2">
                                 <Label htmlFor="admin-telefono">Teléfono</Label>
                                 <Input id="admin-telefono" value={formState.telefono} onChange={handleFormChange("telefono")} placeholder="Teléfono de contacto" />

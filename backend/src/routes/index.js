@@ -5,6 +5,7 @@ import chromaService from '../services/chromaService.js';
 import authRoutes from './auth.js';
 import documentosRoutes from './documentos.js';
 import chatRoutes from './chat.js';
+import passwordRoutes from './password.js';
 
 const { PrismaClient } = prismaPackage;
 
@@ -15,6 +16,7 @@ const prisma = new PrismaClient();
 router.use('/auth', authRoutes);
 router.use('/documentos', documentosRoutes);
 router.use('/chat', chatRoutes);
+router.use('/password', passwordRoutes);
 
 // Ruta de health check
 router.get('/health', async (req, res) => {

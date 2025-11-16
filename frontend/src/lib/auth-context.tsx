@@ -50,10 +50,12 @@ type AuthContextValue = {
     user: AuthUser | null
     token: string | null
     isAuthenticated: boolean
+    mustChangePassword: boolean
     login: (payload: LoginPayload) => Promise<LoginResult>
     logout: () => Promise<void>
     refreshUser: () => Promise<void>
     updateProfile: (payload: UpdateProfilePayload) => Promise<UpdateProfileResult>
+    clearPasswordChangeFlag: () => void
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -109,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [status, setStatus] = useState<AuthStatus>("loading")
     const [user, setUser] = useState<AuthUser | null>(null)
     const [token, setToken] = useState<string | null>(null)
+    const [mustChangePassword, setMustChangePassword] = useState(false)
 
     const isAuthenticated = status === "authenticated" && !!user && !!token
 
@@ -192,10 +195,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const data = await response.json()
             const receivedToken = data.token as string
             const receivedUser = data.user as AuthUser
+            const debeCambiarPassword = data.debeCambiarPassword === true
 
             setToken(receivedToken)
             setUser(receivedUser)
             setStatus("authenticated")
+            setMustChangePassword(debeCambiarPassword)
 
             setStoredValue("auth_token", receivedToken)
             setStoredValue("auth_user", receivedUser)
@@ -219,6 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null)
         setToken(null)
         setStatus("unauthenticated")
+        setMustChangePassword(false)
 
         if (!currentToken) {
             return
@@ -274,16 +280,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, [token])
 
+    const clearPasswordChangeFlag = useCallback(() => {
+        setMustChangePassword(false)
+    }, [])
+
     const value = useMemo<AuthContextValue>(() => ({
         status,
         user,
         token,
         isAuthenticated,
+        mustChangePassword,
         login,
         logout,
         refreshUser,
         updateProfile,
-    }), [isAuthenticated, login, logout, refreshUser, status, token, updateProfile, user])
+        clearPasswordChangeFlag,
+    }), [isAuthenticated, login, logout, refreshUser, status, token, updateProfile, user, mustChangePassword, clearPasswordChangeFlag])
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

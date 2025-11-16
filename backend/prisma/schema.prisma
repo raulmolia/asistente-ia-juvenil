@@ -28,6 +28,7 @@ model Usuario {
   // Autenticación
   emailVerificado DateTime?
   passwordHash    String?
+  debeCambiarPassword Boolean @default(false)
   
   // Información de la organización/grupo
   organizacion    String?

@@ -58,6 +58,7 @@ import { cn, buildApiUrl } from "@/lib/utils"
 import { ThemeToggleButton } from "@/components/theme-toggle"
 import { UsageStats } from "@/components/usage-stats"
 import { downloadAsPDF, downloadAsWord } from "@/lib/document-generator"
+import { ChangePasswordModal } from "@/components/change-password-modal"
 
 type MessageRole = "usuario" | "asistente"
 
@@ -238,6 +239,8 @@ export default function ChatHomePage() {
     const canAccessDocumentation = ["SUPERADMIN", "ADMINISTRADOR", "DOCUMENTADOR"].includes(userRole)
     const canAccessAdministration = ["SUPERADMIN", "ADMINISTRADOR"].includes(userRole)
     const canShowOptions = canAccessDocumentation || canAccessAdministration
+
+    const { mustChangePassword, clearPasswordChangeFlag } = useAuth()
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -1390,6 +1393,13 @@ export default function ChatHomePage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            
+            {mustChangePassword && token && (
+                <ChangePasswordModal 
+                    token={token} 
+                    onSuccess={clearPasswordChangeFlag}
+                />
+            )}
         </div>
     )
 }

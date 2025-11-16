@@ -1,4 +1,4 @@
-# 🚀 Estado actual del proyecto (15 nov 2025)
+# 🚀 Estado actual del proyecto (16 nov 2025)
 
 ## ✅ COMPLETADO CON ÉXITO
 
@@ -8,14 +8,17 @@
 - ✅ `GITHUB_SETUP.md` - Instrucciones para configurar remoto
 - ✅ `RESUMEN_SESION.md` - Resumen completo de la sesión
 - ✅ `README.md` - Información del proyecto
+- ✅ `EMAIL_TROUBLESHOOTING.md` - Guía completa de configuración SMTP/DNS
 
 ### Código y Configuración
 - ✅ Backend operativo en puerto 3001
 - ✅ Frontend operativo en puerto 3000
-- ✅ Base de datos MariaDB `rpjia` con 7 tablas
+- ✅ Base de datos MariaDB `rpjia` con 8 tablas (añadido campo `debeCambiarPassword`)
 - ✅ Servicio ChromaDB preparado
 - ✅ API con endpoints de health check y test
 - ✅ Orquestación con PM2 (`ecosystem.config.js`) para backend, frontend y ChromaDB
+- ✅ Servicio de email configurado con Nodemailer (SMTP port 465, SSL)
+- ✅ Variables de entorno cargadas con ruta absoluta en index.js
 
 ### UI/UX Mejorado (15 nov 2025)
 - ✅ **Tipografía moderna**: Fuente Inter con pesos 300-700 (similar a Notion/ChatGPT)
@@ -47,6 +50,23 @@
 - ✅ **Badges de categorías coloreados**: Sistema de colores distintivos para cada categoría (Dinámicas, Celebraciones, Programaciones, Oraciones, Pastoral, Consulta, Otros) visibles tanto en modo oscuro como claro
 - ✅ **Página "Acerca de"**: Nueva página informativa (`/acerca-de`) con logo RPJ centrado, diseño atractivo con degradados, títulos grandes y espaciado generoso, enlaces con iconos externos y efecto hover, renderizado markdown del contenido de `acercade.md`
 - ✅ **Navegación mejorada**: Enlace "Acerca de" en header principal alineado a la izquierda, botón "Volver al chat" en páginas secundarias
+
+### Sistema de Gestión de Usuarios con Emails (16 nov 2025)
+- ✅ **Servicio de email**: Nodemailer 6.9.7 con SMTP (ia.rpj.es:465, SSL/TLS)
+- ✅ **Generación de contraseñas**: Algoritmo seguro de 12 caracteres (uppercase, lowercase, números, símbolos)
+- ✅ **Templates HTML premium**: Email de bienvenida con logo RPJ embebido (base64), diseño responsive, gradientes corporativos
+- ✅ **Campo debeCambiarPassword**: Migración Prisma añadiendo Boolean default false
+- ✅ **API endpoints nuevos**:
+  - POST /api/password/change - Cambio de contraseña con validación
+  - GET /api/password/must-change - Verificación de flag
+  - POST /api/auth/users (modificado) - Auto-generación y envío de email
+- ✅ **ChangePasswordModal**: Componente React bloqueante con validación en tiempo real, show/hide toggles, tips de seguridad
+- ✅ **Admin UI mejorado**: Checkboxes para auto-generar contraseña y enviar email (defaults: true)
+- ✅ **Auth context extendido**: Estado mustChangePassword y función clearPasswordChangeFlag
+- ✅ **Flujo completo**: Creación → Email → Login → Modal obligatorio → Cambio → Acceso
+- ✅ **SMTP configurado**: Puerto 465 con secure=true, autenticación exitosa
+- ✅ **DKIM activado**: Firma de mensajes salientes habilitada en Plesk
+- ⏳ **Pendiente DNS**: Registros MX necesarios para entrega de emails (en gestión externa)
 
 ## Panorama general
 
@@ -82,14 +102,23 @@
 
 6. **Documentación y tareas** sincronizadas (`docs/task.md`, `.github/registro.md`)
 
+7. **Sistema de gestión de usuarios con emails** (16 nov 2025):
+   - Servicio completo de email con Nodemailer y templates HTML premium
+   - Generación automática de contraseñas seguras
+   - Campo debeCambiarPassword en base de datos
+   - Modal de cambio obligatorio en primer login
+   - Panel de administración con opciones de auto-generación
+   - SMTP configurado y DKIM activado
+
 ## Stack actualizado
 
 ```
-Backend   : Node.js 24, Express 4, Prisma 5, Vitest 1
+Backend   : Node.js 24, Express 4, Prisma 5, Vitest 1, Nodemailer 6.9.7
 Frontend  : Next.js 14, React 18, Tailwind, Shadcn/ui, Vitest + Testing Library
 Tipografía: Inter (Google Fonts) - Sans-serif moderna
 Markdown  : react-markdown + remark-gfm para renderizado de contenido
 Persistencia: MariaDB (prisma), ChromaDB (vectores persistidos en database/chroma)
+Email     : SMTP ia.rpj.es:465 SSL, DKIM, templates HTML responsive
 Infraestructura: PM2 (backend, frontend, chroma) + proxy Apache
 IA        : Chutes AI (https://llm.chutes.ai/v1/chat/completions)
 Modelo    : Kimi-K2-Instruct-0905 (Moonshot AI)

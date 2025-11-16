@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import prismaPackage from '@prisma/client';
 import { authenticate, authorize, getRolePriority } from '../middleware/auth.js';
+import { sendWelcomeEmail, generateRandomPassword } from '../services/emailService.js';
 
 const { PrismaClient } = prismaPackage;
 const PrismaEnums = prismaPackage.$Enums || {};
@@ -146,6 +147,7 @@ router.post('/login', async (req, res) => {
             token: jwtToken,
             expiresIn: JWT_EXPIRES_IN,
             user: sanitizeUser(user),
+            debeCambiarPassword: user.debeCambiarPassword || false,
         });
     } catch (error) {
         console.error('Error en login:', error);
@@ -280,18 +282,25 @@ router.post('/users', authenticate, authorize(['ADMINISTRADOR']), async (req, re
         experiencia,
         rol,
         telefono,
+        enviarEmail,
     } = req.body || {};
 
-    if (!email || !password || !nombre) {
+    if (!email || !nombre) {
         return res.status(400).json({
             error: 'Datos incompletos',
-            message: 'Email, contraseña y nombre son obligatorios',
+            message: 'Email y nombre son obligatorios',
         });
     }
 
     try {
         const assignedRole = resolveRole(rol, req.user.rol);
-        const hashedPassword = await bcrypt.hash(password, DEFAULT_PASSWORD_ROUNDS);
+        
+        // Si no se proporciona contraseña, generar una aleatoria
+        const generatedPassword = password || generateRandomPassword(12);
+        const hashedPassword = await bcrypt.hash(generatedPassword, DEFAULT_PASSWORD_ROUNDS);
+        
+        // Si se genera contraseña automáticamente, el usuario debe cambiarla
+        const mustChangePassword = !password;
 
         const newUser = await prisma.usuario.create({
             data: {
@@ -299,18 +308,50 @@ router.post('/users', authenticate, authorize(['ADMINISTRADOR']), async (req, re
                 passwordHash: hashedPassword,
                 nombre,
                 apellidos,
-                nombreUsuario,
+                nombreUsuario: nombreUsuario || email.split('@')[0],
                 organizacion,
                 cargo,
                 experiencia,
                 telefono,
                 rol: assignedRole,
+                debeCambiarPassword: mustChangePassword,
             },
         });
+        
+        // Enviar email de bienvenida si se solicita o si se generó contraseña automática
+        if (enviarEmail !== false && mustChangePassword) {
+            try {
+                await sendWelcomeEmail({
+                    nombre: newUser.nombre,
+                    email: newUser.email,
+                    nombreUsuario: newUser.nombreUsuario || newUser.email,
+                    password: generatedPassword,
+                    loginUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/auth/login` : 'https://ia.rpj.es/auth/login',
+                });
+                
+                return res.status(201).json({
+                    message: 'Usuario creado correctamente. Se ha enviado un email con las credenciales.',
+                    user: sanitizeUser(newUser),
+                    emailSent: true,
+                });
+            } catch (emailError) {
+                console.error('Error enviando email de bienvenida:', emailError);
+                
+                // Usuario creado pero email falló - devolver contraseña en respuesta
+                return res.status(201).json({
+                    message: 'Usuario creado correctamente, pero no se pudo enviar el email.',
+                    user: sanitizeUser(newUser),
+                    emailSent: false,
+                    temporaryPassword: generatedPassword,
+                    warning: 'Guarda esta contraseña temporal, no se volverá a mostrar.',
+                });
+            }
+        }
 
         return res.status(201).json({
             message: 'Usuario creado correctamente',
             user: sanitizeUser(newUser),
+            emailSent: false,
         });
     } catch (error) {
         if (error.code === 'P2002') {
