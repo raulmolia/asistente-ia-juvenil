@@ -1063,7 +1063,7 @@ export default function ChatHomePage() {
 
                 {/* Botones de acción */}
                 <div className={cn(
-                    "flex items-center gap-2 px-4 pb-4",
+                    "flex items-center gap-2 px-4 pb-4 pt-6",
                     isSidebarCollapsed && "flex-col gap-3 px-2"
                 )}>
                     {isSidebarCollapsed ? (
@@ -1112,12 +1112,9 @@ export default function ChatHomePage() {
                             <button
                                 type="button"
                                 onClick={handleCreateNewChat}
-                                className={cn(
-                                    "flex-1 group flex items-center gap-3 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm font-medium shadow-sm transition",
-                                    "hover:border-primary/40 hover:bg-primary/5",
-                                )}
+                                className="flex-1 flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
                             >
-                                <Plus className="h-4 w-4" aria-hidden="true" />
+                                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                                 <span>Nuevo chat</span>
                             </button>
 
@@ -1151,19 +1148,14 @@ export default function ChatHomePage() {
 
                 {/* Buscar chats - expandido */}
                 {!isSidebarCollapsed && (
-                    <div className="px-4 pb-4">
-                        <button
-                            type="button"
-                            onClick={() => setIsSearchDialogOpen(true)}
-                            className={cn(
-                                "w-full group flex items-center gap-3 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm font-medium shadow-sm transition",
-                                "hover:border-primary/40 hover:bg-primary/5",
-                            )}
-                        >
-                            <Search className="h-4 w-4" aria-hidden="true" />
-                            <span>Buscar chats</span>
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setIsSearchDialogOpen(true)}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                        <Search className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>Buscar chats</span>
+                    </button>
                 )}
 
                 {/* Sección de chats */}
@@ -1175,7 +1167,10 @@ export default function ChatHomePage() {
                             onClick={() => setIsChatsListCollapsed(!isChatsListCollapsed)}
                             className="flex w-full items-center justify-between px-4 pt-2 pb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
                         >
-                            <span>Chats</span>
+                            <div className="flex items-center gap-2">
+                                <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span>Chats</span>
+                            </div>
                             {isChatsListCollapsed ? (
                                 <ChevronRight className="h-4 w-4" />
                             ) : (
@@ -1206,7 +1201,6 @@ export default function ChatHomePage() {
                                             onClick={() => handleSelectChat(chat.id)}
                                         >
                                             <div className="flex min-w-0 flex-1 items-center gap-2">
-                                                <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                                                 <span className="truncate text-sm font-medium">
                                                     {truncatedTitle}
                                                 </span>
