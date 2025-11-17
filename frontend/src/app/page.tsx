@@ -843,16 +843,19 @@ export default function ChatHomePage() {
 
     const transcribeAudio = useCallback(async (audioBlob: Blob) => {
         if (!token) {
+            console.error('❌ No hay token disponible para transcripción')
             setChatError('No hay sesión activa')
             return
         }
 
+        console.log('🎤 Iniciando transcripción de audio...')
         setIsTranscribing(true)
 
         try {
             const formData = new FormData()
             formData.append('audio', audioBlob, 'recording.webm')
 
+            console.log('📤 Enviando audio al servidor...')
             const response = await fetch(buildApiUrl('/api/files/transcribe'), {
                 method: 'POST',
                 headers: {
@@ -861,21 +864,27 @@ export default function ChatHomePage() {
                 body: formData,
             })
 
+            console.log(`📥 Respuesta del servidor: ${response.status}`)
             const data = await response.json()
 
             if (!response.ok) {
+                console.error('❌ Error en respuesta:', data)
                 throw new Error(data.error || 'Error al transcribir el audio')
             }
 
             if (data.success && data.text) {
+                console.log('✅ Texto transcrito:', data.text)
                 // Agregar el texto transcrito al input
                 setInputValue(prev => prev + (prev ? ' ' : '') + data.text)
+            } else {
+                console.warn('⚠️ Respuesta sin texto:', data)
             }
         } catch (error) {
-            console.error('Error transcribiendo audio:', error)
+            console.error('❌ Error transcribiendo audio:', error)
             setChatError(error instanceof Error ? error.message : 'Error al transcribir el audio')
         } finally {
             setIsTranscribing(false)
+            console.log('🏁 Transcripción finalizada')
         }
     }, [token])
 
