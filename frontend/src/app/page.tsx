@@ -842,7 +842,7 @@ export default function ChatHomePage() {
     }, [isRecording])
 
     const transcribeAudio = useCallback(async (audioBlob: Blob) => {
-        if (!token) {
+        if (!token || !activeChat) {
             setChatError('No hay sesión activa')
             return
         }
@@ -1336,35 +1336,6 @@ export default function ChatHomePage() {
                                     </Tooltip>
                                 </TooltipProvider>
                                 
-                                {/* Botón de micrófono para dictar */}
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className={cn(
-                                                    "h-8 w-8 shrink-0 rounded-full transition-colors",
-                                                    isRecording && "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400"
-                                                )}
-                                                aria-label={isRecording ? "Detener grabación" : "Dictar"}
-                                                onClick={isRecording ? handleStopRecording : handleStartRecording}
-                                                disabled={isThinking || isTranscribing}
-                                            >
-                                                {isRecording ? (
-                                                    <Square className="h-4 w-4 animate-pulse" aria-hidden="true" />
-                                                ) : (
-                                                    <Mic className="h-4 w-4" aria-hidden="true" />
-                                                )}
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">
-                                            <p>{isRecording ? "Detener grabación" : isTranscribing ? "Transcribiendo..." : "Dictar"}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                                
                                 {/* Botón llave inglesa para herramientas */}
                                 <TooltipProvider>
                                     <Tooltip>
@@ -1467,6 +1438,35 @@ export default function ChatHomePage() {
                                         </TooltipTrigger>
                                         <TooltipContent side="top">
                                             <p>Activa el modelo de razonamiento profundo</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                
+                                {/* Botón de micrófono para dictar */}
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className={cn(
+                                                    "h-8 w-8 shrink-0 rounded-full transition-colors",
+                                                    isRecording && "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400"
+                                                )}
+                                                aria-label={isRecording ? "Detener grabación" : "Dictar"}
+                                                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                                                disabled={isThinking || isTranscribing || !activeChat}
+                                            >
+                                                {isRecording ? (
+                                                    <Square className="h-4 w-4 animate-pulse" aria-hidden="true" />
+                                                ) : (
+                                                    <Mic className="h-4 w-4" aria-hidden="true" />
+                                                )}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <p>{isRecording ? "Detener grabación" : isTranscribing ? "Transcribiendo..." : "Dictar"}</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
