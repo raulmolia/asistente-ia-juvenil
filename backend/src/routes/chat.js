@@ -45,9 +45,10 @@ const USER_LIMITS = {
         maxDailyInteractions: null, // Sin límite
     },
     USUARIO: {
-        maxConversations: 6,
+        maxConversations: 7,
         maxMessagesPerConversation: 5,
-        maxDailyInteractions: 25,
+        maxDailyInteractions: 15,
+        maxDailyChats: 3,
     },
 };
 
@@ -213,11 +214,24 @@ async function getUserStats(userId, userRole) {
         },
     });
 
+    // Contar chats creados hoy
+    const dailyChats = await prisma.conversacion.count({
+        where: {
+            usuarioId: userId,
+            fechaCreacion: { gte: today },
+        },
+    });
+
     return {
         conversations: {
             current: totalConversations,
             max: limits.maxConversations,
             available: limits.maxConversations ? Math.max(0, limits.maxConversations - totalConversations) : null,
+        },
+        dailyChats: {
+            current: dailyChats,
+            max: limits.maxDailyChats,
+            available: limits.maxDailyChats ? Math.max(0, limits.maxDailyChats - dailyChats) : null,
         },
         dailyInteractions: {
             current: dailyMessages,
@@ -242,6 +256,17 @@ async function validateUserLimits(userId, userRole, conversationId = null) {
                 allowed: false,
                 reason: 'MAX_CONVERSATIONS',
                 message: `Has alcanzado el límite de ${limits.maxConversations} conversaciones. Elimina alguna para continuar.`,
+            };
+        }
+    }
+
+    // Validar límite de chats diarios (solo si es nueva conversación)
+    if (!conversationId && limits.maxDailyChats) {
+        if (stats.dailyChats.current >= limits.maxDailyChats) {
+            return {
+                allowed: false,
+                reason: 'MAX_DAILY_CHATS',
+                message: `Has alcanzado el límite de ${limits.maxDailyChats} chats diarios. Vuelve mañana para crear más.`,
             };
         }
     }
