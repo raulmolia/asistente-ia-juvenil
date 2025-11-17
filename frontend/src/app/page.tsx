@@ -36,6 +36,7 @@ import {
     ChevronDown,
     FileStack,
     UserCog,
+    Search,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -177,6 +178,10 @@ export default function ChatHomePage() {
     const [chatError, setChatError] = useState<string | null>(null)
     const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false)
     const [isDeletingChat, setIsDeletingChat] = useState(false)
+    const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false)
+    const [searchQuery, setSearchQuery] = useState("")
+    const [searchResults, setSearchResults] = useState<Chat[]>([])
+    const [isSearching, setIsSearching] = useState(false)
     const scrollRef = useRef<HTMLDivElement | null>(null)
     const activeChatIdRef = useRef<string>("")
     const promptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -657,6 +662,52 @@ export default function ChatHomePage() {
         setSelectedQuickPrompts([])
     }
 
+    const handleSearchChats = async (query: string) => {
+        if (!query.trim()) {
+            setSearchResults([])
+            return
+        }
+
+        setIsSearching(true)
+        try {
+            const lowerQuery = query.toLowerCase()
+            
+            // Buscar en todos los chats (activos y archivados)
+            const matches = chats.filter((chat) => {
+                // Buscar en el título
+                if (chat.title.toLowerCase().includes(lowerQuery)) {
+                    return true
+                }
+                
+                // Buscar en los mensajes
+                const hasMessageMatch = chat.messages.some((msg) => 
+                    msg.content.toLowerCase().includes(lowerQuery)
+                )
+                
+                return hasMessageMatch
+            })
+
+            setSearchResults(matches)
+        } catch (error) {
+            console.error("Error buscando chats:", error)
+        } finally {
+            setIsSearching(false)
+        }
+    }
+
+    const handleSearchQueryChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const query = e.target.value
+        setSearchQuery(query)
+        void handleSearchChats(query)
+    }
+
+    const handleSelectSearchResult = (chatId: string) => {
+        handleSelectChat(chatId)
+        setIsSearchDialogOpen(false)
+        setSearchQuery("")
+        setSearchResults([])
+    }
+
     const handleRequestDeleteChat = (chat: Chat) => {
         setChatPendingDeletion(chat)
         setIsDeleteDialogOpen(true)
@@ -991,113 +1042,191 @@ export default function ChatHomePage() {
                     sidebarWidthClass,
                 )}
             >
-                {!isSidebarCollapsed && (
-                    <div className="flex items-center gap-3 px-4 pt-6 pb-4">
-                        <span className="relative inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white shadow-md">
-                            <Image src="/LogotipoRPJ_circulo.png" alt="RPJ" width={56} height={56} priority className="object-cover" />
+                {/* Logo - siempre visible */}
+                <div className="flex items-center justify-center px-4 pt-6 pb-4">
+                    {isSidebarCollapsed ? (
+                        <span className="relative inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-md">
+                            <Image src="/LogotipoRPJ_circulo.png" alt="RPJ" width={48} height={48} priority className="object-cover" />
                         </span>
-                        <div className="flex flex-col">
-                            <span className="text-base font-semibold leading-tight">IA Asistente de</span>
-                            <span className="text-base font-semibold leading-tight">Pastoral Juvenil RPJ</span>
-                        </div>
-                    </div>
-                )}
-
-                <div className="flex items-center justify-between gap-2 px-4 pb-4">
-                    <button
-                        type="button"
-                        onClick={handleCreateNewChat}
-                        className={cn(
-                            "group flex items-center gap-3 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm font-medium shadow-sm transition",
-                            "hover:border-primary/40 hover:bg-primary/5",
-                            isSidebarCollapsed && "mx-auto border-none bg-transparent p-0 shadow-none",
-                        )}
-                    >
-                        {isSidebarCollapsed ? (
-                            <span className="relative inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-md">
-                                <Image src="/LogotipoRPJ_circulo.png" alt="RPJ" width={48} height={48} priority className="object-cover" />
+                    ) : (
+                        <div className="flex items-center gap-3 w-full">
+                            <span className="relative inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white shadow-md">
+                                <Image src="/LogotipoRPJ_circulo.png" alt="RPJ" width={56} height={56} priority className="object-cover" />
                             </span>
-                        ) : (
-                            <>
-                                <Plus className="h-4 w-4" aria-hidden="true" />
-                                <span>Nuevo chat</span>
-                            </>
-                        )}
-                    </button>
-
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-                        className="h-9 w-9"
-                        aria-label={isSidebarCollapsed ? "Mostrar menú" : "Ocultar menú"}
-                    >
-                        {isSidebarCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
-                    </Button>
+                            <div className="flex flex-col">
+                                <span className="text-base font-semibold leading-tight">IA Asistente de</span>
+                                <span className="text-base font-semibold leading-tight">Pastoral Juvenil RPJ</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {isSidebarCollapsed ? (
-                    <div className="flex items-center justify-center py-4 text-muted-foreground">
-                        <MessageSquare className="h-4 w-4" aria-hidden="true" />
+                {/* Botones de acción */}
+                <div className={cn(
+                    "flex items-center gap-2 px-4 pb-4",
+                    isSidebarCollapsed && "flex-col gap-3 px-2"
+                )}>
+                    {isSidebarCollapsed ? (
+                        <>
+                            {/* Nuevo chat - colapsado */}
+                            <TooltipProvider>
+                                <Tooltip delayDuration={0}>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={handleCreateNewChat}
+                                            className="h-11 w-11 rounded-full hover:bg-primary/10"
+                                        >
+                                            <Plus className="h-5 w-5" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right">
+                                        <p>Nuevo chat</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+
+                            {/* Buscar chats - colapsado */}
+                            <TooltipProvider>
+                                <Tooltip delayDuration={0}>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setIsSearchDialogOpen(true)}
+                                            className="h-11 w-11 rounded-full hover:bg-primary/10"
+                                        >
+                                            <Search className="h-5 w-5" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right">
+                                        <p>Buscar chats</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </>
+                    ) : (
+                        <>
+                            {/* Nuevo chat - expandido */}
+                            <button
+                                type="button"
+                                onClick={handleCreateNewChat}
+                                className={cn(
+                                    "flex-1 group flex items-center gap-3 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm font-medium shadow-sm transition",
+                                    "hover:border-primary/40 hover:bg-primary/5",
+                                )}
+                            >
+                                <Plus className="h-4 w-4" aria-hidden="true" />
+                                <span>Nuevo chat</span>
+                            </button>
+
+                            {/* Botón de colapsar */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+                                className="h-9 w-9"
+                                aria-label="Ocultar menú"
+                            >
+                                <ChevronsLeft className="h-4 w-4" />
+                            </Button>
+                        </>
+                    )}
+                </div>
+
+                {isSidebarCollapsed && (
+                    <div className="px-2 pb-4">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsSidebarCollapsed(false)}
+                            className="h-9 w-9 mx-auto"
+                            aria-label="Mostrar menú"
+                        >
+                            <ChevronsRight className="h-4 w-4" />
+                        </Button>
                     </div>
-                ) : (
-                    <button
-                        onClick={() => setIsChatsListCollapsed(!isChatsListCollapsed)}
-                        className="flex w-full items-center justify-between px-4 pt-6 pb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                        <span>Chats</span>
-                        {isChatsListCollapsed ? (
-                            <ChevronRight className="h-4 w-4" />
-                        ) : (
-                            <ChevronDown className="h-4 w-4" />
-                        )}
-                    </button>
                 )}
 
-                <ScrollArea className="flex-1">
-                    {!isChatsListCollapsed && (
-                        <div className="space-y-1 px-2 pb-4">
-                            {sidebarChats.length === 0 && (
-                                <div className="rounded-xl border border-dashed border-border/60 bg-background/60 px-3 py-8 text-center text-xs text-muted-foreground">
-                                    No hay chats todavía. Crea un nuevo chat para empezar.
-                                </div>
+                {/* Buscar chats - expandido */}
+                {!isSidebarCollapsed && (
+                    <div className="px-4 pb-4">
+                        <button
+                            type="button"
+                            onClick={() => setIsSearchDialogOpen(true)}
+                            className={cn(
+                                "w-full group flex items-center gap-3 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm font-medium shadow-sm transition",
+                                "hover:border-primary/40 hover:bg-primary/5",
                             )}
+                        >
+                            <Search className="h-4 w-4" aria-hidden="true" />
+                            <span>Buscar chats</span>
+                        </button>
+                    </div>
+                )}
 
-                            {sidebarChats.map((chat) => {
-                            const isActive = chat.id === activeChatId
-                            const truncatedTitle = chat.title.length > 25 ? chat.title.substring(0, 25) + '...' : chat.title
+                {/* Sección de chats */}
+                {isSidebarCollapsed ? (
+                    <div className="flex-1" />
+                ) : (
+                    <>
+                        <button
+                            onClick={() => setIsChatsListCollapsed(!isChatsListCollapsed)}
+                            className="flex w-full items-center justify-between px-4 pt-2 pb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                            <span>Chats</span>
+                            {isChatsListCollapsed ? (
+                                <ChevronRight className="h-4 w-4" />
+                            ) : (
+                                <ChevronDown className="h-4 w-4" />
+                            )}
+                        </button>
 
-                            return (
-                                <div
-                                    key={chat.id}
-                                    className={cn(
-                                        "group relative flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2.5 transition-colors",
-                                        isActive ? "bg-primary/10" : "hover:bg-muted/50",
+                        <ScrollArea className="flex-1">
+                            {!isChatsListCollapsed && (
+                                <div className="space-y-1 px-2 pb-4">
+                                    {sidebarChats.length === 0 && (
+                                        <div className="rounded-xl border border-dashed border-border/60 bg-background/60 px-3 py-8 text-center text-xs text-muted-foreground">
+                                            No hay chats todavía. Crea un nuevo chat para empezar.
+                                        </div>
                                     )}
-                                    onClick={() => handleSelectChat(chat.id)}
-                                >
-                                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                                        <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-                                        <span className="truncate text-sm font-medium">
-                                            {truncatedTitle}
-                                        </span>
-                                    </div>
-                                    
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 flex-shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 hover:bg-muted"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-44">
-                                            <DropdownMenuItem
-                                                onSelect={(event) => {
-                                                    event.preventDefault()
+
+                                    {sidebarChats.map((chat) => {
+                                    const isActive = chat.id === activeChatId
+                                    const truncatedTitle = chat.title.length > 25 ? chat.title.substring(0, 25) + '...' : chat.title
+
+                                    return (
+                                        <div
+                                            key={chat.id}
+                                            className={cn(
+                                                "group relative flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2.5 transition-colors",
+                                                isActive ? "bg-primary/10" : "hover:bg-muted/50",
+                                            )}
+                                            onClick={() => handleSelectChat(chat.id)}
+                                        >
+                                            <div className="flex min-w-0 flex-1 items-center gap-2">
+                                                <MessageSquare className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                                                <span className="truncate text-sm font-medium">
+                                                    {truncatedTitle}
+                                                </span>
+                                            </div>
+                                            
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7 flex-shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 hover:bg-muted"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-44">
+                                                    <DropdownMenuItem
+                                                        onSelect={(event) => {
+                                                            event.preventDefault()
                                                     handleShareChat(chat.id)
                                                 }}
                                             >
@@ -1129,82 +1258,153 @@ export default function ChatHomePage() {
                     </div>
                     )}
                 </ScrollArea>
+                </>
+                )}
 
-                <div className="border-t border-border/60 px-4 py-6">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <button
-                                type="button"
-                                className={cn(
-                                    "flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2 text-left transition",
-                                    "hover:border-border/60",
-                                    isSidebarCollapsed && "flex-col gap-2 px-0 py-0",
-                                )}
-                            >
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#009846] text-sm font-semibold uppercase text-white">
-                                    {initials}
-                                </div>
-                                {!isSidebarCollapsed && (
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium leading-tight">{user?.nombre || user?.email}</span>
-                                        <span className="text-xs uppercase tracking-wide text-muted-foreground">{user?.rol}</span>
-                                    </div>
-                                )}
-                            </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            align={isSidebarCollapsed ? "center" : "end"}
-                            side={isSidebarCollapsed ? "top" : "top"}
-                            className="w-56"
-                        >
-                            <DropdownMenuItem onSelect={() => setIsUserDialogOpen(true)}>
-                                <User className="mr-2 h-4 w-4" />
-                                Usuario
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => setIsArchivedDialogOpen(true)}>
-                                <Archive className="mr-2 h-4 w-4" />
-                                Chats archivados
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => setIsSettingsDialogOpen(true)}>
-                                <Settings className="mr-2 h-4 w-4" />
-                                Configuración
-                            </DropdownMenuItem>
-                            {canShowOptions && (
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>
-                                        <FileStack className="mr-2 h-4 w-4" />
-                                        Opciones
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent className="w-48">
-                                        {canAccessDocumentation && (
-                                            <DropdownMenuItem onSelect={() => router.push("/documentacion")}>
-                                                <FileText className="mr-2 h-4 w-4" />
-                                                Documentación
+                {/* Sección de usuario - siempre visible */}
+                <div className={cn(
+                    "border-t border-border/60",
+                    isSidebarCollapsed ? "px-2 py-4" : "px-4 py-6"
+                )}>
+                    {isSidebarCollapsed ? (
+                        <TooltipProvider>
+                            <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <button
+                                                type="button"
+                                                className="flex h-12 w-12 mx-auto items-center justify-center rounded-full bg-[#009846] text-sm font-semibold uppercase text-white hover:bg-[#007a38] transition-colors"
+                                            >
+                                                {initials}
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent
+                                            align="center"
+                                            side="right"
+                                            className="w-56"
+                                        >
+                                            <DropdownMenuItem onSelect={() => setIsUserDialogOpen(true)}>
+                                                <User className="mr-2 h-4 w-4" />
+                                                Usuario
                                             </DropdownMenuItem>
-                                        )}
-                                        {canAccessAdministration && (
-                                            <DropdownMenuItem onSelect={() => router.push("/admin")}>
-                                                <UserCog className="mr-2 h-4 w-4" />
-                                                Administración
+                                            <DropdownMenuItem onSelect={() => setIsArchivedDialogOpen(true)}>
+                                                <Archive className="mr-2 h-4 w-4" />
+                                                Chats archivados
                                             </DropdownMenuItem>
-                                        )}
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                onSelect={() => handleLogout()}
-                                className="text-destructive"
-                            >
-                                <LogOut className="mr-2 h-4 w-4" />
-                                Salir
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                            <DropdownMenuItem onSelect={() => setIsSettingsDialogOpen(true)}>
+                                                <Settings className="mr-2 h-4 w-4" />
+                                                Configuración
+                                            </DropdownMenuItem>
+                                            {canShowOptions && (
+                                                <DropdownMenuSub>
+                                                    <DropdownMenuSubTrigger>
+                                                        <FileStack className="mr-2 h-4 w-4" />
+                                                        Opciones
+                                                    </DropdownMenuSubTrigger>
+                                                    <DropdownMenuSubContent className="w-48">
+                                                        {canAccessDocumentation && (
+                                                            <DropdownMenuItem onSelect={() => router.push("/documentacion")}>
+                                                                <FileText className="mr-2 h-4 w-4" />
+                                                                Documentación
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                        {canAccessAdministration && (
+                                                            <DropdownMenuItem onSelect={() => router.push("/admin")}>
+                                                                <UserCog className="mr-2 h-4 w-4" />
+                                                                Administración
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                    </DropdownMenuSubContent>
+                                                </DropdownMenuSub>
+                                            )}
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                                onSelect={() => handleLogout()}
+                                                className="text-destructive"
+                                            >
+                                                <LogOut className="mr-2 h-4 w-4" />
+                                                Salir
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                    <p>{user?.nombre || user?.email}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ) : (
+                        <>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2 text-left transition hover:border-border/60"
+                                    >
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#009846] text-sm font-semibold uppercase text-white">
+                                            {initials}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-medium leading-tight">{user?.nombre || user?.email}</span>
+                                            <span className="text-xs uppercase tracking-wide text-muted-foreground">{user?.rol}</span>
+                                        </div>
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    align="end"
+                                    side="top"
+                                    className="w-56"
+                                >
+                                    <DropdownMenuItem onSelect={() => setIsUserDialogOpen(true)}>
+                                        <User className="mr-2 h-4 w-4" />
+                                        Usuario
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => setIsArchivedDialogOpen(true)}>
+                                        <Archive className="mr-2 h-4 w-4" />
+                                        Chats archivados
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => setIsSettingsDialogOpen(true)}>
+                                        <Settings className="mr-2 h-4 w-4" />
+                                        Configuración
+                                    </DropdownMenuItem>
+                                    {canShowOptions && (
+                                        <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger>
+                                                <FileStack className="mr-2 h-4 w-4" />
+                                                Opciones
+                                            </DropdownMenuSubTrigger>
+                                            <DropdownMenuSubContent className="w-48">
+                                                {canAccessDocumentation && (
+                                                    <DropdownMenuItem onSelect={() => router.push("/documentacion")}>
+                                                        <FileText className="mr-2 h-4 w-4" />
+                                                        Documentación
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {canAccessAdministration && (
+                                                    <DropdownMenuItem onSelect={() => router.push("/admin")}>
+                                                        <UserCog className="mr-2 h-4 w-4" />
+                                                        Administración
+                                                    </DropdownMenuItem>
+                                                )}
+                                            </DropdownMenuSubContent>
+                                        </DropdownMenuSub>
+                                    )}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onSelect={() => handleLogout()}
+                                        className="text-destructive"
+                                    >
+                                        <LogOut className="mr-2 h-4 w-4" />
+                                        Salir
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <UsageStats token={token} />
+                        </>
+                    )}
                 </div>
-
-                {/* Estadísticas de uso */}
-                <UsageStats token={token} />
             </aside>
 
             <main className="flex flex-1 flex-col overflow-hidden">
@@ -1539,6 +1739,107 @@ export default function ChatHomePage() {
                             </div>
                         </div>
                     </div>
+                </DialogContent>
+            </Dialog>
+            
+            {/* Diálogo de búsqueda de chats */}
+            <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Buscar en chats</DialogTitle>
+                        <DialogDescription>
+                            Busca en todos tus chats (activos y archivados) por título o contenido
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                type="text"
+                                placeholder="Escribe para buscar..."
+                                value={searchQuery}
+                                onChange={handleSearchQueryChange}
+                                className="pl-10"
+                                autoFocus
+                            />
+                        </div>
+
+                        <ScrollArea className="flex-1 -mx-6 px-6">
+                            {isSearching ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Sparkles className="h-6 w-6 animate-pulse text-primary" />
+                                </div>
+                            ) : searchQuery.trim() === "" ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-center">
+                                    <Search className="h-12 w-12 text-muted-foreground/40 mb-3" />
+                                    <p className="text-sm text-muted-foreground">
+                                        Escribe algo para buscar en tus chats
+                                    </p>
+                                </div>
+                            ) : searchResults.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-center">
+                                    <MessageSquare className="h-12 w-12 text-muted-foreground/40 mb-3" />
+                                    <p className="text-sm text-muted-foreground">
+                                        No se encontraron chats que coincidan con &quot;{searchQuery}&quot;
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {searchResults.map((chat) => {
+                                        const matchesInContent = chat.messages.filter((msg) =>
+                                            msg.content.toLowerCase().includes(searchQuery.toLowerCase())
+                                        ).length
+
+                                        return (
+                                            <button
+                                                key={chat.id}
+                                                onClick={() => handleSelectSearchResult(chat.id)}
+                                                className={cn(
+                                                    "w-full text-left rounded-lg border border-border/60 bg-background p-4 transition-colors hover:bg-muted/50",
+                                                    chat.archived && "opacity-70"
+                                                )}
+                                            >
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <MessageSquare className="h-4 w-4 flex-shrink-0 text-primary" />
+                                                            <h4 className="font-medium text-sm truncate">
+                                                                {chat.title}
+                                                            </h4>
+                                                            {chat.archived && (
+                                                                <Archive className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {chat.messages.length} {chat.messages.length === 1 ? "mensaje" : "mensajes"}
+                                                            {matchesInContent > 0 && (
+                                                                <> • {matchesInContent} {matchesInContent === 1 ? "coincidencia" : "coincidencias"}</>
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </ScrollArea>
+                    </div>
+
+                    <DialogFooter>
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => {
+                                setIsSearchDialogOpen(false)
+                                setSearchQuery("")
+                                setSearchResults([])
+                            }}
+                        >
+                            Cerrar
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
             
