@@ -16,6 +16,7 @@ const ROLE_PRIORITY: Record<string, number> = {
     SUPERADMIN: 4,
     ADMINISTRADOR: 3,
     DOCUMENTADOR: 2,
+    DOCUMENTADOR_JUNIOR: 2,
     USUARIO: 1,
 }
 
@@ -23,6 +24,7 @@ const ROLE_OPTIONS = [
     { value: "SUPERADMIN", label: "Superadmin" },
     { value: "ADMINISTRADOR", label: "Administrador" },
     { value: "DOCUMENTADOR", label: "Documentador" },
+    { value: "DOCUMENTADOR_JUNIOR", label: "Documentador Junior" },
     { value: "USUARIO", label: "Usuario" },
 ]
 
