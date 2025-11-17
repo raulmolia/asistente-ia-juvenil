@@ -45,6 +45,18 @@ module.exports = {
             autorestart: true,
             max_restarts: 5,
             restart_delay: 5000
+        },
+        {
+            name: "rpjia-web-updater",
+            cwd: "./backend",
+            script: "node",
+            args: "jobs/actualizarFuentesWeb.js",
+            watch: false,
+            autorestart: false,
+            cron_restart: "0 2 * * *", // Ejecutar cada día a las 2:00 AM
+            env: {
+                NODE_ENV: "production"
+            }
         }
     ]
 };

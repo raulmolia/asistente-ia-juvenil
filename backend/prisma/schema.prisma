@@ -243,6 +243,7 @@ model FuenteWeb {
   activa               Boolean                @default(true)
   fechaCreacion        DateTime               @default(now())
   fechaActualizacion   DateTime               @updatedAt
+  fechaUltimaActualizacion DateTime?          // Para el sistema de actualización automática cada 24h
 
   // Relaciones
   usuario              Usuario?               @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
