@@ -1042,83 +1042,24 @@ export default function ChatHomePage() {
                     sidebarWidthClass,
                 )}
             >
-                {/* Logo - siempre visible */}
-                <div className="flex items-center justify-center px-4 pt-6 pb-4">
+                {/* Logo y título */}
+                <div className="flex items-center justify-between px-4 pt-6 pb-4">
                     {isSidebarCollapsed ? (
-                        <span className="relative inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-md">
+                        <span className="relative inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-md mx-auto">
                             <Image src="/LogotipoRPJ_circulo.png" alt="RPJ" width={48} height={48} priority className="object-cover" />
                         </span>
                     ) : (
-                        <div className="flex items-center gap-3 w-full">
-                            <span className="relative inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white shadow-md">
-                                <Image src="/LogotipoRPJ_circulo.png" alt="RPJ" width={56} height={56} priority className="object-cover" />
-                            </span>
-                            <div className="flex flex-col">
-                                <span className="text-base font-semibold leading-tight">IA Asistente de</span>
-                                <span className="text-base font-semibold leading-tight">Pastoral Juvenil RPJ</span>
+                        <>
+                            <div className="flex items-center gap-3">
+                                <span className="relative inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white shadow-md">
+                                    <Image src="/LogotipoRPJ_circulo.png" alt="RPJ" width={56} height={56} priority className="object-cover" />
+                                </span>
+                                <div className="flex flex-col">
+                                    <span className="text-base font-semibold leading-tight">IA Asistente de</span>
+                                    <span className="text-base font-semibold leading-tight">Pastoral Juvenil RPJ</span>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Botones de acción */}
-                <div className={cn(
-                    "flex items-center gap-2 px-4 pb-4 pt-6",
-                    isSidebarCollapsed && "flex-col gap-3 px-2"
-                )}>
-                    {isSidebarCollapsed ? (
-                        <>
-                            {/* Nuevo chat - colapsado */}
-                            <TooltipProvider>
-                                <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={handleCreateNewChat}
-                                            className="h-11 w-11 rounded-full hover:bg-primary/10"
-                                        >
-                                            <Plus className="h-5 w-5" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="right">
-                                        <p>Nuevo chat</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-
-                            {/* Buscar chats - colapsado */}
-                            <TooltipProvider>
-                                <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => setIsSearchDialogOpen(true)}
-                                            className="h-11 w-11 rounded-full hover:bg-primary/10"
-                                        >
-                                            <Search className="h-5 w-5" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="right">
-                                        <p>Buscar chats</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </>
-                    ) : (
-                        <>
-                            {/* Nuevo chat - expandido */}
-                            <button
-                                type="button"
-                                onClick={handleCreateNewChat}
-                                className="flex-1 flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
-                            >
-                                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                                <span>Nuevo chat</span>
-                            </button>
-
-                            {/* Botón de colapsar */}
+                            {/* Botón de colapsar junto al título */}
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -1132,8 +1073,51 @@ export default function ChatHomePage() {
                     )}
                 </div>
 
-                {isSidebarCollapsed && (
-                    <div className="px-2 pb-4">
+                {/* Separador */}
+                <div className="pb-4" />
+
+                {/* Botones de acción - mismo padding y espaciado */}
+                {isSidebarCollapsed ? (
+                    <div className="flex flex-col gap-3 px-2">
+                        {/* Nuevo chat - colapsado */}
+                        <TooltipProvider>
+                            <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={handleCreateNewChat}
+                                        className="h-11 w-11 rounded-full hover:bg-primary/10"
+                                    >
+                                        <Plus className="h-5 w-5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                    <p>Nuevo chat</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        {/* Buscar chats - colapsado */}
+                        <TooltipProvider>
+                            <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setIsSearchDialogOpen(true)}
+                                        className="h-11 w-11 rounded-full hover:bg-primary/10"
+                                    >
+                                        <Search className="h-5 w-5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                    <p>Buscar chats</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        {/* Botón expandir */}
                         <Button
                             variant="ghost"
                             size="icon"
@@ -1144,28 +1128,32 @@ export default function ChatHomePage() {
                             <ChevronsRight className="h-4 w-4" />
                         </Button>
                     </div>
-                )}
-
-                {/* Buscar chats - expandido */}
-                {!isSidebarCollapsed && (
-                    <button
-                        type="button"
-                        onClick={() => setIsSearchDialogOpen(true)}
-                        className="flex w-full items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                        <Search className="h-3.5 w-3.5" aria-hidden="true" />
-                        <span>Buscar chats</span>
-                    </button>
-                )}
-
-                {/* Sección de chats */}
-                {isSidebarCollapsed ? (
-                    <div className="flex-1" />
                 ) : (
-                    <>
+                    <div className="space-y-0">
+                        {/* Nuevo chat - expandido */}
+                        <button
+                            type="button"
+                            onClick={handleCreateNewChat}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>Nuevo chat</span>
+                        </button>
+
+                        {/* Buscar chats - expandido */}
+                        <button
+                            type="button"
+                            onClick={() => setIsSearchDialogOpen(true)}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                            <Search className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>Buscar chats</span>
+                        </button>
+
+                        {/* Título Chats */}
                         <button
                             onClick={() => setIsChatsListCollapsed(!isChatsListCollapsed)}
-                            className="flex w-full items-center justify-between px-4 pt-2 pb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+                            className="flex w-full items-center justify-between px-4 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
                         >
                             <div className="flex items-center gap-2">
                                 <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1177,11 +1165,17 @@ export default function ChatHomePage() {
                                 <ChevronDown className="h-4 w-4" />
                             )}
                         </button>
+                    </div>
+                )}
 
-                        <ScrollArea className="flex-1">
-                            {!isChatsListCollapsed && (
-                                <div className="space-y-1 px-2 pb-4">
-                                    {sidebarChats.length === 0 && (
+                {/* Sección de chats */}
+                {isSidebarCollapsed ? (
+                    <div className="flex-1" />
+                ) : (
+                    <ScrollArea className="flex-1">
+                        {!isChatsListCollapsed && (
+                            <div className="space-y-1 px-2 pb-4">
+                                {sidebarChats.length === 0 && (
                                         <div className="rounded-xl border border-dashed border-border/60 bg-background/60 px-3 py-8 text-center text-xs text-muted-foreground">
                                             No hay chats todavía. Crea un nuevo chat para empezar.
                                         </div>
@@ -1252,7 +1246,6 @@ export default function ChatHomePage() {
                     </div>
                     )}
                 </ScrollArea>
-                </>
                 )}
 
                 {/* Sección de usuario - siempre visible */}
