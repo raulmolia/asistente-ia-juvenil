@@ -57,7 +57,7 @@ export default function AcercaDePage() {
                         <div className="flex justify-center">
                             <div className="relative h-32 w-32 overflow-hidden rounded-2xl bg-white shadow-lg">
                                 <Image
-                                    src="/Logotipo RPJ.jpg"
+                                    src="/LogotipoRPJ.png"
                                     alt="Logo RPJ"
                                     fill
                                     className="object-contain p-2"
@@ -83,18 +83,40 @@ export default function AcercaDePage() {
                                             {...props} 
                                         />
                                     ),
-                                    a: ({ node, href, children, ...props }) => (
-                                        <a
-                                            href={href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-0.5 font-medium text-primary transition-all hover:bg-primary/20 hover:underline"
-                                            {...props}
-                                        >
-                                            {children}
-                                            <ExternalLink className="h-3.5 w-3.5 opacity-60 transition-opacity group-hover:opacity-100" />
-                                        </a>
-                                    ),
+                                    a: ({ node, href, children, ...props }) => {
+                                        // Verificar si es el enlace destacado (contiene la flecha →)
+                                        const childrenArray = Array.isArray(children) ? children : [children]
+                                        const text = childrenArray.map(c => typeof c === 'string' ? c : '').join('')
+                                        const isHighlighted = text.includes('→')
+                                        
+                                        if (isHighlighted) {
+                                            return (
+                                                <a
+                                                    href={href}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="group my-4 inline-flex items-center gap-2 rounded-lg border-2 border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3 text-base font-semibold text-primary shadow-sm transition-all hover:border-primary/50 hover:shadow-md hover:scale-[1.02]"
+                                                    {...props}
+                                                >
+                                                    {children}
+                                                    <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                                </a>
+                                            )
+                                        }
+                                        
+                                        return (
+                                            <a
+                                                href={href}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-0.5 font-medium text-primary transition-all hover:bg-primary/20 hover:underline"
+                                                {...props}
+                                            >
+                                                {children}
+                                                <ExternalLink className="h-3.5 w-3.5 opacity-60 transition-opacity group-hover:opacity-100" />
+                                            </a>
+                                        )
+                                    },
                                     ul: ({ node, ...props }) => (
                                         <ul 
                                             className="my-6 ml-6 space-y-3 list-disc marker:text-primary" 

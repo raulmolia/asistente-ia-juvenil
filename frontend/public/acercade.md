@@ -2,7 +2,11 @@
 
 ## ¿Quiénes somos la RPJ?
 La Red de Pastoral Juvenil RPJ somos una red de colaboración eclesial y sinodal comprometida con la evangelización digital y el acompañamiento a los agentes de pastoral juvenil. Desde nuestra fundación en 1959 por parte de los Escolapios con nuestra revista de pastoral juvenil hemos ido respondiendo a las necesidades de los procesos pastorales de cada generación manteniendo la esencia de servicio a la Iglesia aportando reflexiones, formaciones y la creación de recursos y experiencias de pastoral con y para los jóvenes.  
-Desde el año 2020 hemos empezado a trabajar mucho más en red internacional, con formaciones online e iniciativas de evangelización digital en redes sociales. En nuestros equipos y propuestas participan diferentes instituciones eclesiales de varios países, carismas y vocaciones que compartimos esta misión en lengua castellana y también en lengua inglesa:  
+Desde el año 2020 hemos empezado a trabajar mucho más en red internacional, con formaciones online e iniciativas de evangelización digital en redes sociales. En nuestros equipos y propuestas participan diferentes instituciones eclesiales de varios países, carismas y vocaciones que compartimos esta misión en lengua castellana y también en lengua inglesa.
+
+**[→ Qué instituciones forman parte de la RPJ](https://rpj.es/quienes-somos/)**
+
+Conocé más sobre nuestros equipos, instituciones colaboradoras y propuestas:  
 www.rpj.es  
 www.facebook.com/rpjdigital  
 www.instagram.com/redpastoraljuvenil/  
