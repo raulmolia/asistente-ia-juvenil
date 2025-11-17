@@ -99,14 +99,14 @@ REQUISITOS ESTRICTOS:
 - Una sola línea
 - Cálido y acogedor
 - Sin emojis
-- Sin signos de exclamación al final
+- Si abres una exclamación (¡), debes cerrarla (!)
 - Debe ser CREATIVO y DIFERENTE cada vez (no repitas saludos)
 
 Ejemplos válidos (usa variaciones diferentes):
 - "Hola María, cuéntame qué necesitas"
 - "Bienvenido Juan, estoy aquí para ayudarte"
 - "Hola Pedro, cómo puedo acompañarte hoy"
-- "Qué alegría verte Laura, te escucho"
+- "¡Qué alegría verte Laura, te escucho!"
 - "Encantado de saludarte Carlos, conversemos"
 - "Hola Ana, comparte lo que quieras"
 
