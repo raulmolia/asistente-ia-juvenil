@@ -28,21 +28,25 @@ const USER_LIMITS = {
         maxConversations: null, // Sin límite
         maxMessagesPerConversation: null, // Sin límite
         maxDailyInteractions: null, // Sin límite
+        maxDailyChats: null, // Sin límite
     },
     ADMINISTRADOR: {
         maxConversations: null,
         maxMessagesPerConversation: null,
         maxDailyInteractions: null,
+        maxDailyChats: null,
     },
     DOCUMENTADOR: {
         maxConversations: 10,
         maxMessagesPerConversation: null, // Sin límite
         maxDailyInteractions: null, // Sin límite
+        maxDailyChats: null, // Sin límite
     },
     DOCUMENTADOR_JUNIOR: {
         maxConversations: 10,
         maxMessagesPerConversation: null, // Sin límite
         maxDailyInteractions: null, // Sin límite
+        maxDailyChats: null, // Sin límite
     },
     USUARIO: {
         maxConversations: 7,
