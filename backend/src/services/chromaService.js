@@ -342,6 +342,158 @@ class ChromaService {
             return -1;
         }
     }
+
+    /**
+     * Crea una colección temporal para una conversación específica
+     * @param {string} conversationId - ID de la conversación
+     * @returns {Promise<string>} - Nombre de la colección temporal
+     */
+    async createTemporaryCollection(conversationId) {
+        const collectionName = `rpjia-temp-${conversationId}`;
+        
+        try {
+            await this.getOrCreateCollection(collectionName);
+            console.log(`✅ Colección temporal creada: ${collectionName}`);
+            return collectionName;
+        } catch (error) {
+            console.error(`❌ Error creando colección temporal: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Agrega documentos procesados (con Gemma) a una colección temporal
+     * @param {string} conversationId - ID de la conversación
+     * @param {Array} documents - Array de documentos a agregar
+     * @returns {Promise<boolean>} - true si se agregaron correctamente
+     */
+    async addToTemporaryCollection(conversationId, documents) {
+        const collectionName = `rpjia-temp-${conversationId}`;
+        
+        try {
+            const collection = await this.getOrCreateCollection(collectionName);
+            
+            const ids = documents.map((doc, idx) => `${conversationId}-file-${idx}-${Date.now()}`);
+            const texts = documents.map(doc => doc.text);
+            const metadatas = documents.map(doc => this.normalizeMetadata({
+                fileName: doc.fileName,
+                mimeType: doc.mimeType,
+                size: doc.size,
+                wordCount: doc.wordCount,
+                conversationId: conversationId,
+                uploadedAt: new Date().toISOString(),
+                ...doc.metadata,
+            }));
+
+            await collection.add({
+                ids,
+                documents: texts,
+                metadatas,
+            });
+
+            console.log(`✅ ${documents.length} documentos agregados a ${collectionName}`);
+            return true;
+        } catch (error) {
+            console.error(`❌ Error agregando a colección temporal: ${error.message}`);
+            return false;
+        }
+    }
+
+    /**
+     * Busca en la colección temporal de una conversación
+     * @param {string} conversationId - ID de la conversación
+     * @param {string} query - Query de búsqueda
+     * @param {number} limit - Número máximo de resultados
+     * @returns {Promise<Array>} - Resultados de la búsqueda
+     */
+    async searchInTemporaryCollection(conversationId, query, limit = 3) {
+        const collectionName = `rpjia-temp-${conversationId}`;
+        
+        try {
+            const collection = await this.getOrCreateCollection(collectionName);
+            
+            const results = await collection.query({
+                queryTexts: [query],
+                nResults: limit,
+            });
+
+            if (!results || !results.documents || results.documents.length === 0) {
+                return [];
+            }
+
+            const firstResult = results.documents[0];
+            const firstMeta = results.metadatas?.[0] || [];
+            const firstDist = results.distances?.[0] || [];
+            const firstIds = results.ids?.[0] || [];
+
+            return firstResult.map((doc, idx) => ({
+                id: firstIds[idx],
+                text: doc,
+                metadata: firstMeta[idx] || {},
+                distance: firstDist[idx] ?? null,
+            }));
+        } catch (error) {
+            console.error(`❌ Error buscando en colección temporal: ${error.message}`);
+            return [];
+        }
+    }
+
+    /**
+     * Elimina una colección temporal cuando se borra una conversación
+     * @param {string} conversationId - ID de la conversación
+     * @returns {Promise<boolean>} - true si se eliminó correctamente
+     */
+    async deleteTemporaryCollection(conversationId) {
+        const collectionName = `rpjia-temp-${conversationId}`;
+        
+        try {
+            if (!this.isAvailable || !this.client) {
+                const ready = await this.ensureReady();
+                if (!ready) {
+                    console.warn('⚠️ ChromaDB no disponible, no se puede eliminar colección temporal');
+                    return false;
+                }
+            }
+
+            await this.client.deleteCollection({ name: collectionName });
+            
+            // Remover de caché
+            this.collections.delete(collectionName);
+            
+            console.log(`✅ Colección temporal eliminada: ${collectionName}`);
+            return true;
+        } catch (error) {
+            // Si la colección no existe, no es un error crítico
+            if (error.message && error.message.includes('does not exist')) {
+                console.log(`ℹ️ Colección temporal no existía: ${collectionName}`);
+                return true;
+            }
+            
+            console.error(`❌ Error eliminando colección temporal: ${error.message}`);
+            return false;
+        }
+    }
+
+    /**
+     * Verifica si existe una colección temporal para una conversación
+     * @param {string} conversationId - ID de la conversación
+     * @returns {Promise<boolean>} - true si existe
+     */
+    async hasTemporaryCollection(conversationId) {
+        const collectionName = `rpjia-temp-${conversationId}`;
+        
+        try {
+            if (!this.isAvailable || !this.client) {
+                return false;
+            }
+
+            const collections = await this.client.listCollections();
+            return collections.some(col => col.name === collectionName);
+        } catch (error) {
+            console.error(`❌ Error verificando colección temporal: ${error.message}`);
+            return false;
+        }
+    }
 }
 
 // Instancia singleton

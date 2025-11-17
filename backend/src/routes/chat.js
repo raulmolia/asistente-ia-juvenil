@@ -3,6 +3,7 @@ import prismaPackage from '@prisma/client';
 import { authenticate } from '../middleware/auth.js';
 import chromaService from '../services/chromaService.js';
 import { callChatCompletion } from '../services/llmService.js';
+import gemmaService from '../services/gemmaService.js';
 import {
     detectIntentFromText,
     resolveIntent,
@@ -160,7 +161,7 @@ function logChatEvent(level = 'info', payload = {}) {
     }
 }
 
-async function ensureConversation({ conversationId, userId, intent }) {
+async function ensureConversation({ conversationId, userId, intent, userName }) {
     if (conversationId) {
         const existing = await prisma.conversacion.findUnique({
             where: { id: conversationId },
@@ -174,7 +175,8 @@ async function ensureConversation({ conversationId, userId, intent }) {
         }
     }
 
-    return prisma.conversacion.create({
+    // Crear nueva conversación
+    const newConversation = await prisma.conversacion.create({
         data: {
             usuarioId: userId,
             titulo: null,
@@ -182,6 +184,40 @@ async function ensureConversation({ conversationId, userId, intent }) {
             intencionPrincipal: intent?.id || DEFAULT_INTENT.id,
         },
     });
+
+    // Crear colección temporal en ChromaDB
+    try {
+        await chromaService.createTemporaryCollection(newConversation.id);
+        console.log(`✅ Colección temporal creada para conversación ${newConversation.id}`);
+    } catch (error) {
+        console.warn(`⚠️ No se pudo crear colección temporal: ${error.message}`);
+    }
+
+    // Generar saludo inicial con Gemma si tenemos el nombre del usuario
+    if (userName) {
+        try {
+            const greeting = await gemmaService.generateInitialGreeting(
+                userName,
+                intent?.id || null
+            );
+            
+            // Crear mensaje inicial del asistente
+            await prisma.mensajeConversacion.create({
+                data: {
+                    conversacionId: newConversation.id,
+                    rol: RolMensaje.ASISTENTE,
+                    contenido: greeting,
+                    intencion: intent?.id || DEFAULT_INTENT.id,
+                },
+            });
+            
+            console.log(`✅ Saludo inicial generado para ${userName}`);
+        } catch (error) {
+            console.warn(`⚠️ No se pudo generar saludo inicial: ${error.message}`);
+        }
+    }
+
+    return newConversation;
 }
 
 async function fetchConversationHistory(conversationId, limit = 12) {
@@ -434,10 +470,11 @@ router.post('/', authenticate, async (req, res) => {
             ? resolveIntent(rawIntent)
             : detectIntentFromText(trimmedMessage);
 
-        conversation = await ensureConversation({
+        const conversation = await ensureConversation({
             conversationId,
             userId: req.user?.id || null,
             intent: detectedIntent,
+            userName: req.user?.nombre || 'Usuario',
         });
 
         const previousHistory = await fetchConversationHistory(conversation.id, 12);
@@ -472,8 +509,8 @@ router.post('/', authenticate, async (req, res) => {
         const CHROMA_COLLECTION_DOCUMENTOS = process.env.CHROMA_COLLECTION_DOCUMENTOS || detectedIntent?.chromaCollection;
         const CHROMA_WEB_COLLECTION = process.env.CHROMA_COLLECTION_WEB || 'rpjia-fuentes-web';
 
-        // Realizar búsquedas en paralelo
-        const [documentResults, webResults] = await Promise.all([
+        // Realizar búsquedas en paralelo (incluyendo colección temporal de archivos)
+        const [documentResults, webResults, tempResults] = await Promise.all([
             chromaService.searchSimilar(
                 trimmedMessage,
                 3,
@@ -492,10 +529,18 @@ router.post('/', authenticate, async (req, res) => {
                 console.warn('Error buscando en fuentes web:', err.message);
                 return [];
             }),
+            chromaService.searchInTemporaryCollection(
+                conversation.id,
+                trimmedMessage,
+                2,
+            ).catch(err => {
+                console.warn('Error buscando en archivos temporales:', err.message);
+                return [];
+            }),
         ]);
 
         // Combinar y ordenar por relevancia (distancia)
-        contextResults = [...documentResults, ...webResults]
+        contextResults = [...documentResults, ...webResults, ...tempResults]
             .sort((a, b) => (a.distance || 999) - (b.distance || 999))
             .slice(0, 5);
 
@@ -567,6 +612,23 @@ router.post('/', authenticate, async (req, res) => {
                 descripcion: conversation.descripcion || trimmedMessage.slice(0, 200),
             },
         });
+
+        // Generar título automático con Gemma si es el primer mensaje del usuario
+        if (previousHistory.length === 0 || previousHistory.length === 1) {
+            // length === 1 significa que solo existe el saludo inicial del asistente
+            try {
+                const generatedTitle = await gemmaService.generateChatTitle(trimmedMessage);
+                
+                await prisma.conversacion.update({
+                    where: { id: conversation.id },
+                    data: { titulo: generatedTitle },
+                });
+                
+                console.log(`✅ Título generado automáticamente: "${generatedTitle}"`);
+            } catch (error) {
+                console.warn(`⚠️ Error generando título: ${error.message}`);
+            }
+        }
 
         logChatEvent('info', {
             event: 'chat.completion.success',
@@ -681,6 +743,14 @@ router.delete('/:id', authenticate, async (req, res) => {
                 error: 'Acceso denegado',
                 message: 'No puedes eliminar esta conversación',
             });
+        }
+
+        // Eliminar colección temporal de ChromaDB
+        try {
+            await chromaService.deleteTemporaryCollection(id);
+            console.log(`✅ Colección temporal eliminada para conversación ${id}`);
+        } catch (error) {
+            console.warn(`⚠️ Error eliminando colección temporal: ${error.message}`);
         }
 
         await prisma.conversacion.delete({ where: { id } });

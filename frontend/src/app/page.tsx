@@ -619,7 +619,7 @@ export default function ChatHomePage() {
         const input = document.createElement('input')
         input.type = 'file'
         input.multiple = true
-        input.accept = '.txt,.md,.json,.csv,.html'
+        input.accept = '.jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf'
         
         input.onchange = async (e: Event) => {
             const target = e.target as HTMLInputElement
@@ -636,6 +636,12 @@ export default function ChatHomePage() {
 
             try {
                 const formData = new FormData()
+                
+                // Agregar conversationId si existe
+                if (activeChat?.conversationId) {
+                    formData.append('conversationId', activeChat.conversationId)
+                }
+                
                 Array.from(files).forEach(file => {
                     formData.append('files', file)
                 })
@@ -1084,7 +1090,7 @@ export default function ChatHomePage() {
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent side="top">
-                                            <p>Adjuntar archivos (.txt, .md, .json, .csv, .html)</p>
+                                            <p>Adjuntar archivos (imágenes JPG/PNG, PDFs)</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
