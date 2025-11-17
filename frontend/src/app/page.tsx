@@ -842,7 +842,7 @@ export default function ChatHomePage() {
     }, [isRecording])
 
     const transcribeAudio = useCallback(async (audioBlob: Blob) => {
-        if (!token || !activeChat) {
+        if (!token) {
             setChatError('No hay sesión activa')
             return
         }
@@ -1456,7 +1456,7 @@ export default function ChatHomePage() {
                                                 )}
                                                 aria-label={isRecording ? "Detener grabación" : "Dictar"}
                                                 onClick={isRecording ? handleStopRecording : handleStartRecording}
-                                                disabled={isThinking || isTranscribing || !activeChat}
+                                                disabled={isThinking || isTranscribing}
                                             >
                                                 {isRecording ? (
                                                     <Square className="h-4 w-4 animate-pulse" aria-hidden="true" />
