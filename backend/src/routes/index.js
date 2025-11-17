@@ -7,6 +7,7 @@ import documentosRoutes from './documentos.js';
 import fuentesWebRoutes from './fuentesWeb.js';
 import chatRoutes from './chat.js';
 import passwordRoutes from './password.js';
+import filesRoutes from './files.js';
 
 const { PrismaClient } = prismaPackage;
 
@@ -19,6 +20,7 @@ router.use('/documentos', documentosRoutes);
 router.use('/fuentes-web', fuentesWebRoutes);
 router.use('/chat', chatRoutes);
 router.use('/password', passwordRoutes);
+router.use('/files', filesRoutes);
 
 // Ruta de health check
 router.get('/health', async (req, res) => {

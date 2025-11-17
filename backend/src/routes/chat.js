@@ -394,7 +394,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 router.post('/', authenticate, async (req, res) => {
-    const { message, conversationId, intent: rawIntent, tags: clientTags, useThinkingModel } = req.body || {};
+    const { message, conversationId, intent: rawIntent, tags: clientTags, useThinkingModel, attachments } = req.body || {};
 
     let conversation = null;
     let detectedIntent = DEFAULT_INTENT;
@@ -405,6 +405,14 @@ router.post('/', authenticate, async (req, res) => {
         return res.status(400).json({
             error: 'Mensaje inválido',
             message: 'Debes proporcionar un mensaje de usuario',
+        });
+    }
+
+    // Validar attachments si se proporcionan
+    if (attachments && (!Array.isArray(attachments) || attachments.length > 5)) {
+        return res.status(400).json({
+            error: 'Archivos adjuntos inválidos',
+            message: 'Se permiten máximo 5 archivos adjuntos',
         });
     }
 
@@ -433,12 +441,25 @@ router.post('/', authenticate, async (req, res) => {
         });
 
         const previousHistory = await fetchConversationHistory(conversation.id, 12);
+        
+        // Preparar metadatos con información de archivos adjuntos si existen
+        const messageMetadata = {};
+        if (attachments && attachments.length > 0) {
+            messageMetadata.attachments = attachments.map(file => ({
+                fileName: file.fileName,
+                mimeType: file.mimeType,
+                size: file.size,
+                wordCount: file.wordCount,
+            }));
+        }
+        
         userMessageRecord = await prisma.mensajeConversacion.create({
             data: {
                 conversacionId: conversation.id,
                 rol: RolMensaje.USUARIO,
                 contenido: trimmedMessage,
                 intencion: detectedIntent.id,
+                metadatos: Object.keys(messageMetadata).length > 0 ? messageMetadata : undefined,
             },
         });
 
@@ -478,7 +499,17 @@ router.post('/', authenticate, async (req, res) => {
             .sort((a, b) => (a.distance || 999) - (b.distance || 999))
             .slice(0, 5);
 
-        const contextPrompt = buildContextFromChroma(contextResults);
+        let contextPrompt = buildContextFromChroma(contextResults);
+
+        // Agregar contenido de archivos adjuntos al contexto
+        if (attachments && attachments.length > 0) {
+            const attachmentsContext = attachments
+                .map(file => `--- Archivo: ${file.fileName} ---\n${file.text}`)
+                .join('\n\n');
+            
+            const attachmentsHeader = '\n\n=== ARCHIVOS ADJUNTOS POR EL USUARIO ===\n\n';
+            contextPrompt = attachmentsHeader + attachmentsContext + (contextPrompt ? '\n\n' + contextPrompt : '');
+        }
 
         const llmMessages = [
             { role: 'system', content: detectedIntent.systemPrompt },

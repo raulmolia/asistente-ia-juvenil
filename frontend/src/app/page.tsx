@@ -231,6 +231,15 @@ export default function ChatHomePage() {
     )
     const [selectedQuickPrompts, setSelectedQuickPrompts] = useState<string[]>([])
     const [isThinkingMode, setIsThinkingMode] = useState(false)
+    const [attachedFiles, setAttachedFiles] = useState<Array<{
+        fileName: string
+        mimeType: string
+        size: number
+        text: string
+        wordCount: number
+    }>>([])
+    const [isUploadingFiles, setIsUploadingFiles] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement | null>(null)
     
     const selectedQuickPromptItems = useMemo(() => {
         const labelSet = new Set(selectedQuickPrompts)
@@ -533,6 +542,7 @@ export default function ChatHomePage() {
                     intent: intentToSend,
                     tags: tagsToSend.length > 0 ? tagsToSend : undefined,
                     useThinkingModel: isThinkingMode,
+                    attachments: attachedFiles.length > 0 ? attachedFiles : undefined,
                 }),
             })
 
@@ -567,13 +577,16 @@ export default function ChatHomePage() {
             if (!previousConversationId && data.conversationId) {
                 fetchConversations()
             }
+            
+            // Limpiar archivos adjuntos después de enviar
+            setAttachedFiles([])
         } catch (error) {
             const message = error instanceof Error ? error.message : "No se pudo generar la respuesta"
             setChatError(message)
         } finally {
             setIsThinking(false)
         }
-    }, [activeChat, fetchConversations, inputValue, isThinking, token, selectedQuickPromptItems])
+    }, [activeChat, fetchConversations, inputValue, isThinking, token, selectedQuickPromptItems, isThinkingMode, attachedFiles])
 
     const handlePromptKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
@@ -595,6 +608,73 @@ export default function ChatHomePage() {
             }
             return [...prev, prompt.label]
         })
+    }, [])
+
+    const handleFileSelect = useCallback(async () => {
+        if (!token) {
+            setChatError("No hay sesión activa")
+            return
+        }
+
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.multiple = true
+        input.accept = '.txt,.md,.json,.csv,.html'
+        
+        input.onchange = async (e: Event) => {
+            const target = e.target as HTMLInputElement
+            const files = target.files
+            if (!files || files.length === 0) return
+
+            if (files.length > 5) {
+                setChatError("Puedes adjuntar un máximo de 5 archivos")
+                return
+            }
+
+            setIsUploadingFiles(true)
+            setChatError(null)
+
+            try {
+                const formData = new FormData()
+                Array.from(files).forEach(file => {
+                    formData.append('files', file)
+                })
+
+                const response = await fetch(buildApiUrl("/api/files/upload"), {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: formData,
+                })
+
+                const data = await response.json()
+
+                if (!response.ok) {
+                    throw new Error(data.message || "Error al subir archivos")
+                }
+
+                if (data.files && data.files.length > 0) {
+                    setAttachedFiles(prev => [...prev, ...data.files])
+                }
+
+                if (data.errors && data.errors.length > 0) {
+                    const errorMsg = data.errors.map((e: any) => e.message).join(", ")
+                    setChatError(`Algunos archivos no se pudieron procesar: ${errorMsg}`)
+                }
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "Error al subir archivos"
+                setChatError(message)
+            } finally {
+                setIsUploadingFiles(false)
+            }
+        }
+
+        input.click()
+    }, [token])
+
+    const handleRemoveFile = useCallback((fileName: string) => {
+        setAttachedFiles(prev => prev.filter(file => file.fileName !== fileName))
     }, [])
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -959,6 +1039,31 @@ export default function ChatHomePage() {
                             </div>
                         )}
                         
+                        {/* Badges de archivos adjuntos */}
+                        {attachedFiles.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 py-2">
+                                {attachedFiles.map((file) => (
+                                    <Badge
+                                        key={file.fileName}
+                                        variant="outline"
+                                        className="flex items-center gap-2 border-blue-500 bg-blue-100 text-blue-800 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300"
+                                    >
+                                        <FileText className="h-3 w-3" aria-hidden="true" />
+                                        <span className="max-w-[200px] truncate">{file.fileName}</span>
+                                        <span className="text-xs opacity-70">({file.wordCount} palabras)</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveFile(file.fileName)}
+                                            className="ml-1 rounded-full p-0.5 hover:bg-blue-200 dark:hover:bg-blue-900"
+                                            aria-label={`Eliminar ${file.fileName}`}
+                                        >
+                                            ×
+                                        </button>
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
+                        
                         {/* Barra de botones abajo */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -972,13 +1077,14 @@ export default function ChatHomePage() {
                                                 size="icon"
                                                 className="h-8 w-8 shrink-0 rounded-full"
                                                 aria-label="Adjuntar archivos"
-                                                disabled
+                                                onClick={handleFileSelect}
+                                                disabled={isThinking || isUploadingFiles}
                                             >
                                                 <Paperclip className="h-4 w-4" aria-hidden="true" />
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent side="top">
-                                            <p>Adjuntar archivos (próximamente)</p>
+                                            <p>Adjuntar archivos (.txt, .md, .json, .csv, .html)</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
