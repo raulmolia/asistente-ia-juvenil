@@ -588,7 +588,7 @@ export default function DocumentacionPage() {
                                 },
                                 body: JSON.stringify({
                                     url: webUrl,
-                                    tipo_fuente: webTipoFuente,
+                                    tipoFuente: webTipoFuente,
                                     etiquetas: webSelectedTags,
                                     descripcion: webDescripcion || undefined,
                                 }),
