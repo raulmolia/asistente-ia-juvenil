@@ -991,12 +991,12 @@ export default function ChatHomePage() {
             >
                 {!isSidebarCollapsed && (
                     <div className="flex items-center gap-3 px-4 pt-6 pb-4">
-                        <span className="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white shadow">
-                            <Image src="/logo.png" alt="RPJ" width={40} height={40} priority className="object-contain" />
+                        <span className="relative inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white shadow-md">
+                            <Image src="/LogotipoRPJ_circulo.png" alt="RPJ" width={56} height={56} priority className="object-cover" />
                         </span>
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
-                            <span className="text-sm font-semibold">Asistente IA Juvenil</span>
+                        <div className="flex flex-col">
+                            <span className="text-base font-semibold leading-tight">IA Asistente de</span>
+                            <span className="text-base font-semibold leading-tight">Pastoral Juvenil RPJ</span>
                         </div>
                     </div>
                 )}
@@ -1012,8 +1012,8 @@ export default function ChatHomePage() {
                         )}
                     >
                         {isSidebarCollapsed ? (
-                            <span className="relative inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white shadow">
-                                <Image src="/logo.png" alt="RPJ" width={36} height={36} priority className="object-contain" />
+                            <span className="relative inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white shadow-md">
+                                <Image src="/LogotipoRPJ_circulo.png" alt="RPJ" width={48} height={48} priority className="object-cover" />
                             </span>
                         ) : (
                             <>
