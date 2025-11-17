@@ -37,9 +37,13 @@ import {
     FileStack,
     UserCog,
     Search,
+    Paperclip,
+    Wrench,
+    Tag,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -886,153 +890,242 @@ export default function ChatHomePage() {
     const sidebarWidthClass = isSidebarCollapsed ? "w-20" : "w-80"
     const hasMessages = Boolean(activeChat && activeChat.messages.length > 0)
 
-    const renderPromptComposer = (variant: "center" | "bottom") => (
-        <form
-            onSubmit={handleSubmit}
-            className={cn(
-                "w-full",
-                variant === "center" ? "mx-auto max-w-3xl px-4" : "px-8 pb-8 pt-0",
-            )}
-        >
-            <div className="space-y-4">
-                {chatError && (
-                    <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                        <AlertTriangle className="mt-0.5 h-4 w-4" aria-hidden="true" />
-                        <span>{chatError}</span>
-                    </div>
+    const renderPromptComposer = (variant: "center" | "bottom") => {
+        const hasMessages = variant === "bottom"
+        
+        return (
+            <form
+                onSubmit={handleSubmit}
+                className={cn(
+                    "w-full",
+                    variant === "center" ? "mx-auto max-w-3xl px-4" : "px-8 pb-8 pt-0",
                 )}
-                <div
-                    className={cn(
-                        "flex items-center gap-3 rounded-[32px] border border-border/40 px-4 py-2 backdrop-blur",
-                        "bg-slate-50/80 dark:bg-slate-900/40",
-                        "shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_1px_2px_rgba(0,0,0,0.4)]",
-                        "focus-within:border-primary/40",
-                    )}
-                >
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-9 w-9 shrink-0 rounded-full"
-                                                    aria-label="Seleccionar categorías"
-                                                >
-                                                    <Plus className="h-5 w-5" aria-hidden="true" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="start" className="w-56">
-                                                {quickPrompts.map((item) => {
-                                                    const Icon = item.icon
-                                                    const isSelected = selectedQuickPrompts.includes(item.label)
-                                                    return (
-                                                        <DropdownMenuItem
-                                                            key={item.label}
-                                                            className={cn(isSelected && "bg-primary/10 text-primary")}
-                                                            onSelect={() => handleQuickPromptToggle(item)}
-                                                        >
-                                                            <Icon className="mr-2 h-4 w-4 text-primary" aria-hidden="true" />
-                                                            {item.label}
-                                                        </DropdownMenuItem>
-                                                    )
-                                                })}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                    <p>Selecciona categorías para filtrar los documentos</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                        
-                        <div className="flex min-w-0 flex-1 flex-col gap-2">
-                            {selectedQuickPromptItems.length > 0 && (
-                                <div className="flex flex-wrap items-center gap-2">
-                                    {selectedQuickPromptItems.map((item) => {
-                                        const Icon = item.icon
-                                        const categoryColors: Record<string, string> = {
-                                            "Dinámicas": "border-emerald-500 bg-emerald-100 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300",
-                                            "Celebraciones": "border-pink-500 bg-pink-100 text-pink-800 dark:border-pink-500 dark:bg-pink-950/60 dark:text-pink-300",
-                                            "Programaciones": "border-blue-500 bg-blue-100 text-blue-800 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300",
-                                            "Oraciones": "border-violet-500 bg-violet-100 text-violet-800 dark:border-violet-500 dark:bg-violet-950/60 dark:text-violet-300",
-                                            "Pastoral": "border-amber-500 bg-amber-100 text-amber-800 dark:border-amber-500 dark:bg-amber-950/60 dark:text-amber-300",
-                                            "Consulta": "border-cyan-500 bg-cyan-100 text-cyan-800 dark:border-cyan-500 dark:bg-cyan-950/60 dark:text-cyan-300",
-                                            "Otros": "border-slate-500 bg-slate-100 text-slate-800 dark:border-slate-500 dark:bg-slate-950/60 dark:text-slate-300",
-                                        }
-                                        const colorClass = categoryColors[item.label] || "border-gray-500 bg-gray-100 text-gray-800 dark:border-gray-500 dark:bg-gray-950/60 dark:text-gray-300"
-                                        return (
-                                            <button
-                                                key={item.label}
-                                                type="button"
-                                                onClick={() => handleQuickPromptToggle(item)}
-                                                className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition hover:opacity-80 ${colorClass}`}
-                                            >
-                                                <Icon className="h-4 w-4" aria-hidden="true" />
-                                                {item.label}
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            )}
-                            <Textarea
-                                ref={promptTextareaRef}
-                                value={inputValue}
-                                onChange={(event) => setInputValue(event.target.value)}
-                                onKeyDown={handlePromptKeyDown}
-                                placeholder=""
-                                className={cn(
-                                    "min-h-0 max-h-32 resize-none border-none bg-transparent px-0 py-0 text-sm leading-6 shadow-none",
-                                    "focus-visible:ring-0 focus-visible:ring-offset-0",
-                                )}
-                                rows={1}
-                                disabled={isThinking || !activeChat}
-                            />
+            >
+                <div className="space-y-4">
+                    {chatError && (
+                        <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                            <AlertTriangle className="mt-0.5 h-4 w-4" aria-hidden="true" />
+                            <span>{chatError}</span>
                         </div>
+                    )}
+                    <div
+                        className={cn(
+                            "flex flex-col gap-3 rounded-[32px] border border-border/40 px-4 py-3 backdrop-blur",
+                            "bg-slate-50/80 dark:bg-slate-900/40",
+                            "shadow-[0_2px_8px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3),0_1px_2px_rgba(0,0,0,0.4)]",
+                            "focus-within:border-primary/40",
+                        )}
+                    >
+                        {/* Textarea arriba */}
+                        <Textarea
+                            ref={promptTextareaRef}
+                            value={inputValue}
+                            onChange={(event) => setInputValue(event.target.value)}
+                            onKeyDown={handlePromptKeyDown}
+                            placeholder="¿Cómo puedo ayudarte hoy?"
+                            className={cn(
+                                "min-h-0 max-h-32 resize-none border-none bg-transparent px-0 py-0 text-sm leading-6 shadow-none",
+                                "focus-visible:ring-0 focus-visible:ring-offset-0",
+                            )}
+                            rows={1}
+                            disabled={isThinking || !activeChat}
+                        />
                         
-                        <div className="flex shrink-0 items-center gap-2">
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsThinkingMode(!isThinkingMode)}
-                                            className={cn(
-                                                "h-9 w-9 shrink-0 rounded-full transition flex items-center justify-center",
-                                                isThinkingMode
-                                                    ? "bg-orange-500 text-white hover:bg-orange-600"
-                                                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                                            )}
-                                            aria-label="Modo Thinking"
-                                            aria-pressed={isThinkingMode}
-                                        >
-                                            <Brain className="h-5 w-5" aria-hidden="true" />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">
-                                        <p>Activa el modelo de razonamiento profundo</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
+                        {/* Barra de botones abajo */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                {/* Botón clip para archivos */}
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 shrink-0 rounded-full"
+                                                aria-label="Adjuntar archivos"
+                                                disabled
+                                            >
+                                                <Paperclip className="h-4 w-4" aria-hidden="true" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <p>Adjuntar archivos (próximamente)</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                
+                                {/* Botón llave inglesa para herramientas */}
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 shrink-0 rounded-full"
+                                                            aria-label="Herramientas"
+                                                        >
+                                                            <Wrench className="h-4 w-4" aria-hidden="true" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="start" className="w-56">
+                                                        <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                                                            No hay herramientas disponibles
+                                                        </div>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <p>Herramientas</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                
+                                {/* Selector de etiquetas - solo cuando hay mensajes */}
+                                {hasMessages && (
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 shrink-0 rounded-full"
+                                                                aria-label="Seleccionar categorías"
+                                                            >
+                                                                <Tag className="h-4 w-4" aria-hidden="true" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="start" className="w-56">
+                                                            {quickPrompts.map((item) => {
+                                                                const Icon = item.icon
+                                                                const isSelected = selectedQuickPrompts.includes(item.label)
+                                                                return (
+                                                                    <DropdownMenuItem
+                                                                        key={item.label}
+                                                                        className={cn(isSelected && "bg-primary/10 text-primary")}
+                                                                        onSelect={() => handleQuickPromptToggle(item)}
+                                                                    >
+                                                                        <Icon className="mr-2 h-4 w-4 text-primary" aria-hidden="true" />
+                                                                        {item.label}
+                                                                    </DropdownMenuItem>
+                                                                )
+                                                            })}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>Selecciona categorías para filtrar los documentos</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                )}
+                            </div>
                             
-                            <Button
-                                type="submit"
-                                size="icon"
-                                className="h-9 w-9 shrink-0 rounded-full"
-                                disabled={isThinking || inputValue.trim().length === 0 || !activeChat}
-                                aria-label="Enviar"
-                            >
-                                <Send className="h-4 w-4" aria-hidden="true" />
-                            </Button>
+                            <div className="flex shrink-0 items-center gap-2">
+                                {/* Badge Thinking */}
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsThinkingMode(!isThinkingMode)}
+                                                className="transition"
+                                                aria-label="Modo Thinking"
+                                                aria-pressed={isThinkingMode}
+                                            >
+                                                <Badge
+                                                    className={cn(
+                                                        "cursor-pointer transition-colors",
+                                                        isThinkingMode
+                                                            ? "bg-[#8CC63F] hover:bg-[#7AB62F] text-white border-[#8CC63F]"
+                                                            : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+                                                    )}
+                                                >
+                                                    Thinking
+                                                </Badge>
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <p>Activa el modelo de razonamiento profundo</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                
+                                <Button
+                                    type="submit"
+                                    size="icon"
+                                    className="h-8 w-8 shrink-0 rounded-full"
+                                    disabled={isThinking || inputValue.trim().length === 0 || !activeChat}
+                                    aria-label="Enviar"
+                                >
+                                    <Send className="h-4 w-4" aria-hidden="true" />
+                                </Button>
+                            </div>
                         </div>
                     </div>
+                    
+                    {/* Etiquetas debajo de la caja - solo cuando NO hay mensajes */}
+                    {!hasMessages && (
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                            {quickPrompts.map((item) => {
+                                const Icon = item.icon
+                                const isSelected = selectedQuickPrompts.includes(item.label)
+                                const categoryColors: Record<string, { base: string, selected: string }> = {
+                                    "Dinámicas y Actividades": {
+                                        base: "border-emerald-500/30 bg-transparent text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30",
+                                        selected: "border-emerald-500 bg-emerald-100 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                    },
+                                    "Celebraciones": {
+                                        base: "border-pink-500/30 bg-transparent text-pink-700 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-950/30",
+                                        selected: "border-pink-500 bg-pink-100 text-pink-800 dark:border-pink-500 dark:bg-pink-950/60 dark:text-pink-300"
+                                    },
+                                    "Programaciones": {
+                                        base: "border-blue-500/30 bg-transparent text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30",
+                                        selected: "border-blue-500 bg-blue-100 text-blue-800 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300"
+                                    },
+                                    "Oraciones": {
+                                        base: "border-violet-500/30 bg-transparent text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30",
+                                        selected: "border-violet-500 bg-violet-100 text-violet-800 dark:border-violet-500 dark:bg-violet-950/60 dark:text-violet-300"
+                                    },
+                                    "Otros": {
+                                        base: "border-slate-500/30 bg-transparent text-slate-700 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-950/30",
+                                        selected: "border-slate-500 bg-slate-100 text-slate-800 dark:border-slate-500 dark:bg-slate-950/60 dark:text-slate-300"
+                                    },
+                                }
+                                const colors = categoryColors[item.label] || {
+                                    base: "border-gray-500/30 bg-transparent text-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-950/30",
+                                    selected: "border-gray-500 bg-gray-100 text-gray-800 dark:border-gray-500 dark:bg-gray-950/60 dark:text-gray-300"
+                                }
+                                const colorClass = isSelected ? colors.selected : colors.base
+                                
+                                return (
+                                    <button
+                                        key={item.label}
+                                        type="button"
+                                        onClick={() => handleQuickPromptToggle(item)}
+                                        className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${colorClass}`}
+                                    >
+                                        <Icon className="h-4 w-4" aria-hidden="true" />
+                                        {item.label}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    )}
                 </div>
             </form>
         )
+    }
 
         return (
         <div className="flex h-screen overflow-hidden bg-background text-foreground">
@@ -1424,7 +1517,7 @@ export default function ChatHomePage() {
 
                 <section className="flex flex-1 flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/40">
                     {!hasMessages ? (
-                        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8">
+                        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8" style={{ paddingBottom: "15%" }}>
                             <div className="flex flex-col items-center gap-6 text-center">
                                 <p className="text-2xl font-medium text-foreground">¿En qué puedo ayudarte?</p>
                             </div>
