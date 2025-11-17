@@ -274,16 +274,13 @@ class ChromaService {
 
             const queryParams = {
                 queryEmbeddings: [queryEmbedding],
-                nResults: limit,
+                // Aumentamos nResults para compensar el filtrado posterior
+                nResults: tags && tags.length > 0 ? limit * 3 : limit,
                 include: ['documents', 'metadatas', 'distances'],
             };
 
-            // Añadir filtro por tags si se proporcionan
-            if (tags && Array.isArray(tags) && tags.length > 0) {
-                // ChromaDB usa sintaxis de filtro where con $or para múltiples tags
-                const tagFilters = tags.map(tag => ({ etiquetas: { $contains: tag } }));
-                queryParams.where = tags.length === 1 ? tagFilters[0] : { $or: tagFilters };
-            }
+            // NOTA: ChromaDB no soporta $contains para arrays serializados como JSON strings
+            // Por lo tanto, hacemos el filtrado después de obtener los resultados
 
             const result = await targetCollection.query(queryParams);
 
@@ -293,12 +290,36 @@ class ChromaService {
 
             const firstBatch = result.ids[0] || [];
 
-            return firstBatch.map((id, index) => ({
+            let results = firstBatch.map((id, index) => ({
                 id,
                 document: result.documents?.[0]?.[index] || '',
                 metadata: result.metadatas?.[0]?.[index] || {},
                 distance: result.distances?.[0]?.[index] || null,
             }));
+
+            // Filtrar por tags después de obtener los resultados
+            if (tags && Array.isArray(tags) && tags.length > 0) {
+                results = results.filter(item => {
+                    if (!item.metadata || !item.metadata.etiquetas) {
+                        return false;
+                    }
+                    
+                    // Las etiquetas están guardadas como string JSON
+                    let documentTags = [];
+                    try {
+                        documentTags = JSON.parse(item.metadata.etiquetas);
+                    } catch (e) {
+                        // Si no es JSON válido, intentar como string separado por comas
+                        documentTags = item.metadata.etiquetas.split(',').map(t => t.trim());
+                    }
+                    
+                    // Verificar si alguna de las etiquetas solicitadas está en el documento
+                    return tags.some(tag => documentTags.includes(tag));
+                });
+            }
+
+            // Limitar al número de resultados solicitado
+            return results.slice(0, limit);
         } catch (error) {
             console.error('❌ Error buscando en ChromaDB:', error.message);
             return [];
