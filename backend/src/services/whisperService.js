@@ -33,10 +33,24 @@ export async function transcribeAudio(audioBuffer) {
 
         const data = await response.json();
         
-        // El API de Whisper normalmente devuelve { text: "..." }
-        return {
-            text: data.text || data.transcription || '',
-        };
+        console.log('📥 Respuesta completa de Whisper:', JSON.stringify(data, null, 2));
+        
+        // Whisper Large V3 devuelve un array de segmentos con timestamps
+        // Formato: [{ "start": 0, "end": 3.96, "text": " Hola" }, ...]
+        let text = '';
+        
+        if (Array.isArray(data)) {
+            // Si es un array de segmentos, concatenar todos los textos
+            text = data.map(segment => segment.text || '').join('').trim();
+        } else if (typeof data === 'object' && data.text) {
+            // Si es un objeto con propiedad text directa
+            text = data.text;
+        } else if (typeof data === 'object' && data.transcription) {
+            // Si es un objeto con propiedad transcription
+            text = data.transcription;
+        }
+        
+        return { text };
     } catch (error) {
         console.error('Error transcribiendo audio:', error);
         throw error;
