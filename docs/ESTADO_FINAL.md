@@ -1,4 +1,4 @@
-# 🚀 Estado actual del proyecto (16 nov 2025)
+# 🚀 Estado actual del proyecto (17 nov 2025)
 
 ## ✅ COMPLETADO CON ÉXITO
 
@@ -11,12 +11,12 @@
 - ✅ `EMAIL_TROUBLESHOOTING.md` - Guía completa de configuración SMTP/DNS
 
 ### Código y Configuración
-- ✅ Backend operativo en puerto 3001
+- ✅ Backend operativo en puerto 5000
 - ✅ Frontend operativo en puerto 3000
-- ✅ Base de datos MariaDB `rpjia` con 8 tablas (añadido campo `debeCambiarPassword`)
-- ✅ Servicio ChromaDB preparado
+- ✅ ChromaDB operativo en puerto 8000
+- ✅ Base de datos MariaDB `rpjia` con 9 tablas (añadido campo `debeCambiarPassword` y `fechaUltimaActualizacion`)
 - ✅ API con endpoints de health check y test
-- ✅ Orquestación con PM2 (`ecosystem.config.js`) para backend, frontend y ChromaDB
+- ✅ Orquestación con PM2 (`ecosystem.config.js`) para backend, frontend, ChromaDB y web-updater
 - ✅ Servicio de email configurado con Nodemailer (SMTP port 465, SSL)
 - ✅ Variables de entorno cargadas con ruta absoluta en index.js
 
@@ -76,14 +76,25 @@
 - ✅ **Aplicado a todas las intenciones**: DINAMICA, CELEBRACION, PROGRAMACION, ORACION y OTROS incluyen ambas directrices
 - ✅ **Prompts actualizados**: Sistema de prompts en `backend/src/config/chatPrompts.js` con secciones claras de restricción temática y uso de documentación
 
-### Sistema de Fuentes Web (16 nov 2025)
-- ✅ **Modelo FuenteWeb**: Tabla en base de datos con campos para URL, dominio, título, descripción, etiquetas, tipo de fuente, estado de procesamiento y contenido extraído
-- ✅ **Tipos de fuente**: PAGINA (URL individual), DOMINIO (crawling completo), SITEMAP (procesamiento de XML sitemap)
-- ✅ **Servicio de scraping**: `webScraperService.js` con cheerio para extracción de HTML, límites configurables (50 páginas máximo por dominio), timeout de 30 segundos, tamaño máximo 5MB
+### Sistema de Fuentes Web (17 nov 2025)
+- ✅ **Modelo FuenteWeb**: Tabla en base de datos con campos para URL, dominio, título, descripción, etiquetas, tipo de fuente, estado de procesamiento, contenido extraído y fechaUltimaActualizacion
+- ✅ **Tipos de fuente**: PAGINA (URL individual), DOMINIO (crawling completo hasta 50 páginas), SITEMAP (procesamiento de XML sitemap)
+- ✅ **Servicio de scraping**: `webScraperService.js` con cheerio para extracción de HTML, límites configurables, timeout de 30 segundos, tamaño máximo 5MB, filtrado de contenidos no-HTML (PDFs, imágenes, audio)
 - ✅ **API REST completa**: Endpoints CRUD en `/api/fuentes-web` (GET etiquetas, GET listar, POST agregar, PATCH actualizar, DELETE eliminar, POST reprocesar)
-- ✅ **Vectorización automática**: Contenido web se divide en chunks (1500 caracteres, overlap 200) y se indexa en ChromaDB colección `rpjia-fuentes-web`
+- ✅ **Vectorización corregida**: Corrección crítica del formato de entries para `chromaService.addDocuments()` - ahora usa formato `[{id, document, metadata}]` en lugar de parámetros separados
+- ✅ **Helper convertToChromaEntries**: Función auxiliar para convertir chunks, metadatas e IDs al formato correcto de ChromaDB
 - ✅ **Integración con chat**: Búsqueda paralela en documentos PDF y fuentes web, combinación por relevancia (distancia vectorial), contexto enriquecido con URLs de origen
 - ✅ **Procesamiento en background**: Scraping y vectorización no bloquean la respuesta HTTP, actualización de estado en BD
+- ✅ **Logs detallados**: Mensajes "✅ Vectorizados X chunks de URL" para cada página procesada, logs de error si addDocuments falla
+- ✅ **Colección ChromaDB**: 56 documentos vectorizados en `rpjia-fuentes-web` (30 páginas del dominio escolapiosemaus.org, 1 página de pastoralbetania.org)
+- ✅ **Búsqueda semántica verificada**: Queries como "escolapios" devuelven resultados relevantes con URLs de origen
+- ✅ **Script de reprocesamiento**: `backend/reprocesar_fuentes_web.js` para vectorizar fuentes existentes que no fueron procesadas correctamente
+- ✅ **UI completa**: Interfaz de administración integrada en página de documentación con selector de tipo de fuente (radio buttons negros), tabla de fuentes con edición/eliminación, confirmación inline para borrado
+- ✅ **Tema consistente**: Iconos y controles en negro/blanco siguiendo el esquema de color de la aplicación
+- ✅ **Actualización automática 24h**: Sistema cron que re-scrapea fuentes diariamente a las 2 AM, detecta contenido nuevo y lo añade incrementalmente a ChromaDB sin duplicar
+- ✅ **Migración BD**: Campo `fechaUltimaActualizacion` añadido para tracking de última actualización
+- ✅ **Job automático**: `backend/jobs/actualizarFuentesWeb.js` ejecutado por PM2 (proceso `rpjia-web-updater`) con cron `0 2 * * *`
+- ✅ **Actualización incremental**: Compara contenido actual vs contenido extraído anterior, solo vectoriza diferencias, usa IDs únicos con timestamp para evitar duplicados
 - ✅ **Dependencia cheerio**: Versión 1.0.0-rc.12 instalada para parsing HTML avanzado
 - ✅ **Variables de entorno**: WEB_SCRAPER_MAX_PAGES, WEB_SCRAPER_MAX_SIZE, WEB_SCRAPER_USER_AGENT, WEB_SCRAPER_TIMEOUT_MS, WEB_CHUNK_SIZE, WEB_CHUNK_OVERLAP, WEB_MAX_CHUNKS, CHROMA_COLLECTION_WEB
 
@@ -103,23 +114,28 @@
    - Conversaciones ligadas al usuario con saneado de títulos y timestamps
    - Registro de metadatos (tokens, intentos, contexto documental utilizado)
 
-2. **Prompts e intenciones centralizadas** en `backend/src/config/chatPrompts.js` (DINAMICA, ORACION, PROYECTO, GENERAL)
+2. **Prompts e intenciones centralizadas** en `backend/src/config/chatPrompts.js` (DINAMICA, ORACION, PROGRAMACION, CELEBRACION, OTROS)
 
 3. **Servicio LLM robusto** (`backend/src/services/llmService.js`) con AbortController, reintentos y gestión de errores
 
 4. **Integración Chroma** mejorada (`backend/src/services/chromaService.js`) con fallback si el servicio no está disponible
 
-5. **Experiencia de usuario afinada**: 
+5. **Sistema de fuentes web completo** (17 nov 2025):
+   - Scraping de páginas individuales, dominios completos y sitemaps XML
+   - Vectorización automática en ChromaDB con corrección crítica de formato
+   - Actualización automática cada 24 horas con cron job
+   - UI de administración integrada con tema consistente
+   - Búsqueda semántica funcional verificada
+
+6. **Experiencia de usuario afinada**: 
    - Tipografía Inter sans-serif moderna
    - Sidebar compacto con límite de 25 caracteres en títulos
    - Input con estilo corporativo
    - Eliminación de chats desde la interfaz
    - Feedback visual mejorado
    - **Renderizado markdown** en mensajes del asistente (negrita, listas, código)
-   - **Respuestas completas** sin cortes (límite 4096 tokens)
+   - **Respuestas completas** sin cortes (límite 128K tokens)
    - **Scroll optimizado** en página de documentación
-
-6. **Documentación y tareas** sincronizadas (`docs/task.md`, `.github/registro.md`)
 
 7. **Sistema de gestión de usuarios con emails** (16 nov 2025):
    - Servicio completo de email con Nodemailer y templates HTML premium
@@ -129,21 +145,25 @@
    - Panel de administración con opciones de auto-generación
    - SMTP configurado y DKIM activado
 
+8. **Documentación y tareas** sincronizadas (`docs/task.md`, `.github/registro.md`)
+
 ## Stack actualizado
 
 ```
-Backend   : Node.js 24, Express 4, Prisma 5, Vitest 1, Nodemailer 6.9.7
+Backend   : Node.js 24, Express 4, Prisma 5, Vitest 1, Nodemailer 6.9.7, Cheerio 1.0.0-rc.12
 Frontend  : Next.js 14, React 18, Tailwind, Shadcn/ui, Vitest + Testing Library
 Tipografía: Inter (Google Fonts) - Sans-serif moderna
 Markdown  : react-markdown + remark-gfm para renderizado de contenido
 Persistencia: MariaDB (prisma), ChromaDB (vectores persistidos en database/chroma)
 Email     : SMTP ia.rpj.es:465 SSL, DKIM, templates HTML responsive
-Infraestructura: PM2 (backend, frontend, chroma) + proxy Apache
+Infraestructura: PM2 (backend, frontend, chroma, web-updater) + proxy Apache
 IA        : Chutes AI (https://llm.chutes.ai/v1/chat/completions)
 Modelo    : Kimi-K2-Instruct-0905 (Moonshot AI)
 Max tokens: 128,000 (128K)
 Intenciones: 5 categorías con prompts especializados y filtrado por tags ChromaDB
 Etiquetas : 9 opciones para clasificación documental
+Web Scraping: Cheerio para HTML, 50 páginas/dominio, chunks 1500 chars, overlap 200
+Cron Jobs : Actualización automática de fuentes web cada 24h (2 AM)
 ```
 
 ## API pública (resumen)
@@ -159,106 +179,85 @@ Etiquetas : 9 opciones para clasificación documental
 | PATCH | `/api/documentos/:id` | Actualizar etiquetas de un documento |
 | DELETE | `/api/documentos/:id` | Eliminar documento (BD, ChromaDB y archivo) |
 | GET | `/api/documentos/etiquetas` | Obtener etiquetas disponibles |
+| GET | `/api/fuentes-web` | Listar fuentes web del usuario |
+| GET | `/api/fuentes-web/etiquetas` | Obtener etiquetas para fuentes web |
+| POST | `/api/fuentes-web` | Agregar fuente web (scrapea y vectoriza en background) |
+| PATCH | `/api/fuentes-web/:id` | Actualizar etiquetas/descripción de fuente web |
+| DELETE | `/api/fuentes-web/:id` | Eliminar fuente web (BD, ChromaDB) |
+| POST | `/api/fuentes-web/:id/reprocesar` | Re-scrapear y re-vectorizar fuente web |
 | GET | `/api/chat` | Listado de conversaciones del usuario |
 | GET | `/api/chat/:id` | Recuperar mensajes ordenados |
 | POST | `/api/chat` | Enviar mensaje al asistente (Chutes AI) |
+| DELETE | `/api/chat/:id` | Eliminar conversación + mensajes |
+| POST | `/api/password/change` | Cambiar contraseña |
+| GET | `/api/password/must-change` | Verificar si debe cambiar contraseña |
 
-| DELETE | `/api/chat/:id` | Eliminar conversación + mensajes |├── Express.js 4.18.2
+> Los prompts de sistema y palabras clave para detección de intención están documentados en `backend/src/config/chatPrompts.js`.
 
-├── Prisma ORM 5.7.0
+## Testing & QA
 
-> Los prompts de sistema y palabras clave para detección de intención están documentados en `backend/src/config/chatPrompts.js`.├── ChromaDB 3.1.0
+- `npm run test --prefix backend`: Pruebas unitarias (prompts, servicio LLM, Chroma fallback) usando Vitest.
+- `npm run test:e2e --prefix frontend`: Flujo de login validado con Vitest + Testing Library (jsdom).
+- Cobertura manual: Eliminación de conversaciones, fallback IA y logs verificados en PM2.
 
-└── Middlewares: Helmet, CORS, Rate Limit
+## Despliegue
 
-## Testing & QA```
+1. `npm run build --prefix frontend`
+2. Copia de artefactos a `frontend/.next/standalone` (automático en `scripts/deploy.sh`).
+3. `scripts/deploy.sh` ejecuta pull, dependencias, migraciones Prisma, build y `pm2 start --update-env`.
+4. Reinicios puntuales: `pm2 restart rpjia-backend` / `pm2 restart rpjia-frontend` / `pm2 restart rpjia-chromadb` / `pm2 restart rpjia-web-updater`.
+5. **PM2 ecosystem**: 4 procesos gestionados:
+   - `rpjia-backend` (puerto 5000)
+   - `rpjia-frontend` (puerto 3000)
+   - `rpjia-chromadb` (puerto 8000)
+   - `rpjia-web-updater` (cron: `0 2 * * *`)
+6. **Persistencia PM2**: `pm2 save` para guardar configuración, `pm2 startup` para auto-inicio tras reinicio del VPS.
 
-- `npm run test --prefix backend`: 11 pruebas (prompts, servicio LLM, Chroma fallback) usando Vitest.
+## Bases de Datos
 
-- `npm run test:e2e --prefix frontend`: flujo de login validado con Vitest + Testing Library (jsdom).### Frontend
+### MariaDB
+- Host: 127.0.0.1:3306
+- Database: rpjia
+- User: sa
+- Status: ✅ OPERATIVA
+- Tablas: 9 (Usuario, Conversacion, Mensaje, Documento, FuenteWeb, etc.)
 
-- Cobertura manual: eliminación de conversaciones, fallback IA y logs verificados en PM2.```
+### ChromaDB
+- Modo: Servidor dedicado (puerto 8000)
+- Colecciones: `rpjia-actividades`, `rpjia-documentos`, `rpjia-fuentes-web`
+- Status: ✅ OPERATIVO
+- Documentos vectorizados: 56 en `rpjia-fuentes-web`
 
-Next.js 14
+## Métricas
 
-## Despliegue├── TypeScript
+- Commits totales: **30+**
+- Últimos relevantes: 
+  - `f997d91` - Sistema automático actualización fuentes web 24h (17 nov 2025)
+  - `ccc5a1a` - Corrección vectorización fuentes web (17 nov 2025)
+  - `ecc0a79` - Fix campo tipoFuente frontend (16 nov 2025)
+- Cambios recientes: 450+ líneas añadidas en sistema de actualización automática
 
-1. `npm run build --prefix frontend`├── Tailwind CSS
+## Próximos pasos
 
-2. Copia de artefactos a `frontend/.next/standalone` (automático en `scripts/deploy.sh`).├── Shadcn/ui
+1. Monitoreo de actualizaciones automáticas (verificar logs de cron job)
+2. Extender pruebas E2E para cubrir el ciclo completo del chat y el módulo de documentación
+3. Añadir seeds para disponer de conversaciones y documentos de ejemplo en entornos nuevos
+4. Exponer métricas en dashboards (Prometheus/Grafana) reutilizando los logs estructurados
+5. Evaluar respuestas en streaming desde Chutes para mejorar la experiencia
 
-3. `scripts/deploy.sh` ejecuta pull, dependencias, migraciones Prisma, build y `pm2 start --update-env`.└── App Router
-
-4. Reinicios puntuales: `pm2 restart rpjia-backend` / `pm2 restart rpjia-frontend`.```
-
-
-
-## Métricas### Bases de Datos
-
-- Commits totales: **26** (`HEAD: 8641c2a feat: enhance chat workflows and testing`).```
-
-- Últimos relevantes: despliegue dominio (`e4047cb`), panel usuarios (`3aa0db9`), modo oscuro (`bd25a9e`).MariaDB
-
-- Cambios recientes: 28 archivos, 7.2k líneas añadidas, 1.4k eliminadas.├── Host: 127.0.0.1:3306
-
-├── Database: rpjia
-
-## Próximos pasos├── User: sa
-
-1. Extender pruebas E2E para cubrir el ciclo completo del chat y el módulo de documentación.└── Status: ✅ OPERATIVA
-
-2. Añadir seeds para disponer de conversaciones y documentos de ejemplo en entornos nuevos.
-
-3. Exponer métricas en dashboards (Prometheus/Grafana) reutilizando los logs estructurados.ChromaDB
-
-4. Evaluar respuestas en streaming desde Chutes para mejorar la experiencia.├── Modo: Desarrollo con servidor uvicorn dedicado
-
-└── Status: ✅ Operativo via `python3 backend/scripts/run_chromadb.py`
-
-## Referencias rápidas```
+## Referencias rápidas
 
 - Prompts e intenciones: `backend/src/config/chatPrompts.js`
-
-- Servicio LLM con reintentos: `backend/src/services/llmService.js`---
-
+- Servicio LLM con reintentos: `backend/src/services/llmService.js`
 - Servicio vectorial: `backend/src/services/chromaService.js`
-
-- Rutas API: `backend/src/routes/*.js`## 🚀 SIGUIENTE ACCIÓN REQUERIDA
-
+- Servicio scraping: `backend/src/services/webScraperService.js`
+- Job actualización web: `backend/jobs/actualizarFuentesWeb.js`
+- Rutas API: `backend/src/routes/*.js`
 - Pruebas: `backend/tests/*.test.js`, `frontend/tests/auth-login.e2e.test.tsx`
+- Deploy: `scripts/deploy.sh`, `ecosystem.config.js`
 
-- Deploy: `scripts/deploy.sh`, `ecosystem.config.js`### ⚠️ CONFIGURAR REPOSITORIO REMOTO EN GITHUB
+## Estructura del proyecto
 
-
-
-**Estado**: ✅ Plataforma funcionando en producción con soporte de IA, historial persistente y observabilidad básica.**Archivo de instrucciones**: `GITHUB_SETUP.md`
-
-
-**Pasos rápidos**:
-1. Crear repositorio en GitHub
-2. Ejecutar:
-   ```bash
-   cd /var/www/vhosts/practical-chatelet.217-154-99-32.plesk.page/httpdocs
-   git remote add origin https://github.com/<usuario>/<repo>.git
-   git push -u origin main
-   ```
-
-**Una vez hecho el push**:
-- ✅ Código respaldado en GitHub
-- ✅ Listo para colaboración
-- ✅ Historial completo sincronizado
-
----
-
-## 📈 MÉTRICAS DEL PROYECTO
-
-### Commits
-- **Total**: 5 commits
-- **Archivos modificados**: 40+ archivos
-- **Líneas añadidas**: 1,800+ líneas
-- **Líneas eliminadas**: 1,200+ líneas
-
-### Estructura
 ```
 httpdocs/
 ├── .github/          (Documentación)
@@ -266,104 +265,79 @@ httpdocs/
 ├── backend/          (API Node.js)
 │   ├── src/
 │   │   ├── index.js
+│   │   ├── config/
+│   │   │   └── chatPrompts.js
+│   │   ├── middleware/
+│   │   │   └── auth.js
 │   │   ├── routes/
+│   │   │   ├── auth.js
+│   │   │   ├── chat.js
+│   │   │   ├── documentos.js
+│   │   │   ├── fuentesWeb.js
+│   │   │   └── password.js
 │   │   └── services/
+│   │       ├── chromaService.js
+│   │       ├── emailService.js
+│   │       ├── llmService.js
+│   │       └── webScraperService.js
+│   ├── jobs/
+│   │   └── actualizarFuentesWeb.js
 │   ├── prisma/
 │   │   ├── schema.prisma
-│   │   └── seed.js
+│   │   ├── seed.js
+│   │   └── migrations/
+│   ├── scripts/
+│   │   └── run_chromadb.py
+│   ├── storage/
+│   │   └── documentos/
+│   ├── tests/
 │   └── package.json
 ├── frontend/         (Next.js App)
 │   ├── src/
 │   │   ├── app/
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx
+│   │   │   ├── acerca-de/
+│   │   │   ├── administracion/
+│   │   │   └── documentacion/
 │   │   ├── components/
+│   │   │   ├── change-password-modal.tsx
+│   │   │   ├── web-sources-table.tsx
+│   │   │   └── ...
 │   │   └── lib/
+│   ├── public/
+│   │   └── acercade.md
+│   ├── tests/
 │   └── package.json
 ├── database/
+│   └── chroma/
 ├── docs/
-└── Archivos raíz (README, .gitignore, etc.)
+│   ├── DEPLOYMENT.md
+│   ├── EMAIL_TROUBLESHOOTING.md
+│   ├── ESTADO_FINAL.md
+│   ├── GITHUB_SETUP.md
+│   └── README.md
+├── scripts/
+│   └── deploy.sh
+└── ecosystem.config.js
 ```
 
-### Tests Exitosos
-- ✅ Prisma generate
-- ✅ Prisma db push
-- ✅ Conexión MariaDB
-- ✅ Servidor backend iniciado
-- ✅ Servidor frontend iniciado
-- ✅ Endpoints API respondiendo
+## 🎯 PUNTOS DE RESTAURACIÓN
 
----
+### Checkpoint actual
+- Tag: `checkpoint-20251117-013227`
+- Commit: `f997d91`
+- Descripción: Sistema de actualización automática de fuentes web cada 24h
+- Fecha: 2025-11-17 01:32:20
 
-## 💾 ESTADO DE SINCRONIZACIÓN
-
-### Git Local
-```
-Status: ✅ LIMPIO
-Branch: main
-Commits: 5
-Cambios sin commit: 0
-```
-
-### GitHub Remote
-```
-Status: ⚠️ NO CONFIGURADO
-Acción requerida: Configurar origin
-Ver: GITHUB_SETUP.md
-```
-
----
-
-## ✨ LOGROS DESTACADOS
-
-1. **Resolución exitosa** del problema de autenticación PostgreSQL
-2. **Migración completa** a stack MariaDB + ChromaDB
-3. **Base de datos operativa** con esquema completo
-4. **Infraestructura lista** para desarrollo de funcionalidades
-5. **Documentación exhaustiva** de todo el proceso
-6. **Código limpio** sin archivos temporales
-7. **Control de versiones** con commits descriptivos
-
----
-
-## 🎯 TAREAS PENDIENTES
-
-### Prioritarias
-1. ⚠️ Configurar repositorio remoto en GitHub y hacer push
-2. ⭕ Crear seed para poblar base de datos con datos de ejemplo
-3. ⭕ Activar ChromaDB con servidor dedicado
-4. ⭕ Implementar sistema de autenticación
-
-### Siguientes Fases
-- Desarrollo de funcionalidades core
-- Integración con API de IA
-- Testing completo
-- Deploy a producción
-
----
-
-## 📞 SOPORTE
-
-### Archivos de Referencia
-- `README.md` - Información general
-- `GITHUB_SETUP.md` - Configurar remoto
-- `RESUMEN_SESION.md` - Detalles técnicos
-- `.github/registro.md` - Historial completo
-
-### Verificar Estado
+Para restaurar:
 ```bash
-cd /var/www/vhosts/practical-chatelet.217-154-99-32.plesk.page/httpdocs
-
-# Ver commits
-git log --oneline
-
-# Ver estado
-git status
-
-# Ver configuración
-git config --list
+git checkout checkpoint-20251117-013227
 ```
 
 ---
 
-**Fecha de finalización**: 2 de Noviembre de 2025  
-**Estado**: ✅ OPERATIVO Y LISTO PARA DESARROLLO  
-**Próxima acción**: Configurar GitHub remoto
+**Estado**: ✅ PLATAFORMA FUNCIONANDO EN PRODUCCIÓN CON SISTEMA COMPLETO DE FUENTES WEB Y ACTUALIZACIÓN AUTOMÁTICA
+
+**Fecha de actualización**: 17 de Noviembre de 2025  
+**Próxima acción**: Monitorear ejecución del cron job (2 AM diarias)
