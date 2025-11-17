@@ -124,6 +124,15 @@ function splitIntoChunks(text, chunkSize, overlap) {
     return chunks;
 }
 
+// Helper para convertir chunks + metadata + ids al formato esperado por chromaService
+function convertToChromaEntries(chunks, metadatas, ids) {
+    return chunks.map((chunk, index) => ({
+        id: ids[index],
+        document: chunk,
+        metadata: metadatas[index],
+    }));
+}
+
 async function procesarFuenteWeb({ fuenteWeb, etiquetas }) {
     const metadataBase = {
         tipo: 'fuente_web',
@@ -162,12 +171,19 @@ async function procesarFuenteWeb({ fuenteWeb, etiquetas }) {
                 wordCount: scrapeResult.wordCount,
             };
 
-            await chromaService.addDocuments(
-                CHROMA_WEB_COLLECTION,
+            const entries = convertToChromaEntries(
                 limitedChunks,
                 Array(limitedChunks.length).fill(metadata),
                 limitedChunks.map((_, index) => `${fuenteWeb.id}_chunk_${index}`)
             );
+
+            const addResult = await chromaService.addDocuments(entries, CHROMA_WEB_COLLECTION);
+
+            if (!addResult) {
+                console.error(`❌ Error vectorizando página ${fuenteWeb.url} - addDocuments retornó false`);
+            } else {
+                console.log(`✅ Vectorizados ${limitedChunks.length} chunks de ${fuenteWeb.url}`);
+            }
 
             await prisma.fuenteWeb.update({
                 where: { id: fuenteWeb.id },
@@ -199,12 +215,19 @@ async function procesarFuenteWeb({ fuenteWeb, etiquetas }) {
                     pagina_descripcion: page.description,
                 };
 
-                await chromaService.addDocuments(
-                    CHROMA_WEB_COLLECTION,
+                const entries = convertToChromaEntries(
                     limitedChunks,
                     Array(limitedChunks.length).fill(pageMetadata),
                     limitedChunks.map((_, index) => `${fuenteWeb.id}_${totalChunks + index}`)
                 );
+
+                const addResult = await chromaService.addDocuments(entries, CHROMA_WEB_COLLECTION);
+
+                if (!addResult) {
+                    console.error(`❌ Error vectorizando página ${page.url} - addDocuments retornó false`);
+                } else {
+                    console.log(`✅ Vectorizados ${limitedChunks.length} chunks de ${page.url}`);
+                }
 
                 totalChunks += limitedChunks.length;
             }
@@ -244,12 +267,19 @@ async function procesarFuenteWeb({ fuenteWeb, etiquetas }) {
                     pagina_descripcion: page.description,
                 };
 
-                await chromaService.addDocuments(
-                    CHROMA_WEB_COLLECTION,
+                const entries = convertToChromaEntries(
                     limitedChunks,
                     Array(limitedChunks.length).fill(pageMetadata),
                     limitedChunks.map((_, index) => `${fuenteWeb.id}_${totalChunks + index}`)
                 );
+
+                const addResult = await chromaService.addDocuments(entries, CHROMA_WEB_COLLECTION);
+
+                if (!addResult) {
+                    console.error(`❌ Error vectorizando página ${page.url} - addDocuments retornó false`);
+                } else {
+                    console.log(`✅ Vectorizados ${limitedChunks.length} chunks de ${page.url}`);
+                }
 
                 totalChunks += limitedChunks.length;
             }

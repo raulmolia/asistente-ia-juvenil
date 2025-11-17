@@ -213,11 +213,15 @@ class ChromaService {
         }
 
         if (!this.embeddingFunction) {
-            console.log('⚠️ No hay función de embeddings configurada, imposible procesar documentos');
+            console.error('❌ No hay función de embeddings configurada, imposible procesar documentos');
             return false;
         }
 
         if (!Array.isArray(entries) || entries.length === 0) {
+            console.error('❌ addDocuments: entries no válido o vacío');
+            console.error('entries type:', typeof entries);
+            console.error('entries value:', entries);
+            console.error('entries.length:', entries?.length);
             return false;
         }
 
