@@ -5,6 +5,7 @@ import { authenticate } from '../middleware/auth.js';
 import fileProcessorService from '../services/fileProcessorService.js';
 import gemmaService from '../services/gemmaService.js';
 import chromaService from '../services/chromaService.js';
+import whisperService from '../services/whisperService.js';
 
 const router = express.Router();
 
@@ -27,6 +28,30 @@ const upload = multer({
     },
 });
 
+// Configurar multer específico para audio
+const audioUpload = multer({
+    storage,
+    limits: {
+        fileSize: 25 * 1024 * 1024, // 25 MB para audio
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedAudioTypes = [
+            'audio/webm',
+            'audio/wav',
+            'audio/mp3',
+            'audio/mpeg',
+            'audio/ogg',
+            'audio/mp4',
+            'audio/x-m4a',
+        ];
+        
+        if (allowedAudioTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error(`Tipo de audio no permitido: ${file.mimetype}`));
+        }
+    },
+});
 /**
  * POST /api/files/upload
  * Sube archivos, los procesa con OCR/PDF, los transcribe con Gemma
@@ -151,6 +176,40 @@ router.get('/supported-formats', authenticate, (req, res) => {
             'Almacenamiento temporal en ChromaDB',
         ],
     });
+});
+
+/**
+ * POST /api/files/transcribe
+ * Transcribe audio a texto usando Whisper Large V3
+ */
+router.post('/transcribe', authenticate, audioUpload.single('audio'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error: 'No se proporcionó archivo de audio',
+            });
+        }
+
+        console.log(`🎤 Transcribiendo audio: ${req.file.originalname} (${(req.file.size / 1024).toFixed(2)} KB)`);
+
+        // Transcribir el audio
+        const result = await whisperService.transcribeAudio(req.file.buffer);
+
+        console.log(`✅ Audio transcrito: ${result.text.substring(0, 100)}...`);
+
+        return res.json({
+            success: true,
+            text: result.text,
+        });
+    } catch (error) {
+        console.error('❌ Error transcribiendo audio:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Error al transcribir el audio',
+            message: error.message,
+        });
+    }
 });
 
 export default router;

@@ -40,6 +40,8 @@ import {
     Paperclip,
     Wrench,
     Tag,
+    Mic,
+    Square,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -240,7 +242,11 @@ export default function ChatHomePage() {
         wordCount?: number
     }>>([])
     const [isUploadingFiles, setIsUploadingFiles] = useState(false)
+    const [isRecording, setIsRecording] = useState(false)
+    const [isTranscribing, setIsTranscribing] = useState(false)
     const fileInputRef = useRef<HTMLInputElement | null>(null)
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+    const audioChunksRef = useRef<Blob[]>([])
     
     const selectedQuickPromptItems = useMemo(() => {
         const labelSet = new Set(selectedQuickPrompts)
@@ -799,6 +805,80 @@ export default function ChatHomePage() {
         setAttachedFiles(prev => prev.filter(file => file.fileName !== fileName))
     }, [])
 
+    const handleStartRecording = useCallback(async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            const mediaRecorder = new MediaRecorder(stream)
+            mediaRecorderRef.current = mediaRecorder
+            audioChunksRef.current = []
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data)
+                }
+            }
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+                stream.getTracks().forEach(track => track.stop())
+                
+                // Transcribir el audio
+                await transcribeAudio(audioBlob)
+            }
+
+            mediaRecorder.start()
+            setIsRecording(true)
+        } catch (error) {
+            console.error('Error al iniciar la grabación:', error)
+            setChatError('No se pudo acceder al micrófono')
+        }
+    }, [])
+
+    const handleStopRecording = useCallback(() => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop()
+            setIsRecording(false)
+        }
+    }, [isRecording])
+
+    const transcribeAudio = useCallback(async (audioBlob: Blob) => {
+        if (!token) {
+            setChatError('No hay sesión activa')
+            return
+        }
+
+        setIsTranscribing(true)
+
+        try {
+            const formData = new FormData()
+            formData.append('audio', audioBlob, 'recording.webm')
+
+            const response = await fetch(buildApiUrl('/api/files/transcribe'), {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                body: formData,
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Error al transcribir el audio')
+            }
+
+            if (data.success && data.text) {
+                // Agregar el texto transcrito al input
+                setInputValue(prev => prev + (prev ? ' ' : '') + data.text)
+            }
+        } catch (error) {
+            console.error('Error transcribiendo audio:', error)
+            setChatError(error instanceof Error ? error.message : 'Error al transcribir el audio')
+        } finally {
+            setIsTranscribing(false)
+        }
+    }, [token])
+
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         await submitPrompt()
@@ -1252,6 +1332,35 @@ export default function ChatHomePage() {
                                         </TooltipTrigger>
                                         <TooltipContent side="top">
                                             <p>Adjuntar archivos (imágenes JPG/PNG, PDFs)</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                
+                                {/* Botón de micrófono para dictar */}
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className={cn(
+                                                    "h-8 w-8 shrink-0 rounded-full transition-colors",
+                                                    isRecording && "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400"
+                                                )}
+                                                aria-label={isRecording ? "Detener grabación" : "Dictar"}
+                                                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                                                disabled={isThinking || isTranscribing}
+                                            >
+                                                {isRecording ? (
+                                                    <Square className="h-4 w-4 animate-pulse" aria-hidden="true" />
+                                                ) : (
+                                                    <Mic className="h-4 w-4" aria-hidden="true" />
+                                                )}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <p>{isRecording ? "Detener grabación" : isTranscribing ? "Transcribiendo..." : "Dictar"}</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
