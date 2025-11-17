@@ -614,6 +614,7 @@ router.post('/', authenticate, async (req, res) => {
         });
 
         // Generar título automático con Gemma si es el primer mensaje del usuario
+        let updatedTitle = null;
         if (previousHistory.length === 0 || previousHistory.length === 1) {
             // length === 1 significa que solo existe el saludo inicial del asistente
             try {
@@ -624,6 +625,7 @@ router.post('/', authenticate, async (req, res) => {
                     data: { titulo: generatedTitle },
                 });
                 
+                updatedTitle = generatedTitle;
                 console.log(`✅ Título generado automáticamente: "${generatedTitle}"`);
             } catch (error) {
                 console.warn(`⚠️ Error generando título: ${error.message}`);
@@ -645,6 +647,7 @@ router.post('/', authenticate, async (req, res) => {
         return res.json({
             conversationId: conversation.id,
             intent: detectedIntent.id,
+            title: updatedTitle,
             message: {
                 role: 'assistant',
                 content: assistantMessageRecord.contenido,

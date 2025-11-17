@@ -235,8 +235,9 @@ export default function ChatHomePage() {
         fileName: string
         mimeType: string
         size: number
-        text: string
-        wordCount: number
+        file?: File
+        text?: string
+        wordCount?: number
     }>>([])
     const [isUploadingFiles, setIsUploadingFiles] = useState(false)
     const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -493,7 +494,7 @@ export default function ChatHomePage() {
         setChatError(null)
 
         const chatId = activeChat.id
-        const previousConversationId = activeChat.conversationId
+        let currentConversationId = activeChat.conversationId
         
         // Determinar intent y tags basados en quickPrompts seleccionados
         let intentToSend = activeChat.intent
@@ -530,6 +531,92 @@ export default function ChatHomePage() {
         setIsThinking(true)
 
         try {
+            // Subir archivos primero si los hay
+            let uploadedFiles = []
+            if (attachedFiles.length > 0 && attachedFiles.some(f => f.file)) {
+                setIsUploadingFiles(true)
+                
+                // Crear el mensaje primero para tener conversationId
+                const initialResponse = await fetch(buildApiUrl("/api/chat"), {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        conversationId: currentConversationId,
+                        message: prompt,
+                        intent: intentToSend,
+                        tags: tagsToSend.length > 0 ? tagsToSend : undefined,
+                        useThinkingModel: isThinkingMode,
+                    }),
+                })
+
+                const initialData = await initialResponse.json().catch(() => null)
+                
+                if (initialResponse.ok && initialData?.conversationId) {
+                    currentConversationId = initialData.conversationId
+                    
+                    // Actualizar el chat con la conversationId
+                    setChats((prevChats) =>
+                        prevChats.map((chat) =>
+                            chat.id === chatId
+                                ? {
+                                    ...chat,
+                                    conversationId: currentConversationId,
+                                    intent: initialData.intent ?? chat.intent ?? null,
+                                    title: initialData.title ?? chat.title,
+                                    messages: [...chat.messages, {
+                                        id: createId(),
+                                        role: "asistente",
+                                        content: initialData.message?.content || "",
+                                        createdAt: new Date().toISOString(),
+                                    }],
+                                    hasLoaded: true,
+                                }
+                                : chat,
+                        ),
+                    )
+                    
+                    // Ahora subir archivos con el conversationId
+                    const formData = new FormData()
+                    formData.append('conversationId', currentConversationId || '')
+                    
+                    attachedFiles.forEach(file => {
+                        if (file.file) {
+                            formData.append('files', file.file)
+                        }
+                    })
+
+                    const uploadResponse = await fetch(buildApiUrl("/api/files/upload"), {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: formData,
+                    })
+
+                    const uploadData = await uploadResponse.json()
+                    
+                    if (uploadResponse.ok && uploadData.files) {
+                        uploadedFiles = uploadData.files
+                    }
+                    
+                    setIsUploadingFiles(false)
+                    setAttachedFiles([])
+                    
+                    if (!currentConversationId) {
+                        fetchConversations()
+                    }
+                    
+                    setIsThinking(false)
+                    return
+                }
+                
+                setIsUploadingFiles(false)
+            }
+
+            // Si no hay archivos o ya se procesaron, enviar mensaje normal
             const response = await fetch(buildApiUrl("/api/chat"), {
                 method: "POST",
                 headers: {
@@ -537,12 +624,11 @@ export default function ChatHomePage() {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    conversationId: previousConversationId,
+                    conversationId: currentConversationId,
                     message: prompt,
                     intent: intentToSend,
                     tags: tagsToSend.length > 0 ? tagsToSend : undefined,
                     useThinkingModel: isThinkingMode,
-                    attachments: attachedFiles.length > 0 ? attachedFiles : undefined,
                 }),
             })
 
@@ -567,6 +653,7 @@ export default function ChatHomePage() {
                             ...chat,
                             conversationId: data.conversationId ?? chat.conversationId,
                             intent: data.intent ?? chat.intent ?? null,
+                            title: data.title ?? chat.title,
                             messages: [...chat.messages, assistantMessage],
                             hasLoaded: true,
                         }
@@ -574,7 +661,7 @@ export default function ChatHomePage() {
                 ),
             )
 
-            if (!previousConversationId && data.conversationId) {
+            if (!currentConversationId && data.conversationId) {
                 fetchConversations()
             }
             
@@ -586,7 +673,7 @@ export default function ChatHomePage() {
         } finally {
             setIsThinking(false)
         }
-    }, [activeChat, fetchConversations, inputValue, isThinking, token, selectedQuickPromptItems, isThinkingMode, attachedFiles])
+    }, [activeChat, fetchConversations, inputValue, isThinking, token, selectedQuickPromptItems, isThinkingMode, attachedFiles, isUploadingFiles])
 
     const handlePromptKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
@@ -631,49 +718,25 @@ export default function ChatHomePage() {
                 return
             }
 
-            setIsUploadingFiles(true)
-            setChatError(null)
+            // Guardar archivos localmente sin subirlos aún
+            // Se subirán cuando el usuario envíe el mensaje
+            const filesList: Array<{
+                fileName: string
+                mimeType: string
+                size: number
+                file: File
+            }> = []
 
-            try {
-                const formData = new FormData()
-                
-                // Agregar conversationId si existe
-                if (activeChat?.conversationId) {
-                    formData.append('conversationId', activeChat.conversationId)
-                }
-                
-                Array.from(files).forEach(file => {
-                    formData.append('files', file)
+            Array.from(files).forEach(file => {
+                filesList.push({
+                    fileName: file.name,
+                    mimeType: file.type,
+                    size: file.size,
+                    file: file,
                 })
+            })
 
-                const response = await fetch(buildApiUrl("/api/files/upload"), {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: formData,
-                })
-
-                const data = await response.json()
-
-                if (!response.ok) {
-                    throw new Error(data.message || "Error al subir archivos")
-                }
-
-                if (data.files && data.files.length > 0) {
-                    setAttachedFiles(prev => [...prev, ...data.files])
-                }
-
-                if (data.errors && data.errors.length > 0) {
-                    const errorMsg = data.errors.map((e: any) => e.message).join(", ")
-                    setChatError(`Algunos archivos no se pudieron procesar: ${errorMsg}`)
-                }
-            } catch (error) {
-                const message = error instanceof Error ? error.message : "Error al subir archivos"
-                setChatError(message)
-            } finally {
-                setIsUploadingFiles(false)
-            }
+            setAttachedFiles(filesList as any)
         }
 
         input.click()
@@ -1659,7 +1722,11 @@ export default function ChatHomePage() {
                     {!hasMessages ? (
                         <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8" style={{ paddingBottom: "15%" }}>
                             <div className="flex flex-col items-center gap-6 text-center">
-                                <p className="text-2xl font-medium text-foreground">¿En qué puedo ayudarte?</p>
+                                <p className="text-3xl font-semibold text-foreground max-w-2xl leading-relaxed">
+                                    {activeChat?.messages[0]?.role === "asistente" && activeChat?.messages[0]?.content 
+                                        ? activeChat.messages[0].content 
+                                        : "¿En qué puedo ayudarte?"}
+                                </p>
                             </div>
                             {renderPromptComposer("center")}
                         </div>
