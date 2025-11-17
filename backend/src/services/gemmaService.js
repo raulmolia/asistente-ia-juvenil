@@ -92,28 +92,34 @@ Responde SOLO con el título, sin comillas, sin explicaciones. Debe ser claro y 
 export async function generateInitialGreeting(userName, intent = null) {
     const intentContext = intent ? `El usuario está interesado en: ${intent}.` : '';
     
-    const prompt = `Genera un saludo corto, cálido y juvenil para ${userName} que acaba de abrir un nuevo chat en una aplicación de pastoral juvenil. ${intentContext}
+    const prompt = `Genera un saludo ultra corto y cálido para ${userName} que acaba de abrir un chat. ${intentContext}
 
-El saludo debe:
-- Ser breve (máximo 2 líneas)
-- Ser acogedor y motivador
-- Invitar a compartir lo que necesita
-- NO usar emojis
+REQUISITOS ESTRICTOS:
+- Máximo 7 palabras (no más)
+- Una sola línea
+- Cálido y acogedor
+- Sin emojis
+- Sin signos de exclamación al final
 
-Responde SOLO con el saludo, sin comillas.`;
+Ejemplos válidos:
+- "Hola María, cuéntame qué necesitas"
+- "Bienvenido Juan, estoy aquí para ayudarte"
+- "Hola Pedro, cómo puedo acompañarte hoy"
+
+Responde SOLO con el saludo, sin comillas ni explicaciones.`;
 
     try {
         const greeting = await callGemma([
             { role: 'user', content: prompt }
         ], {
-            temperature: 0.8,
-            maxTokens: 150,
+            temperature: 0.7,
+            maxTokens: 50,
         });
 
         return greeting.trim();
     } catch (error) {
         console.error('Error generando saludo inicial:', error);
-        return `¡Hola ${userName}! 👋 ¿En qué puedo ayudarte hoy?`;
+        return `Hola ${userName}, ¿en qué puedo ayudarte?`;
     }
 }
 
