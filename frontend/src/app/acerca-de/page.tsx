@@ -55,13 +55,15 @@ export default function AcercaDePage() {
                     <div className="space-y-8">
                         {/* Logo */}
                         <div className="flex justify-center">
-                            <div className="relative h-32 w-32 overflow-hidden rounded-2xl bg-white shadow-lg">
+                            <div className="relative h-52 w-52 overflow-hidden rounded-2xl bg-white shadow-lg">
                                 <Image
                                     src="/LogotipoRPJ.png"
                                     alt="Logo RPJ"
                                     fill
-                                    className="object-contain p-2"
-                                    sizes="128px"
+                                    className="object-contain p-3"
+                                    sizes="208px"
+                                    quality={100}
+                                    priority
                                 />
                             </div>
                         </div>
