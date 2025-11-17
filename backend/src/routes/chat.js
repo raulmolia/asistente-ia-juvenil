@@ -193,13 +193,10 @@ async function ensureConversation({ conversationId, userId, intent, userName }) 
         console.warn(`⚠️ No se pudo crear colección temporal: ${error.message}`);
     }
 
-    // Generar saludo inicial con Gemma si tenemos el nombre del usuario
+    // Crear mensaje inicial estático del asistente
     if (userName) {
         try {
-            const greeting = await gemmaService.generateInitialGreeting(
-                userName,
-                intent?.id || null
-            );
+            const greeting = `Hola ${userName}, ¿en qué puedo ayudarte?`;
             
             // Crear mensaje inicial del asistente
             await prisma.mensajeConversacion.create({
@@ -211,9 +208,9 @@ async function ensureConversation({ conversationId, userId, intent, userName }) 
                 },
             });
             
-            console.log(`✅ Saludo inicial generado para ${userName}`);
+            console.log(`✅ Saludo inicial creado para ${userName}`);
         } catch (error) {
-            console.warn(`⚠️ No se pudo generar saludo inicial: ${error.message}`);
+            console.warn(`⚠️ No se pudo crear saludo inicial: ${error.message}`);
         }
     }
 
