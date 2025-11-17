@@ -33,6 +33,7 @@ import {
     User,
     Settings,
     ChevronRight,
+    ChevronDown,
     FileStack,
     UserCog,
 } from "lucide-react"
@@ -155,6 +156,7 @@ export default function ChatHomePage() {
     const [inputValue, setInputValue] = useState("")
     const [isThinking, setIsThinking] = useState(false)
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+    const [isChatsListCollapsed, setIsChatsListCollapsed] = useState(false)
     const [shareFeedback, setShareFeedback] = useState<string | null>(null)
     const [isUserDialogOpen, setIsUserDialogOpen] = useState(false)
     const [isArchivedDialogOpen, setIsArchivedDialogOpen] = useState(false)
@@ -1039,18 +1041,29 @@ export default function ChatHomePage() {
                         <MessageSquare className="h-4 w-4" aria-hidden="true" />
                     </div>
                 ) : (
-                    <p className="px-4 pt-6 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Conversaciones</p>
+                    <button
+                        onClick={() => setIsChatsListCollapsed(!isChatsListCollapsed)}
+                        className="flex w-full items-center justify-between px-4 pt-6 pb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                        <span>Chats</span>
+                        {isChatsListCollapsed ? (
+                            <ChevronRight className="h-4 w-4" />
+                        ) : (
+                            <ChevronDown className="h-4 w-4" />
+                        )}
+                    </button>
                 )}
 
-                <ScrollArea className="flex-1">
-                    <div className="space-y-1 px-2 pb-4">
-                        {sidebarChats.length === 0 && (
-                            <div className="rounded-xl border border-dashed border-border/60 bg-background/60 px-3 py-8 text-center text-xs text-muted-foreground">
-                                No hay conversaciones todavía. Crea un nuevo chat para empezar.
-                            </div>
-                        )}
+                {!isChatsListCollapsed && (
+                    <ScrollArea className="flex-1">
+                        <div className="space-y-1 px-2 pb-4">
+                            {sidebarChats.length === 0 && (
+                                <div className="rounded-xl border border-dashed border-border/60 bg-background/60 px-3 py-8 text-center text-xs text-muted-foreground">
+                                    No hay chats todavía. Crea un nuevo chat para empezar.
+                                </div>
+                            )}
 
-                        {sidebarChats.map((chat) => {
+                            {sidebarChats.map((chat) => {
                             const isActive = chat.id === activeChatId
                             const truncatedTitle = chat.title.length > 25 ? chat.title.substring(0, 25) + '...' : chat.title
 
@@ -1115,6 +1128,7 @@ export default function ChatHomePage() {
                         })}
                     </div>
                 </ScrollArea>
+                )}
 
                 <div className="border-t border-border/60 px-4 py-6">
                     <DropdownMenu>
