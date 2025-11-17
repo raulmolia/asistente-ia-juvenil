@@ -247,6 +247,7 @@ export default function ChatHomePage() {
     const fileInputRef = useRef<HTMLInputElement | null>(null)
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const audioChunksRef = useRef<Blob[]>([])
+    const initialChatCreatedRef = useRef(false)
     
     const selectedQuickPromptItems = useMemo(() => {
         const labelSet = new Set(selectedQuickPrompts)
@@ -303,7 +304,9 @@ export default function ChatHomePage() {
     }, [activeChatId, chats])
 
     useEffect(() => {
-        if (status === "authenticated" && !loadingConversations && chats.length === 0 && token) {
+        if (status === "authenticated" && !loadingConversations && chats.length === 0 && token && !initialChatCreatedRef.current) {
+            initialChatCreatedRef.current = true
+            
             const newChat = createLocalChat()
             setChats([newChat])
             setActiveChatId(newChat.id)
@@ -452,6 +455,11 @@ export default function ChatHomePage() {
                 nextChats = [...unsaved, ...mapped]
                 return nextChats
             })
+
+            // Si hay conversaciones existentes, marcar que ya no necesitamos crear el chat inicial
+            if (conversations.length > 0) {
+                initialChatCreatedRef.current = true
+            }
 
             if (!activeChatIdRef.current && nextChats.length > 0) {
                 setActiveChatId(nextChats[0]?.id ?? "")
