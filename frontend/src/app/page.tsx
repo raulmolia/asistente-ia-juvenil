@@ -1054,8 +1054,8 @@ export default function ChatHomePage() {
                     </button>
                 )}
 
-                {!isChatsListCollapsed && (
-                    <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1">
+                    {!isChatsListCollapsed && (
                         <div className="space-y-1 px-2 pb-4">
                             {sidebarChats.length === 0 && (
                                 <div className="rounded-xl border border-dashed border-border/60 bg-background/60 px-3 py-8 text-center text-xs text-muted-foreground">
@@ -1127,8 +1127,8 @@ export default function ChatHomePage() {
                             )
                         })}
                     </div>
+                    )}
                 </ScrollArea>
-                )}
 
                 <div className="border-t border-border/60 px-4 py-6">
                     <DropdownMenu>
