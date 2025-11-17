@@ -1201,7 +1201,7 @@ export default function ChatHomePage() {
                             className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                         >
                             <Info className="h-4 w-4" />
-                            Acerca de la RPJ
+                            Acerca de la IA RPJ
                         </Link>
                         <Link 
                             href="/guia-documental"
