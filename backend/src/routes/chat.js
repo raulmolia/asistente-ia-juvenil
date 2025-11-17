@@ -644,10 +644,16 @@ router.post('/', authenticate, async (req, res) => {
             contextDocuments: contextResults.length,
         });
 
+        // Obtener el título actual de la conversación (puede ser el recién generado o uno existente)
+        const currentConversation = await prisma.conversacion.findUnique({
+            where: { id: conversation.id },
+            select: { titulo: true }
+        });
+
         return res.json({
             conversationId: conversation.id,
             intent: detectedIntent.id,
-            title: updatedTitle,
+            title: updatedTitle || currentConversation?.titulo,
             message: {
                 role: 'assistant',
                 content: assistantMessageRecord.contenido,

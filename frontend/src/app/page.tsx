@@ -1037,7 +1037,10 @@ export default function ChatHomePage() {
     }
 
     const sidebarWidthClass = isSidebarCollapsed ? "w-20" : "w-80"
-    const hasMessages = Boolean(activeChat && activeChat.messages.length > 0)
+    
+    // Considerar que no hay mensajes si solo está el saludo inicial del asistente
+    const userMessages = activeChat?.messages.filter(m => m.role === "usuario") || []
+    const hasMessages = Boolean(activeChat && userMessages.length > 0)
 
     const renderPromptComposer = (variant: "center" | "bottom") => {
         const hasMessages = variant === "bottom"
