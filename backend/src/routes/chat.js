@@ -21,6 +21,8 @@ const RolMensaje = PrismaEnums.RolMensaje || {
 const router = express.Router();
 const prisma = new PrismaClient();
 const FALLBACK_MESSAGE = 'Lo siento, ahora mismo no puedo generar una propuesta. Estoy revisando el sistema; inténtalo de nuevo en unos minutos.';
+const RATE_LIMIT_MESSAGE = 'El servicio de IA está experimentando una alta demanda en este momento. Por favor, espera unos momentos e intenta de nuevo.';
+const SYSTEM_MESSAGE_PREDICATE = /mensaje del sistema:/i;
 
 // Límites por rol
 const USER_LIMITS = {
@@ -566,13 +568,17 @@ router.post('/', authenticate, async (req, res) => {
             });
         }
 
+        // Detectar si es un error 429 (rate limit)
+        const is429Error = error.message.includes('429');
+        const fallbackContent = is429Error ? RATE_LIMIT_MESSAGE : FALLBACK_MESSAGE;
+
         let assistantMessageRecord = null;
         try {
             assistantMessageRecord = await prisma.mensajeConversacion.create({
                 data: {
                     conversacionId: conversation.id,
                     rol: RolMensaje.ASISTENTE,
-                    contenido: FALLBACK_MESSAGE,
+                    contenido: fallbackContent,
                     intencion: detectedIntent.id,
                     tokensEntrada: null,
                     tokensSalida: null,

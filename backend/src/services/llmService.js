@@ -92,7 +92,12 @@ export async function callChatCompletion({
                 break;
             }
 
-            const waitTime = Math.min(DEFAULT_RETRY_DELAY_MS * attempt, DEFAULT_RETRY_DELAY_MS * 4);
+            // Detectar error 429 y aumentar el tiempo de espera
+            const is429Error = lastError.message.includes('429');
+            const waitTime = is429Error 
+                ? Math.min(DEFAULT_RETRY_DELAY_MS * attempt * 3, 5000) // Esperar más tiempo en error 429
+                : Math.min(DEFAULT_RETRY_DELAY_MS * attempt, DEFAULT_RETRY_DELAY_MS * 4);
+            
             console.warn(`[ChutesAI] intento ${attempt} fallido: ${lastError.message}. Reintentando en ${waitTime} ms`);
             await delay(waitTime);
         }
