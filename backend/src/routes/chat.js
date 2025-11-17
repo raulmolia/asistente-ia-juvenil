@@ -786,4 +786,59 @@ router.delete('/:id', authenticate, async (req, res) => {
     }
 });
 
+// Crear una nueva conversación con saludo inicial
+router.post('/create', authenticate, async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const userName = req.user?.nombre || 'Usuario';
+        const { intent } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Usuario no autenticado' });
+        }
+
+        // Resolver intención
+        const detectedIntent = intent ? resolveIntent(intent) : DEFAULT_INTENT;
+
+        // Crear la conversación con saludo inicial
+        const conversation = await ensureConversation({
+            conversationId: null,
+            userId,
+            intent: detectedIntent,
+            userName,
+        });
+
+        // Obtener los mensajes (debería incluir el saludo inicial)
+        const messages = await prisma.mensajeConversacion.findMany({
+            where: { conversacionId: conversation.id },
+            orderBy: { fechaCreacion: 'desc' },
+            take: 1,
+        });
+
+        logChatEvent('info', {
+            event: 'chat.conversation.created',
+            conversationId: conversation.id,
+            userId,
+            intent: detectedIntent.id,
+        });
+
+        return res.json({
+            conversationId: conversation.id,
+            intent: detectedIntent.id,
+            messages: messages.map(msg => ({
+                id: msg.id,
+                role: msg.rol === RolMensaje.ASISTENTE ? 'assistant' : 'user',
+                content: msg.contenido,
+                fechaCreacion: msg.fechaCreacion,
+            })),
+        });
+    } catch (error) {
+        console.error('❌ Error creando conversación:', error);
+        return res.status(500).json({
+            error: 'Error creando conversación',
+            message: error.message,
+        });
+    }
+});
+
 export default router;

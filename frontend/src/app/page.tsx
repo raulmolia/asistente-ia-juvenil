@@ -297,12 +297,55 @@ export default function ChatHomePage() {
     }, [activeChatId, chats])
 
     useEffect(() => {
-        if (status === "authenticated" && !loadingConversations && chats.length === 0) {
+        if (status === "authenticated" && !loadingConversations && chats.length === 0 && token) {
             const newChat = createLocalChat()
             setChats([newChat])
             setActiveChatId(newChat.id)
+
+            // Crear la conversación en el backend inmediatamente para generar el saludo
+            const createInitialConversation = async () => {
+                try {
+                    const response = await fetch(buildApiUrl("/api/chat/create"), {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                            intent: null,
+                        }),
+                    })
+
+                    if (response.ok) {
+                        const data = await response.json()
+                        
+                        setChats((prevChats) =>
+                            prevChats.map((chat) =>
+                                chat.id === newChat.id
+                                    ? {
+                                        ...chat,
+                                        conversationId: data.conversationId,
+                                        intent: data.intent,
+                                        messages: data.messages.map((msg: any) => ({
+                                            id: msg.id,
+                                            role: toFrontendRole(msg.role),
+                                            content: msg.content,
+                                            createdAt: msg.fechaCreacion,
+                                        })),
+                                        hasLoaded: true,
+                                    }
+                                    : chat,
+                            ),
+                        )
+                    }
+                } catch (error) {
+                    console.error("Error creando conversación inicial:", error)
+                }
+            }
+
+            void createInitialConversation()
         }
-    }, [chats.length, loadingConversations, status])
+    }, [chats.length, loadingConversations, status, token])
 
     useEffect(() => {
         activeChatIdRef.current = activeChatId
@@ -814,7 +857,7 @@ export default function ChatHomePage() {
         }
     }
 
-    const handleCreateNewChat = () => {
+    const handleCreateNewChat = async () => {
         const newChat = createLocalChat()
 
         setChats((prevChats) => [newChat, ...prevChats])
@@ -823,6 +866,48 @@ export default function ChatHomePage() {
         setInputValue("")
         setChatError(null)
         setSelectedQuickPrompts([])
+
+        // Crear la conversación en el backend inmediatamente para generar el saludo
+        if (token) {
+            try {
+                const response = await fetch(buildApiUrl("/api/chat/create"), {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        intent: null,
+                    }),
+                })
+
+                if (response.ok) {
+                    const data = await response.json()
+                    
+                    // Actualizar el chat con la conversación y los mensajes (saludo inicial)
+                    setChats((prevChats) =>
+                        prevChats.map((chat) =>
+                            chat.id === newChat.id
+                                ? {
+                                    ...chat,
+                                    conversationId: data.conversationId,
+                                    intent: data.intent,
+                                    messages: data.messages.map((msg: any) => ({
+                                        id: msg.id,
+                                        role: toFrontendRole(msg.role),
+                                        content: msg.content,
+                                        createdAt: msg.fechaCreacion,
+                                    })),
+                                    hasLoaded: true,
+                                }
+                                : chat,
+                        ),
+                    )
+                }
+            } catch (error) {
+                console.error("Error creando conversación:", error)
+            }
+        }
     }
 
     const handleSearchChats = async (query: string) => {
