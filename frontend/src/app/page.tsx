@@ -897,8 +897,8 @@ export default function ChatHomePage() {
             <form
                 onSubmit={handleSubmit}
                 className={cn(
-                    "w-full",
-                    variant === "center" ? "mx-auto max-w-3xl px-4" : "px-8 pb-8 pt-0",
+                    "w-full mx-auto max-w-3xl",
+                    variant === "center" ? "px-4" : "px-4 pb-8 pt-0",
                 )}
             >
                 <div className="space-y-4">
@@ -930,6 +930,34 @@ export default function ChatHomePage() {
                             rows={1}
                             disabled={isThinking || !activeChat}
                         />
+                        
+                        {/* Badges de etiquetas seleccionadas - solo cuando hay mensajes */}
+                        {hasMessages && selectedQuickPromptItems.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2">
+                                {selectedQuickPromptItems.map((item) => {
+                                    const Icon = item.icon
+                                    const categoryColors: Record<string, string> = {
+                                        "Dinámicas y Actividades": "border-emerald-500 bg-emerald-100 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300",
+                                        "Celebraciones": "border-pink-500 bg-pink-100 text-pink-800 dark:border-pink-500 dark:bg-pink-950/60 dark:text-pink-300",
+                                        "Programaciones": "border-blue-500 bg-blue-100 text-blue-800 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300",
+                                        "Oraciones": "border-violet-500 bg-violet-100 text-violet-800 dark:border-violet-500 dark:bg-violet-950/60 dark:text-violet-300",
+                                        "Otros": "border-slate-500 bg-slate-100 text-slate-800 dark:border-slate-500 dark:bg-slate-950/60 dark:text-slate-300",
+                                    }
+                                    const colorClass = categoryColors[item.label] || "border-gray-500 bg-gray-100 text-gray-800 dark:border-gray-500 dark:bg-gray-950/60 dark:text-gray-300"
+                                    return (
+                                        <button
+                                            key={item.label}
+                                            type="button"
+                                            onClick={() => handleQuickPromptToggle(item)}
+                                            className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition hover:opacity-80 ${colorClass}`}
+                                        >
+                                            <Icon className="h-4 w-4" aria-hidden="true" />
+                                            {item.label}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        )}
                         
                         {/* Barra de botones abajo */}
                         <div className="flex items-center justify-between">
