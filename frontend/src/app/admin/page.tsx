@@ -7,6 +7,13 @@ import { ArrowLeft, Loader2, ShieldCheck, Trash2, UserPlus, Users } from "lucide
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { useAuth } from "@/hooks/use-auth"
 import { ThemeToggleButton } from "@/components/theme-toggle"
 import { buildApiUrl } from "@/lib/utils"
@@ -420,18 +427,23 @@ export default function AdminPage() {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="admin-rol">Rol</Label>
-                                <select
-                                    id="admin-rol"
+                                <Select
                                     value={formState.rol}
-                                    onChange={handleFormChange("rol")}
-                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                    onValueChange={(value) => {
+                                        setFormState((prev) => ({ ...prev, rol: value }))
+                                    }}
                                 >
-                                    {availableRoleOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                    <SelectTrigger id="admin-rol">
+                                        <SelectValue placeholder="Seleccionar rol" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableRoleOptions.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <Button type="submit" className="w-full" disabled={creatingUser}>
                                 {creatingUser ? (
@@ -498,18 +510,22 @@ export default function AdminPage() {
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <select
+                                                    <Select
                                                         value={managedUser.rol}
-                                                        onChange={(event) => handleRoleChange(managedUser.id, managedUser.rol, event.target.value)}
+                                                        onValueChange={(value) => handleRoleChange(managedUser.id, managedUser.rol, value)}
                                                         disabled={!canManageUser || updatingRoleId === managedUser.id}
-                                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
                                                     >
-                                                        {availableRoleOptions.map((option) => (
-                                                            <option key={option.value} value={option.value}>
-                                                                {option.label}
-                                                            </option>
-                                                        ))}
-                                                    </select>
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {availableRoleOptions.map((option) => (
+                                                                <SelectItem key={option.value} value={option.value}>
+                                                                    {option.label}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <span className={managedUser.activo ? "rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700" : "rounded-full bg-rose-100 px-3 py-1 text-xs font-medium text-rose-700"}>

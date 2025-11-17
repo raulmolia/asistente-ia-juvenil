@@ -25,6 +25,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { ThemeToggleButton } from "@/components/theme-toggle"
 import { WebSourcesTable } from "@/components/web-sources-table"
 import { useAuth } from "@/hooks/use-auth"
@@ -923,22 +930,25 @@ export default function DocumentacionPage() {
                                 className="pl-9"
                             />
                         </div>
-                        <div className="relative">
-                            <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <select
+                        <div className="relative w-full sm:w-48">
+                            <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none" />
+                            <Select
                                 value=""
-                                onChange={(e) => {
-                                    if (e.target.value) handleFilterTagToggle(e.target.value)
+                                onValueChange={(value) => {
+                                    if (value) handleFilterTagToggle(value)
                                 }}
-                                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-9 pr-8 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-48"
                             >
-                                <option value="">Filtrar por etiqueta</option>
-                                {tagOptions.map((tag) => (
-                                    <option key={tag.id} value={tag.id}>
-                                        {tag.label}
-                                    </option>
-                                ))}
-                            </select>
+                                <SelectTrigger className="pl-9">
+                                    <SelectValue placeholder="Filtrar por etiqueta" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {tagOptions.map((tag) => (
+                                        <SelectItem key={tag.id} value={tag.id}>
+                                            {tag.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 
