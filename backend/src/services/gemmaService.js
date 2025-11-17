@@ -100,11 +100,15 @@ REQUISITOS ESTRICTOS:
 - Cálido y acogedor
 - Sin emojis
 - Sin signos de exclamación al final
+- Debe ser CREATIVO y DIFERENTE cada vez (no repitas saludos)
 
-Ejemplos válidos:
+Ejemplos válidos (usa variaciones diferentes):
 - "Hola María, cuéntame qué necesitas"
 - "Bienvenido Juan, estoy aquí para ayudarte"
 - "Hola Pedro, cómo puedo acompañarte hoy"
+- "Qué alegría verte Laura, te escucho"
+- "Encantado de saludarte Carlos, conversemos"
+- "Hola Ana, comparte lo que quieras"
 
 Responde SOLO con el saludo, sin comillas ni explicaciones.`;
 
@@ -112,7 +116,7 @@ Responde SOLO con el saludo, sin comillas ni explicaciones.`;
         const greeting = await callGemma([
             { role: 'user', content: prompt }
         ], {
-            temperature: 0.7,
+            temperature: 0.9,
             maxTokens: 50,
         });
 
