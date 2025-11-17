@@ -1,11 +1,49 @@
 # Resumen técnico de la iteración
-**Fecha:** 11 de noviembre de 2025  
+**Fecha:** 17 de noviembre de 2025  
 **Participantes:** Equipo RPJ + asistente IA  
-**Objetivo:** Restablecer la respuesta de la IA en producción, endurecer la reconexión de ChromaDB y mantener la documentación sincronizada.
+**Objetivo:** Implementar dictado por voz con Whisper Large V3 y optimizar posición del micrófono.
 
 ---
 
-## 0. Novedades del 11/11/2025
+## 0. Novedades del 17/11/2025
+
+### Dictado por voz con Whisper Large V3
+- **Nuevo servicio**: `backend/src/services/whisperService.js`
+  - Integración con Whisper Large V3 via Chutes AI
+  - URL: `https://chutes-whisper-large-v3.chutes.ai/transcribe`
+  - Convierte audio buffer a base64 y envía a API
+  - Maneja formato de respuesta: array de segmentos con timestamps
+  - Ejemplo: `[{"start": 0, "end": 3.96, "text": " Hola, ¿qué tal?"}]`
+
+- **Nuevo endpoint**: `POST /api/files/transcribe`
+  - Ubicación: `backend/src/routes/files.js`
+  - Acepta audio via multer (hasta 25MB)
+  - Formatos soportados: webm, wav, mp3, mpeg, ogg, mp4, x-m4a
+  - Autenticación requerida con Bearer token
+  - Responde: `{success: true, text: "texto transcrito"}`
+
+- **Frontend**: MediaRecorder API integrado
+  - Estados: `isRecording`, `isTranscribing`
+  - Refs: `mediaRecorderRef`, `audioChunksRef`
+  - Botón micrófono con iconos dinámicos (Mic/Square)
+  - Visual feedback: rojo pulsante durante grabación
+  - Flujo: click → permiso → grabar → stop → transcribir → insertar texto
+  - Ubicación: después del badge "Thinking", antes del botón enviar
+
+### Mejoras y fixes
+- **Posicionamiento del micrófono**: Movido junto al botón de enviar para mejor UX
+- **Validaciones optimizadas**: Solo requiere token (no activeChat) para transcripción
+- **Logging detallado**: Mensajes de debug en consola para troubleshooting
+- **Manejo robusto de errores**: Detecta permisos de micrófono y fallos de API
+
+### Problemas resueltos
+1. **Formato de respuesta Whisper**: API devuelve array de segmentos, no objeto plano
+2. **Validación de sesión**: Eliminada dependencia de activeChat para permitir dictado inmediato
+3. **Transcripción vacía**: Corregido parseo de array de segmentos con concatenación de textos
+
+---
+
+## 1. Cambios destacados (11/11/2025)
 - `backend/src/services/chromaService.js` ahora memoriza la inicialización en curso, reintenta con `setTimeout` y limpia el reintento tras recuperar la conexión; además evita operaciones si falta la función de embeddings.
 - Se amplió `CHUTES_TIMEOUT_MS` a 45 s, se redujo `CHUTES_MAX_RETRIES` y se normalizó el mensaje de `AbortError` en `backend/src/services/llmService.js` para detectar timeouts reales.
 - `.env` actualizado con los nuevos valores por defecto para Chutes, manteniendo coherencia entre código y configuración desplegada.
