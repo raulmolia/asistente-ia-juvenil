@@ -1396,7 +1396,7 @@ export default function ChatHomePage() {
 
             <main className="flex flex-1 flex-col overflow-hidden">
                 <header className="flex items-center justify-between border-b border-border/60 bg-background/95 px-8 py-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-8">
                         <Link 
                             href="/acerca-de"
                             className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
