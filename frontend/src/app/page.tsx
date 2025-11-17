@@ -607,6 +607,11 @@ export default function ChatHomePage() {
                     
                     if (!currentConversationId) {
                         fetchConversations()
+                        // Cargar los mensajes completos de la conversación recién creada
+                        // para incluir el saludo inicial de Gemma
+                        setTimeout(() => {
+                            loadConversationMessages(initialData.conversationId)
+                        }, 500)
                     }
                     
                     setIsThinking(false)
@@ -663,6 +668,11 @@ export default function ChatHomePage() {
 
             if (!currentConversationId && data.conversationId) {
                 fetchConversations()
+                // Cargar los mensajes completos de la conversación recién creada
+                // para incluir el saludo inicial de Gemma
+                setTimeout(() => {
+                    loadConversationMessages(data.conversationId)
+                }, 500)
             }
             
             // Limpiar archivos adjuntos después de enviar
@@ -673,7 +683,7 @@ export default function ChatHomePage() {
         } finally {
             setIsThinking(false)
         }
-    }, [activeChat, fetchConversations, inputValue, isThinking, token, selectedQuickPromptItems, isThinkingMode, attachedFiles, isUploadingFiles])
+    }, [activeChat, fetchConversations, inputValue, isThinking, token, selectedQuickPromptItems, isThinkingMode, attachedFiles, isUploadingFiles, loadConversationMessages])
 
     const handlePromptKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
