@@ -164,6 +164,9 @@ export default function ChatHomePage() {
     const [isThinking, setIsThinking] = useState(false)
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [isChatsListCollapsed, setIsChatsListCollapsed] = useState(false)
+    const [loadingConversations, setLoadingConversations] = useState(false)
+    const [hasInitialLoadCompleted, setHasInitialLoadCompleted] = useState(false)
+    const [chatError, setChatError] = useState<string | null>(null)
     const [shareFeedback, setShareFeedback] = useState<string | null>(null)
     const [isUserDialogOpen, setIsUserDialogOpen] = useState(false)
     const [isArchivedDialogOpen, setIsArchivedDialogOpen] = useState(false)
@@ -180,8 +183,6 @@ export default function ChatHomePage() {
     const [profileFeedback, setProfileFeedback] = useState<string | null>(null)
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [chatPendingDeletion, setChatPendingDeletion] = useState<Chat | null>(null)
-    const [loadingConversations, setLoadingConversations] = useState(false)
-    const [chatError, setChatError] = useState<string | null>(null)
     const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false)
     const [isDeletingChat, setIsDeletingChat] = useState(false)
     const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false)
@@ -287,8 +288,11 @@ export default function ChatHomePage() {
 
     const { mustChangePassword, clearPasswordChangeFlag } = useAuth()
 
+    // Resetear el flag de chat inicial cuando el usuario se desautentica
     useEffect(() => {
         if (status === "unauthenticated") {
+            initialChatCreatedRef.current = false
+            setHasInitialLoadCompleted(false)
             router.replace("/auth/login")
         }
     }, [router, status])
@@ -304,7 +308,18 @@ export default function ChatHomePage() {
     }, [activeChatId, chats])
 
     useEffect(() => {
-        if (status === "authenticated" && !loadingConversations && chats.length === 0 && token && !initialChatCreatedRef.current) {
+        // Solo crear el chat inicial una vez que:
+        // 1. El usuario esté autenticado
+        // 2. Se haya completado la carga inicial de conversaciones
+        // 3. No existan conversaciones previas
+        // 4. No se haya creado ya un chat inicial en esta sesión
+        if (
+            status === "authenticated" && 
+            hasInitialLoadCompleted && 
+            chats.length === 0 && 
+            token && 
+            !initialChatCreatedRef.current
+        ) {
             initialChatCreatedRef.current = true
             
             const newChat = createLocalChat()
@@ -354,7 +369,7 @@ export default function ChatHomePage() {
 
             void createInitialConversation()
         }
-    }, [chats.length, loadingConversations, status, token])
+    }, [hasInitialLoadCompleted, status, token])
 
     useEffect(() => {
         activeChatIdRef.current = activeChatId
@@ -455,6 +470,9 @@ export default function ChatHomePage() {
                 nextChats = [...unsaved, ...mapped]
                 return nextChats
             })
+
+            // Marcar que la carga inicial se ha completado
+            setHasInitialLoadCompleted(true)
 
             // Si hay conversaciones existentes, marcar que ya no necesitamos crear el chat inicial
             if (conversations.length > 0) {
