@@ -1,5 +1,16 @@
 # Registro de Desarrollo - Asistente IA para Actividades Juveniles
 
+## Actualización 18 de noviembre de 2025 - Fix creación espontánea de chats
+- 🐛 **Problema resuelto**: Múltiples chats se creaban espontáneamente al hacer login debido a condición de carrera
+- 🔧 **Causa raíz**: useEffect con dependencias problemáticas (`chats.length`) que se disparaba múltiples veces
+- ✅ **Solución implementada**: 
+  - Añadido estado `hasInitialLoadCompleted` para controlar flujo de creación
+  - Modificado useEffect para crear chat solo después de completar carga inicial de conversaciones
+  - Reseteo de flags (`initialChatCreatedRef` y `hasInitialLoadCompleted`) en logout
+  - Eliminadas dependencias problemáticas del array de dependencias
+  - Limpieza de estados duplicados (`loadingConversations`, `chatError`)
+- 📊 **Resultado**: Ahora solo se crea UN chat inicial por sesión, sin duplicados
+
 ## Actualización 16 de noviembre de 2025 - Sistema de fuentes web
 - 🌐 **Scraping web integrado**: El asistente ahora puede consultar páginas web además de documentos PDF
 - 📄 **Tres tipos de fuente**: PAGINA (URL individual), DOMINIO (crawling completo hasta 50 páginas), SITEMAP (procesamiento de XML)

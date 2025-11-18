@@ -1,4 +1,4 @@
-# 🚀 Estado actual del proyecto (17 nov 2025)
+# 🚀 Estado actual del proyecto (18 nov 2025)
 
 ## ✅ COMPLETADO CON ÉXITO
 
@@ -19,6 +19,7 @@
 - ✅ Orquestación con PM2 (`ecosystem.config.js`) para backend, frontend, ChromaDB y web-updater
 - ✅ Servicio de email configurado con Nodemailer (SMTP port 465, SSL)
 - ✅ Variables de entorno cargadas con ruta absoluta en index.js
+- ✅ **Fix creación espontánea de chats** (18 nov 2025): Resuelto problema de condición de carrera que causaba múltiples chats al login
 
 ### UI/UX Mejorado (15 nov 2025)
 - ✅ **Tipografía moderna**: Fuente Inter con pesos 300-700 (similar a Notion/ChatGPT)
