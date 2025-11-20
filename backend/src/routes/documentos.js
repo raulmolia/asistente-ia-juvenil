@@ -337,6 +337,10 @@ async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileB
         .replace(/\u0000/g, '')
         .replace(/\r\n/g, '\n')
         .trim();
+
+    if (!contenidoNormalizado) {
+        throw new Error('El PDF no contiene texto legible para ser vectorizado');
+    }
     
     // Usar descripción personalizada si se proporciona, sino generar una
     const descripcionGenerada = descripcionPersonalizada 
@@ -348,46 +352,53 @@ async function procesarDocumento({ documento, titulo, etiquetas, filePath, fileB
     let mergeFactor = 1;
     let originalChunkCount = 0;
 
-    if (contenidoNormalizado) {
-        let chunks = splitIntoChunks(
-            contenidoNormalizado,
-            CHROMA_DOCUMENT_CHUNK_SIZE,
-            CHROMA_DOCUMENT_CHUNK_OVERLAP,
+    let chunks = splitIntoChunks(
+        contenidoNormalizado,
+        CHROMA_DOCUMENT_CHUNK_SIZE,
+        CHROMA_DOCUMENT_CHUNK_OVERLAP,
+    );
+
+    originalChunkCount = chunks.length;
+
+    if (chunks.length === 0) {
+        throw new Error('No se pudieron generar fragmentos para el documento');
+    }
+
+    if (Number.isFinite(CHROMA_DOCUMENT_MAX_CHUNKS) && CHROMA_DOCUMENT_MAX_CHUNKS > 0 && chunks.length > CHROMA_DOCUMENT_MAX_CHUNKS) {
+        const result = mergeChunksToLimit(chunks, CHROMA_DOCUMENT_MAX_CHUNKS);
+        if (result.mergedChunks.length === 0) {
+            throw new Error('No se pudieron compactar los fragmentos del documento');
+        }
+
+        console.warn(
+            `⚠️ Documento ${documento.id} generó ${chunks.length} fragmentos. `
+            + `Agrupando en ${result.mergedChunks.length} fragmentos (factor ${result.mergeFactor}).`,
         );
 
-        originalChunkCount = chunks.length;
+        chunks = result.mergedChunks;
+        mergeFactor = result.mergeFactor;
+    }
 
-        if (chunks.length > 0 && Number.isFinite(CHROMA_DOCUMENT_MAX_CHUNKS) && CHROMA_DOCUMENT_MAX_CHUNKS > 0 && chunks.length > CHROMA_DOCUMENT_MAX_CHUNKS) {
-            const result = mergeChunksToLimit(chunks, CHROMA_DOCUMENT_MAX_CHUNKS);
-            if (result.mergedChunks.length > 0) {
-                console.warn(
-                    `⚠️ Documento ${documento.id} generó ${chunks.length} fragmentos. `
-                    + `Agrupando en ${result.mergedChunks.length} fragmentos (factor ${result.mergeFactor}).`,
-                );
-                chunks = result.mergedChunks;
-                mergeFactor = result.mergeFactor;
-            }
-        }
+    totalChunks = chunks.length;
 
-        totalChunks = chunks.length;
+    const entries = chunks.map((chunk, index) => ({
+        id: `${documento.id}#${index}`,
+        document: chunk,
+        metadata: {
+            ...metadataBase,
+            resumen: descripcionGenerada,
+            chunkIndex: index,
+            totalChunks,
+            chunksOriginales: originalChunkCount || totalChunks,
+            factorAgrupacion: mergeFactor,
+            longitudCaracteres: chunk.length,
+        },
+    }));
 
-        if (chunks.length > 0) {
-            const entries = chunks.map((chunk, index) => ({
-                id: `${documento.id}#${index}`,
-                document: chunk,
-                metadata: {
-                    ...metadataBase,
-                    resumen: descripcionGenerada,
-                    chunkIndex: index,
-                    totalChunks,
-                    chunksOriginales: originalChunkCount || totalChunks,
-                    factorAgrupacion: mergeFactor,
-                    longitudCaracteres: chunk.length,
-                },
-            }));
+    vectorOk = await chromaService.addDocuments(entries, CHROMA_DOCUMENT_COLLECTION);
 
-            vectorOk = await chromaService.addDocuments(entries, CHROMA_DOCUMENT_COLLECTION);
-        }
+    if (!vectorOk) {
+        throw new Error('No se pudo vectorizar el documento en ChromaDB');
     }
 
     const actualizado = await prisma.documento.update({

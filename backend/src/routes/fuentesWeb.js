@@ -160,10 +160,17 @@ async function procesarFuenteWeb({ fuenteWeb, etiquetas }) {
             if (!scrapeResult.success) {
                 throw new Error(scrapeResult.error || 'Error desconocido al scraping la página');
             }
+            if (!scrapeResult.content || scrapeResult.content.trim().length === 0) {
+                throw new Error('No se pudo extraer contenido utilizable de la página');
+            }
 
             // Vectorizar el contenido de la página
             const chunks = splitIntoChunks(scrapeResult.content, WEB_CHUNK_SIZE, WEB_CHUNK_OVERLAP);
             const limitedChunks = chunks.slice(0, WEB_MAX_CHUNKS);
+
+            if (limitedChunks.length === 0) {
+                throw new Error('La página no generó fragmentos para vectorizar');
+            }
 
             const metadata = {
                 ...metadataBase,
@@ -180,10 +187,10 @@ async function procesarFuenteWeb({ fuenteWeb, etiquetas }) {
             const addResult = await chromaService.addDocuments(entries, CHROMA_WEB_COLLECTION);
 
             if (!addResult) {
-                console.error(`❌ Error vectorizando página ${fuenteWeb.url} - addDocuments retornó false`);
-            } else {
-                console.log(`✅ Vectorizados ${limitedChunks.length} chunks de ${fuenteWeb.url}`);
+                throw new Error(`Error vectorizando página ${fuenteWeb.url}`);
             }
+
+            console.log(`✅ Vectorizados ${limitedChunks.length} chunks de ${fuenteWeb.url}`);
 
             await prisma.fuenteWeb.update({
                 where: { id: fuenteWeb.id },
@@ -202,11 +209,19 @@ async function procesarFuenteWeb({ fuenteWeb, etiquetas }) {
             scrapeResult = await webScraperService.scrapeDomain(fuenteWeb.url);
 
             const successfulPages = scrapeResult.pages.filter(p => p.success);
+            if (successfulPages.length === 0) {
+                throw new Error('No se pudo extraer contenido utilizable del dominio');
+            }
             let totalChunks = 0;
 
             for (const page of successfulPages) {
                 const chunks = splitIntoChunks(page.content, WEB_CHUNK_SIZE, WEB_CHUNK_OVERLAP);
                 const limitedChunks = chunks.slice(0, Math.floor(WEB_MAX_CHUNKS / successfulPages.length));
+
+                if (limitedChunks.length === 0) {
+                    console.warn(`⚠️ Página ${page.url} no generó fragmentos utilizable, se omite`);
+                    continue;
+                }
 
                 const pageMetadata = {
                     ...metadataBase,
@@ -224,12 +239,16 @@ async function procesarFuenteWeb({ fuenteWeb, etiquetas }) {
                 const addResult = await chromaService.addDocuments(entries, CHROMA_WEB_COLLECTION);
 
                 if (!addResult) {
-                    console.error(`❌ Error vectorizando página ${page.url} - addDocuments retornó false`);
-                } else {
-                    console.log(`✅ Vectorizados ${limitedChunks.length} chunks de ${page.url}`);
+                    throw new Error(`Error vectorizando página ${page.url}`);
                 }
 
+                console.log(`✅ Vectorizados ${limitedChunks.length} chunks de ${page.url}`);
+
                 totalChunks += limitedChunks.length;
+            }
+
+            if (totalChunks === 0) {
+                throw new Error('El dominio no generó contenido vectorizable');
             }
 
             const combinedContent = successfulPages
@@ -254,11 +273,19 @@ async function procesarFuenteWeb({ fuenteWeb, etiquetas }) {
             scrapeResult = await webScraperService.scrapeSitemap(fuenteWeb.url);
 
             const successfulPages = scrapeResult.pages.filter(p => p.success);
+            if (successfulPages.length === 0) {
+                throw new Error('No se pudo extraer contenido utilizable del sitemap');
+            }
             let totalChunks = 0;
 
             for (const page of successfulPages) {
                 const chunks = splitIntoChunks(page.content, WEB_CHUNK_SIZE, WEB_CHUNK_OVERLAP);
                 const limitedChunks = chunks.slice(0, Math.floor(WEB_MAX_CHUNKS / successfulPages.length));
+
+                if (limitedChunks.length === 0) {
+                    console.warn(`⚠️ Página ${page.url} del sitemap no generó fragmentos utilizable, se omite`);
+                    continue;
+                }
 
                 const pageMetadata = {
                     ...metadataBase,
@@ -276,12 +303,16 @@ async function procesarFuenteWeb({ fuenteWeb, etiquetas }) {
                 const addResult = await chromaService.addDocuments(entries, CHROMA_WEB_COLLECTION);
 
                 if (!addResult) {
-                    console.error(`❌ Error vectorizando página ${page.url} - addDocuments retornó false`);
-                } else {
-                    console.log(`✅ Vectorizados ${limitedChunks.length} chunks de ${page.url}`);
+                    throw new Error(`Error vectorizando página ${page.url}`);
                 }
 
+                console.log(`✅ Vectorizados ${limitedChunks.length} chunks de ${page.url}`);
+
                 totalChunks += limitedChunks.length;
+            }
+
+            if (totalChunks === 0) {
+                throw new Error('El sitemap no generó contenido vectorizable');
             }
 
             const combinedContent = successfulPages

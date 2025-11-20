@@ -14,6 +14,13 @@ dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 const { PrismaClient } = prismaPackage;
 const prisma = new PrismaClient();
 
+const EstadoProcesamiento = {
+    PENDIENTE: 'PENDIENTE',
+    PROCESANDO: 'PROCESANDO',
+    COMPLETADO: 'COMPLETADO',
+    ERROR: 'ERROR',
+};
+
 function parseEtiquetas(etiquetas) {
     if (Array.isArray(etiquetas)) {
         return etiquetas.map((value) => String(value).trim()).filter(Boolean);
@@ -37,18 +44,38 @@ async function main() {
     await chromaService.initialize();
 
     const pendientes = await prisma.documento.findMany({
-        where: { estadoProcesamiento: 'PROCESANDO' },
+        where: { estadoProcesamiento: EstadoProcesamiento.PROCESANDO },
         orderBy: { fechaCreacion: 'asc' },
     });
 
-    if (pendientes.length === 0) {
-        console.log('✅ No hay documentos pendientes de reprocesar');
+    const incompletos = await prisma.documento.findMany({
+        where: {
+            estadoProcesamiento: EstadoProcesamiento.COMPLETADO,
+            OR: [
+                { vectorDocumentoId: null },
+                { coleccionVectorial: null },
+                { contenidoExtraido: null },
+                { contenidoExtraido: '' },
+            ],
+        },
+        orderBy: { fechaCreacion: 'asc' },
+    });
+
+    const documentosMap = new Map();
+    for (const documento of [...pendientes, ...incompletos]) {
+        documentosMap.set(documento.id, documento);
+    }
+
+    const documentos = Array.from(documentosMap.values());
+
+    if (documentos.length === 0) {
+        console.log('✅ No hay documentos pendientes o incompletos de reprocesar');
         return;
     }
 
-    console.log(`🔁 Reprocesando ${pendientes.length} documento(s) pendientes...`);
+    console.log(`🔁 Reprocesando ${documentos.length} documento(s) (pendientes: ${pendientes.length}, incompletos: ${incompletos.length})...`);
 
-    for (const documento of pendientes) {
+    for (const documento of documentos) {
         console.log(`→ Documento ${documento.id} (${documento.titulo})`);
 
         try {
@@ -59,7 +86,7 @@ async function main() {
             await prisma.documento.update({
                 where: { id: documento.id },
                 data: {
-                    estadoProcesamiento: 'ERROR',
+                    estadoProcesamiento: EstadoProcesamiento.ERROR,
                     mensajeError: mensaje,
                     fechaProcesamiento: new Date(),
                 },
@@ -84,7 +111,7 @@ async function main() {
             await prisma.documento.update({
                 where: { id: documento.id },
                 data: {
-                    estadoProcesamiento: 'ERROR',
+                    estadoProcesamiento: EstadoProcesamiento.ERROR,
                     mensajeError: mensaje,
                     fechaProcesamiento: new Date(),
                 },
